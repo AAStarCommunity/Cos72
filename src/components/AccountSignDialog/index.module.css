@@ -21,3 +21,17 @@
     flex-direction: column;
     gap: 20px;
 }
+
+.WelcomeBack {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    font-size: 20px;
+    font-weight: bold;
+    margin-bottom: 20px;
+}
+.WelcomeBack img {
+    width: 140px;
+}

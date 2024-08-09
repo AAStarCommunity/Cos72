@@ -11,7 +11,7 @@ import { ethers } from "ethers";
 import { NetworkdConfig, networkIds } from "../../config";
 import { entryPointAddress } from "../../sdk/AAStarClient";
 import { Toast } from "primereact/toast";
-
+import AAStarLogo from "../../assets/logo-aastar.png";
 interface AccountSignDialogParams {
   onHide: () => void;
   visible: boolean;
@@ -61,7 +61,9 @@ function AccountSignDialog({ onHide, visible }: AccountSignDialogParams) {
       visible={visible}
       header={"Sign in"}
     >
-         <Toast ref={toast} />
+    <Toast ref={toast} />
+   
+      <div className={styles.WelcomeBack}><img src={AAStarLogo}></img> <div>Welcome Back</div></div>
       <div className={styles.Register}>
         <div className={styles.inputRow}>
           <div>Email address</div>

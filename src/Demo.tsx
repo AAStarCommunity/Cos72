@@ -197,22 +197,9 @@ function Demo() {
       )
     );
     for (let i = 0, l = mintList.length; i < l; i++) {
-      const filterTo = NFTContract.filters.Transfer(
-        null,
+       NFTContract.getAccountTokenIds(
         mintList[i].account
-      );
-      NFTContract.queryFilter(filterTo, -1000, "latest").then((events) => {
-        const tokenIds = events
-        .filter((item) => {
-          if (item.topics[3] != undefined) {
-            return true;
-          } else {
-            return false;
-          }
-        })
-        .map((item) => {
-          return parseInt(item.topics[3]);
-        });
+      ).then((tokenIds: any) => {
         setMintList((items) => {
           const newItems = [...items];
           const newItem = newItems[i];
@@ -220,6 +207,20 @@ function Demo() {
           return newItems;
         });
       })
+      // NFTContract.queryFilter(filterTo, -1000, "latest").then((events) => {
+      //   const tokenIds = events
+      //   .filter((item) => {
+      //     if (item.topics[3] != undefined) {
+      //       return true;
+      //     } else {
+      //       return false;
+      //     }
+      //   })
+      //   .map((item) => {
+      //     return parseInt(item.topics[3]);
+      //   });
+        
+      // })
     }
   };
 
