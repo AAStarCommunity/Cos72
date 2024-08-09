@@ -1,0 +1,43 @@
+.root {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 2rem;
+    
+  }
+
+.mintRow {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.mintList {
+    display: flex;
+    gap: 20px;
+    flex-direction: column;
+}
+
+.accountText {
+    width: 200px;
+}
+
+.batchMintUsdtBtn {
+    margin-top: 20px;
+    margin-bottom: 20px;
+}
+
+.selectRow {
+    margin-bottom: 20px;
+    display: flex;
+    gap: 20px;
+}
+
+.contractLink {
+    font-weight: bold;
+    margin-bottom: 20px;
+    display: block;
+}
+
+.TransactionTable {
+    margin-top: 20px;
+}
