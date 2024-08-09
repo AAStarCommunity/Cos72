@@ -2,7 +2,7 @@
 import { UserOperationStruct } from "@account-abstraction/contracts";
 import { PaymasterAPI } from "../PaymasterAPI";
 import { ethers } from "ethers";
-import { calcPreVerificationGas } from "../calcPreVerificationGas";
+import { calcPreVerificationGas } from "../utils/calcPreVerificationGas";
 import { entryPointAddress, PaymasterConfig } from "../AAStarClient";
 async function OptoJSON(op: Partial<UserOperationStruct>): Promise<any> {
     const userOp = await ethers.utils.resolveProperties(op);

@@ -1,11 +1,13 @@
+import { ethers } from "ethers";
 import { BundlerConfig, PaymasterConfig } from "./sdk/AAStarClient";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export const networkIds = {
   ETH_SEPOLIA: 11155111,
   OP_SEPOLIA: 11155420,
+  ARB_SEPOLIA: 421614,
 } as const;
-export type NetworkId = 11155111 | 11155420;
+export type NetworkId = 11155111 | 11155420 | 421614;
 export interface INetwork {
   name: string;
   chainId: number;
@@ -13,6 +15,7 @@ export interface INetwork {
   blockExplorerURL: null | string;
   contracts: {
     USDT: string;
+    NFT: string;
   };
   bundler: BundlerConfig[];
   paymaster: PaymasterConfig[];
@@ -25,6 +28,7 @@ export const NetworkdConfig: { [K in NetworkId]: INetwork } = {
     blockExplorerURL: "https://sepolia.etherscan.io",
     contracts: {
       USDT: "0x7169D38820dfd117C3FA1f22a697dBA58d90BA06",
+      NFT: "0xCEf599508abd274bab8F0D9D9149d9ceeD9a2A07"
     },
     bundler: [
       {
@@ -99,12 +103,42 @@ export const NetworkdConfig: { [K in NetworkId]: INetwork } = {
     blockExplorerURL: "https://sepolia-optimism.etherscan.io",
     contracts: {
       USDT: "0x1927E2D716D7259d06006bFaF3dBFA22A12d6945",
+      NFT: "0xcef599508abd274bab8f0d9d9149d9ceed9a2a07"
     },
     bundler: [
       {
         provider: "stackup",
         config: {
           url: "https://public.stackup.sh/api/v1/node/optimism-sepolia",
+        },
+      },
+    ],
+    paymaster: [
+      {
+        provider: "stackup",
+        config: {
+          url: "https://api.stackup.sh/v1/paymaster/5309e1878a24d01f3998beb56b2357443f72d127ee224eab072bd2378168da01",
+          option: {
+            type: "payg",
+          },
+        },
+      },
+    ],
+  },
+  [networkIds.ARB_SEPOLIA]: {
+    name: "Arbitrum Sepolia",
+    rpc: "https://public.stackup.sh/api/v1/node/arbitrum-sepolia",
+    chainId: networkIds.ARB_SEPOLIA,
+    blockExplorerURL: "https://sepolia-explorer.arbitrum.io",
+    contracts: {
+      USDT: "0x1927E2D716D7259d06006bFaF3dBFA22A12d6945",
+      NFT: ethers.constants.AddressZero
+    },
+    bundler: [
+      {
+        provider: "stackup",
+        config: {
+          url: "https://public.stackup.sh/api/v1/node/arbitrum-sepolia",
         },
       },
     ],

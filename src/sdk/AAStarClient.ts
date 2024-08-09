@@ -2,16 +2,17 @@
 
 import { ethers } from "ethers";
 
-import { SimpleAccountAPI } from "./SimpleAccountAPI";
+import { SimpleAccountAPI } from "./account/SimpleAccountAPI";
 import { PaymasterAPI } from "./PaymasterAPI";
 import { StackupPayMasterAPI } from "./paymaster/StackupPayMasterAPI";
 import { PimlicoPayMasterAPI } from "./paymaster/PimlicoPayMasterAPI";
 import { AAStarPayMasterAPI } from "./paymaster/AAStarPayMasterAPI";
 import { BiconomyPayMasterAPI } from "./paymaster/BiconomyPayMasterAPI";
 import { BundlerClient } from "./BundlerClient";
+import { AirAccountAPI } from "./account/AirAccountAPI";
 
 export type Provider = "stackup" | "pimlico" | "aastar" | "biconomy";
-
+export type AAProvider = "SimpleAccount" | "AirAccount";
 export interface BundlerConfig {
   provider: Provider;
   config: {
@@ -33,13 +34,14 @@ export interface PaymasterConfig {
 export interface AAWalletConfig {
   entryPointAddress: string;
   factoryAddress: string;
+  provider: AAProvider
 }
 
 export interface SmartAccountParams {
   rpc: string;
   bundler: BundlerConfig;
   paymaster: PaymasterConfig;
-  signer: ethers.Wallet;
+  signer?: ethers.Wallet;
   aaConfig?: AAWalletConfig;
 }
 export const entryPointAddress = "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789";
@@ -48,10 +50,10 @@ export const factoryAddress = "0x9406Cc6185a346906296840746125a0E44976454";
 export class AAStarClient {
   bundler: BundlerConfig;
   paymaster: PaymasterConfig;
-  aaWallet: SimpleAccountAPI | null;
+  aaWallet: SimpleAccountAPI | AirAccountAPI | null;
   aaConfig: AAWalletConfig;
   rpc: string;
-  signer: ethers.Wallet;
+  signer: any;
   provider: ethers.providers.JsonRpcProvider;
   bundlerClient: BundlerClient | null;
   constructor(params: SmartAccountParams) {
@@ -69,23 +71,36 @@ export class AAStarClient {
       factoryAddress: params.aaConfig?.factoryAddress
         ? params.aaConfig?.factoryAddress
         : factoryAddress,
+      provider: params.aaConfig?.provider ? params.aaConfig?.provider  : "AirAccount"
     };
   }
 
   async sendUserOperation(callTo: string[], callData: string[]) {
     if (!this.aaWallet) {
-      this.aaWallet = new SimpleAccountAPI({
-        provider: new ethers.providers.JsonRpcProvider(this.rpc),
-        entryPointAddress,
-        owner: this.signer,
-        factoryAddress,
-        paymasterAPI: this.buildPayMaster(),
-      });
+      if (this.aaConfig.provider === "SimpleAccount") {
+        this.aaWallet = new SimpleAccountAPI({
+          provider: new ethers.providers.JsonRpcProvider(this.rpc),
+          entryPointAddress,
+          owner: this.signer,
+          factoryAddress,
+          paymasterAPI: this.buildPayMaster(),
+        });
+      }
+      else {
+        this.aaWallet = new AirAccountAPI({
+          provider: new ethers.providers.JsonRpcProvider(this.rpc),
+          entryPointAddress,
+          factoryAddress,
+          paymasterAPI: this.buildPayMaster(),
+        });
+      }
+ 
     }
     if (!this.bundlerClient) {
       this.bundlerClient = await this.buildBundlerClient();
     }
     const address = await this.aaWallet.getCounterFactualAddress();
+  
     const op = await this.aaWallet.createSignedUserOp({
       target: address,
       data: [callTo, callData],

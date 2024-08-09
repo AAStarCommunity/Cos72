@@ -1,0 +1,23 @@
+.SignInBtn {
+    width: 100%;
+}
+
+.input {
+    width: 100%;
+}
+
+.inputRow {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.SignInDialog {
+    width: 500px;
+}
+
+.Register {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}

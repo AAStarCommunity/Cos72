@@ -48,3 +48,14 @@
     align-items: center;
     margin-bottom: 20px;
 }
+
+.contractRow {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.usdtCard {
+    margin-bottom: 30px;
+}

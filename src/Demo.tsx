@@ -2,11 +2,16 @@
 import { ethers } from "ethers";
 import { useEffect, useState } from "react";
 import TetherToken from "./contracts/TetherToken.json";
+import AAStarDemoNFT from "./contracts/AAStarDemoNFT.json";
 import styles from "./Demo.module.css";
 import "react-toastify/dist/ReactToastify.css";
 
 import { LoadingButton } from "@mui/lab";
 import {
+  Button,
+  Card,
+  CardContent,
+  CardHeader,
   FormControl,
   InputLabel,
   MenuItem,
@@ -29,8 +34,10 @@ import { AAStarClient } from "./sdk";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 
 import { NetworkdConfig, NetworkId } from "./config";
+import { useAccount } from "wagmi";
 
 const TetherTokenABI = TetherToken.abi;
+const AAStarDemoNFTABI = AAStarDemoNFT.abi;
 
 const getWallet = () => {
   const signingKey = localStorage.getItem("signingKey");
@@ -67,9 +74,12 @@ const getWallet = () => {
 interface MintItem {
   account: string;
   amount: string | null;
+  nftAmount: string | null;
   balance: string | null;
   loading?: boolean;
   mintBtnText: string;
+  nftBtnText: string;
+  tokenIds: number [];
 }
 
 interface TransactionLog {
@@ -111,39 +121,50 @@ interface TransactionLog {
 //   return config;
 // }
 function Demo() {
-  
-  const [currentChainId, setCurrentChainId] = useState(Object.values(NetworkdConfig)[0].chainId)
+  const { connector } = useAccount();
+  const [currentChainId, setCurrentChainId] = useState(
+    Object.values(NetworkdConfig)[1].chainId
+  );
+  console.log(Object.values(NetworkdConfig))
   const [transactionLogs, setTransactionLogs] = useState<TransactionLog[]>([]);
-  const [bundler, setBundler] = useState(NetworkdConfig[Object.values(NetworkdConfig)[0].chainId as NetworkId].bundler[0].config.url);
-  const [payMaster, setPayMaseter] = useState(NetworkdConfig[Object.values(NetworkdConfig)[0].chainId as NetworkId].paymaster[0].config.url);
+  const [bundler, setBundler] = useState(
+    NetworkdConfig[Object.values(NetworkdConfig)[1].chainId as NetworkId]
+      .bundler[0].config.url
+  );
+  const [payMaster, setPayMaseter] = useState(
+    NetworkdConfig[Object.values(NetworkdConfig)[1].chainId as NetworkId]
+      .paymaster[0].config.url
+  );
   // const [batchLoading, setBatchLoading] = useState(false);
   const [mintList, setMintList] = useState<MintItem[]>([
     {
       account: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
       amount: null,
+      nftAmount: null,
       balance: null,
       mintBtnText: "Mint USDT",
+      nftBtnText: "Mint NFT",
+      tokenIds: []
     },
-    {
-      account: "0x6Ecbe1DB9EF729CBe972C83Fb886247691Fb6beb",
-      amount: null,
-      balance: null,
-      mintBtnText: "Mint USDT",
-    },
-    {
-      account: "0x5409ED021D9299bf6814279A6A1411A7e866A631",
-      amount: null,
-      balance: null,
-      mintBtnText: "Mint USDT",
-    },
-    {
-      account: "0x47E51256Fc9C7e87fd23b3444091D7A877C919B4",
-      amount: null,
-      balance: null,
-      mintBtnText: "Mint USDT",
-    },
+    // {
+    //   account: "0x6Ecbe1DB9EF729CBe972C83Fb886247691Fb6beb",
+    //   amount: null,
+    //   balance: null,
+    //   mintBtnText: "Mint USDT",
+    // },
+    // {
+    //   account: "0x5409ED021D9299bf6814279A6A1411A7e866A631",
+    //   amount: null,
+    //   balance: null,
+    //   mintBtnText: "Mint USDT",
+    // },
+    // {
+    //   account: "0x47E51256Fc9C7e87fd23b3444091D7A877C919B4",
+    //   amount: null,
+    //   balance: null,
+    //   mintBtnText: "Mint USDT",
+    // },
   ]);
-  
 
   const updateUSDTBalance = async () => {
     const TestnetERC20 = new ethers.Contract(
@@ -167,6 +188,41 @@ function Demo() {
     }
   };
 
+  const updateNFTBalance = async () => {
+    const NFTContract = new ethers.Contract(
+      NetworkdConfig[currentChainId as NetworkId].contracts.NFT,
+      AAStarDemoNFTABI,
+      new ethers.providers.JsonRpcProvider(
+        NetworkdConfig[currentChainId as NetworkId].rpc
+      )
+    );
+    for (let i = 0, l = mintList.length; i < l; i++) {
+      const filterTo = NFTContract.filters.Transfer(
+        null,
+        mintList[i].account
+      );
+      NFTContract.queryFilter(filterTo, -1000, "latest").then((events) => {
+        const tokenIds = events
+        .filter((item) => {
+          if (item.topics[3] != undefined) {
+            return true;
+          } else {
+            return false;
+          }
+        })
+        .map((item) => {
+          return parseInt(item.topics[3]);
+        });
+        setMintList((items) => {
+          const newItems = [...items];
+          const newItem = newItems[i];
+          newItem.tokenIds = tokenIds.reverse();
+          return newItems;
+        });
+      })
+    }
+  };
+
   const mintUSDT = async (data: MintItem) => {
     const id = toast.loading("Please wait...");
     //do something else
@@ -174,19 +230,25 @@ function Demo() {
       const wallet = getWallet();
 
       // 第一步 创建 AAStarClient
-      const bundlerConfig = find(NetworkdConfig[currentChainId as NetworkId].bundler, ((item) => {
-        return item.config.url === bundler;
-      }))
+      const bundlerConfig = find(
+        NetworkdConfig[currentChainId as NetworkId].bundler,
+        (item) => {
+          return item.config.url === bundler;
+        }
+      );
       if (!bundlerConfig) {
         alert("Please select bundler");
       }
-      const payMasterConfig = find(NetworkdConfig[currentChainId as NetworkId].paymaster, ((item) => {
-        return item.config.url === payMaster;
-      }))
+      const payMasterConfig = find(
+        NetworkdConfig[currentChainId as NetworkId].paymaster,
+        (item) => {
+          return item.config.url === payMaster;
+        }
+      );
       if (!payMasterConfig) {
         alert("Please select paymaster");
       }
-      console.log(bundlerConfig, payMasterConfig)
+      console.log(bundlerConfig, payMasterConfig);
       const smartAccount = new AAStarClient({
         bundler: bundlerConfig as any, // bunder 配置
         paymaster: payMasterConfig as any, // payMaserter 配置
@@ -203,7 +265,9 @@ function Demo() {
         )
       );
       // Encode the calls
-      const callTo = [NetworkdConfig[currentChainId as NetworkId].contracts.USDT];
+      const callTo = [
+        NetworkdConfig[currentChainId as NetworkId].contracts.USDT,
+      ];
       const callData = [
         TestnetERC20.interface.encodeFunctionData("_mint", [
           data.account,
@@ -253,65 +317,202 @@ function Demo() {
     }
   };
 
+  const mintNFT = async (data: MintItem) => {
+    const id = toast.loading("Please wait...");
+    //do something else
+    try {
+      const wallet = getWallet();
+
+      // 第一步 创建 AAStarClient
+      const bundlerConfig = find(
+        NetworkdConfig[currentChainId as NetworkId].bundler,
+        (item) => {
+          return item.config.url === bundler;
+        }
+      );
+      if (!bundlerConfig) {
+        alert("Please select bundler");
+      }
+      const payMasterConfig = find(
+        NetworkdConfig[currentChainId as NetworkId].paymaster,
+        (item) => {
+          return item.config.url === payMaster;
+        }
+      );
+      if (!payMasterConfig) {
+        alert("Please select paymaster");
+      }
+      console.log(bundlerConfig, payMasterConfig);
+      const smartAccount = new AAStarClient({
+        bundler: bundlerConfig as any, // bunder 配置
+        paymaster: payMasterConfig as any, // payMaserter 配置
+        signer: wallet, // EOA 钱包,
+        rpc: NetworkdConfig[currentChainId as NetworkId].rpc, // rpc节点地址,
+      });
+
+      // 第二步 创建合约调用参数
+      const NFTContract = new ethers.Contract(
+        NetworkdConfig[currentChainId as NetworkId].contracts.NFT,
+        AAStarDemoNFTABI,
+        new ethers.providers.JsonRpcProvider(
+          NetworkdConfig[currentChainId as NetworkId].rpc
+        )
+      );
+      // Encode the calls
+      const callTo = [
+        NetworkdConfig[currentChainId as NetworkId].contracts.NFT,
+      ];
+      const callData = [
+        NFTContract.interface.encodeFunctionData("mint", [
+          data.account,
+          ethers.BigNumber.from(data.nftAmount),
+        ]),
+      ];
+      console.log("Waiting for transaction...");
+      // 第三步 发送 UserOperation
+      const response = await smartAccount.sendUserOperation(callTo, callData);
+      console.log(`Transaction hash: ${response.transactionHash}`);
+      toast.update(id, {
+        render: "Success",
+        type: "success",
+        isLoading: false,
+        autoClose: 5000,
+      });
+      await updateNFTBalance()
+      setMintList((items) => {
+        const newItems = [...items];
+        const newItem: any = _.find(newItems, (mintItem: any) => {
+          return mintItem.account === data.account;
+        });
+        if (newItem) {
+          newItem.loading = false;
+          newItem.nftBtnText = "Mint NFT";
+        }
+        return newItems;
+      });
+      setTransactionLogs((items) => {
+        const newItems = [...items];
+        newItems.unshift({
+          aaAccount: response.aaAccountAddress,
+          userOpHash: response.userOpHash,
+          transactionHash: `${response.transactionHash}`,
+        });
+        localStorage.setItem("TransactionLogs", JSON.stringify(newItems));
+        return newItems;
+      });
+    } catch (error) {
+      console.log(error);
+      toast.update(id, {
+        render: "Transaction Fail",
+        type: "error",
+        isLoading: false,
+        autoClose: 5000,
+      });
+    }
+  };
+
   useEffect(() => {
-    
     updateUSDTBalance();
+    updateNFTBalance();
     const TransactionLogs = localStorage.getItem("TransactionLogs");
     if (TransactionLogs) {
       setTransactionLogs(JSON.parse(TransactionLogs));
     }
   }, [currentChainId]);
-  // const deploy = async () => {
-  //   try {
-  //     if (connector) {
-  //       const _provider: any = await connector.getProvider();
-  //       const provider = new ethers.providers.Web3Provider(_provider);
-  //       console.log(_provider, provider)
-  //       const factory = new ethers.ContractFactory(
-  //         TetherToken.abi,
-  //         TetherToken.bytecode,
-  //         provider.getSigner()
-  //       );
-  //     //   function TetherToken(uint _initialSupply, string _name, string _symbol, uint _decimals) public {
-  //     //     _totalSupply = _initialSupply;
-  //     //     name = _name;
-  //     //     symbol = _symbol;
-  //     //     decimals = _decimals;
-  //     //     balances[owner] = _initialSupply;
-  //     //     deprecated = false;
-  //     // }
+  const deployUSDT = async () => {
+    try {
+      if (connector) {
+        const _provider: any = await connector.getProvider();
+        const provider = new ethers.providers.Web3Provider(_provider);
+        console.log(_provider, provider);
+        const factory = new ethers.ContractFactory(
+          TetherToken.abi,
+          TetherToken.bytecode,
+          provider.getSigner()
+        );
+        //   function TetherToken(uint _initialSupply, string _name, string _symbol, uint _decimals) public {
+        //     _totalSupply = _initialSupply;
+        //     name = _name;
+        //     symbol = _symbol;
+        //     decimals = _decimals;
+        //     balances[owner] = _initialSupply;
+        //     deprecated = false;
+        // }
 
-  //       // const deployTransaction = await factory.getDeployTransaction(
-  //       //   ethers.constants.MaxInt256,
-  //       //   "Test Tether USD",
-  //       //   "USDT",
-  //       //   6
-  //       // );
-  //       // const gasLimit = await provider.estimateGas(deployTransaction);
-  //       // const newGasLimit = gasLimit
-  //       //   .mul(ethers.utils.parseEther("1.9"))
-  //       //   .div(ethers.utils.parseEther("1"));
+        // const deployTransaction = await factory.getDeployTransaction(
+        //   ethers.constants.MaxInt256,
+        //   "Test Tether USD",
+        //   "USDT",
+        //   6
+        // );
+        // const gasLimit = await provider.estimateGas(deployTransaction);
+        // const newGasLimit = gasLimit
+        //   .mul(ethers.utils.parseEther("1.9"))
+        //   .div(ethers.utils.parseEther("1"));
 
-  //       const contract = await factory.deploy(
-  //         ethers.constants.MaxInt256,
-  //         "Test Tether USD",
-  //         "USDT",
-  //         6,
+        const contract = await factory.deploy(
+          ethers.constants.MaxInt256,
+          "Test Tether USD",
+          "USDT",
+          6
 
-  //         // {
-  //         //   gasLimit: newGasLimit,
-  //         // }
-  //       );
-  //       console.log(contract);
+          // {
+          //   gasLimit: newGasLimit,
+          // }
+        );
+        console.log(contract);
 
-  //       await contract.deployTransaction.wait();
-  //     }
+        await contract.deployTransaction.wait();
+      }
 
-  //     //  message.success("url update success");
-  //   } catch (error: any) {
-  //     console.log(error);
-  //   }
-  // };
+      //  message.success("url update success");
+    } catch (error: any) {
+      console.log(error);
+    }
+  };
+
+  const deployNFT = async () => {
+    try {
+      if (connector) {
+        const _provider: any = await connector.getProvider();
+        const provider = new ethers.providers.Web3Provider(_provider);
+        console.log(_provider, provider);
+        const factory = new ethers.ContractFactory(
+          AAStarDemoNFT.abi,
+          AAStarDemoNFT.bytecode,
+          provider.getSigner()
+        );
+        //   function TetherToken(uint _initialSupply, string _name, string _symbol, uint _decimals) public {
+        //     _totalSupply = _initialSupply;
+        //     name = _name;
+        //     symbol = _symbol;
+        //     decimals = _decimals;
+        //     balances[owner] = _initialSupply;
+        //     deprecated = false;
+        // }
+
+        // const deployTransaction = await factory.getDeployTransaction(
+        //   ethers.constants.MaxInt256,
+        //   "Test Tether USD",
+        //   "USDT",
+        //   6
+        // );
+        // const gasLimit = await provider.estimateGas(deployTransaction);
+        // const newGasLimit = gasLimit
+        //   .mul(ethers.utils.parseEther("1.9"))
+        //   .div(ethers.utils.parseEther("1"));
+
+        const contract = await factory.deploy();
+        console.log(contract);
+
+        await contract.deployTransaction.wait();
+      }
+
+      //  message.success("url update success");
+    } catch (error: any) {
+      console.log(error);
+    }
+  };
 
   return (
     <div className={styles.root}>
@@ -319,19 +520,11 @@ function Demo() {
       <div>Smart Account: {currentSmartAccountAddress}</div> */}
 
       <div className={styles.header}>
-        <a
-          className={styles.contractLink}
-          href={`${NetworkdConfig[currentChainId as NetworkId].blockExplorerURL}/address/${NetworkdConfig[currentChainId as NetworkId].contracts.USDT}`}
-          target="_blank"
-        >
-          Contract :{" "}
-          {NetworkdConfig[currentChainId as NetworkId].contracts.USDT}
-        </a>
         <ConnectButton></ConnectButton>
       </div>
       {/* <button onClick={deploy}>Deploy</button> */}
       <div className={styles.selectRow}>
-      <FormControl fullWidth>
+        <FormControl fullWidth>
           <InputLabel id="chain-label">Chain</InputLabel>
           <Select
             labelId="chain-label"
@@ -342,13 +535,13 @@ function Demo() {
             }}
           >
             {Object.values(NetworkdConfig).map((item) => {
+              
               return (
                 <MenuItem key={item.chainId} value={item.chainId}>
                   {item.name}
                 </MenuItem>
               );
             })}
-
           </Select>
         </FormControl>
         <FormControl fullWidth>
@@ -418,67 +611,202 @@ function Demo() {
           </Select>
         </FormControl>
       </div>
-      <div className={styles.mintList}>
-        {mintList.map((item) => {
-          return (
-            <div className={styles.mintRow}>
-              <TextField
-                label="Account"
-                fullWidth
-                defaultValue={item.account}
-                InputProps={{
-                  readOnly: true,
-                }}
-              />
-              <TextField
-                label="USDT balance"
-                defaultValue={0}
-                value={item.balance ? item.balance : 0}
-                InputProps={{
-                  readOnly: true,
-                }}
-              />
-
-              <TextField
-                label="Amount"
-                value={item.amount}
-                onChange={(event) => {
-                  setMintList((items) => {
-                    const newItems = [...items];
-                    const newItem: any = _.find(newItems, (mintItem: any) => {
-                      return mintItem.account === item.account;
-                    });
-                    if (newItem) {
-                      newItem.amount = event.target.value;
-                    }
-
-                    return newItems;
-                  });
-                }}
-              ></TextField>
-              <LoadingButton
-                variant="contained"
-                loading={item.loading ? item.loading : false}
+      <div className={styles.usdtCard}>
+        {" "}
+        <Card>
+          <CardHeader title="GET USDT"></CardHeader>
+          <CardContent>
+            <div className={styles.contractRow}>
+              {" "}
+              <a
+                className={styles.contractLink}
+                href={`${
+                  NetworkdConfig[currentChainId as NetworkId].blockExplorerURL
+                }/address/${
+                  NetworkdConfig[currentChainId as NetworkId].contracts.USDT
+                }`}
+                target="_blank"
+              >
+                Contract :{" "}
+                {NetworkdConfig[currentChainId as NetworkId].contracts.USDT}
+              </a>
+              <Button
                 onClick={() => {
-                  setMintList((items) => {
-                    const newItems = [...items];
-                    const newItem: any = _.find(newItems, (mintItem: any) => {
-                      return mintItem.account === item.account;
-                    });
-                    if (newItem) {
-                      newItem.loading = true;
-                      newItem.mintBtnText = "Wait...";
-                    }
-                    return newItems;
-                  });
-                  mintUSDT(item);
+                  deployUSDT();
                 }}
               >
-                {item.mintBtnText}
-              </LoadingButton>
+                Deploy USDT Contract
+              </Button>
             </div>
-          );
-        })}
+
+            <div className={styles.mintList}>
+              {mintList.map((item) => {
+                return (
+                  <div className={styles.mintRow}>
+                    <TextField
+                      label="Account"
+                      fullWidth
+                      defaultValue={item.account}
+                      InputProps={{
+                        readOnly: true,
+                      }}
+                    />
+                    <TextField
+                      label="USDT balance"
+                      defaultValue={0}
+                      value={item.balance ? item.balance : 0}
+                      InputProps={{
+                        readOnly: true,
+                      }}
+                    />
+
+                    <TextField
+                      label="Amount"
+                      value={item.amount}
+                      onChange={(event) => {
+                        setMintList((items) => {
+                          const newItems = [...items];
+                          const newItem: any = _.find(
+                            newItems,
+                            (mintItem: any) => {
+                              return mintItem.account === item.account;
+                            }
+                          );
+                          if (newItem) {
+                            newItem.amount = event.target.value;
+                          }
+
+                          return newItems;
+                        });
+                      }}
+                    ></TextField>
+                    <LoadingButton
+                      variant="contained"
+                      loading={item.loading ? item.loading : false}
+                      onClick={() => {
+                        setMintList((items) => {
+                          const newItems = [...items];
+                          const newItem: any = _.find(
+                            newItems,
+                            (mintItem: any) => {
+                              return mintItem.account === item.account;
+                            }
+                          );
+                          if (newItem) {
+                            newItem.loading = true;
+                            newItem.mintBtnText = "Wait...";
+                          }
+                          return newItems;
+                        });
+                        mintUSDT(item);
+                      }}
+                    >
+                      {item.mintBtnText}
+                    </LoadingButton>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+      <div className={styles.nftCard}>
+        {" "}
+        <Card>
+          <CardHeader title="GET NFT"></CardHeader>
+          <CardContent>
+          <div className={styles.contractRow}>
+              {" "}
+              <a
+                className={styles.contractLink}
+                href={`${
+                  NetworkdConfig[currentChainId as NetworkId].blockExplorerURL
+                }/address/${
+                  NetworkdConfig[currentChainId as NetworkId].contracts.NFT
+                }`}
+                target="_blank"
+              >
+                Contract :{" "}
+                {NetworkdConfig[currentChainId as NetworkId].contracts.NFT}
+              </a>
+              <Button
+                onClick={() => {
+                  deployNFT();
+                }}
+              >
+                Deploy NFT Contract
+              </Button>
+            </div>
+            <div className={styles.nftList}>
+              {mintList.map((item) => {
+                return (
+                  <div className={styles.mintRow}>
+                    <TextField
+                      label="Account"
+                      fullWidth
+                      defaultValue={item.account}
+                      InputProps={{
+                        readOnly: true,
+                      }}
+                    />
+                    <TextField
+                      label="NFT Token IDs"
+                      defaultValue={0}
+                      value={item.tokenIds ? item.tokenIds.join(",") : ""}
+                      InputProps={{
+                        readOnly: true,
+                      }}
+                    />
+
+                    <TextField
+                      label="Amount"
+                      value={item.nftAmount}
+                      onChange={(event) => {
+                        setMintList((items) => {
+                          const newItems = [...items];
+                          const newItem: any = _.find(
+                            newItems,
+                            (mintItem: any) => {
+                              return mintItem.account === item.account;
+                            }
+                          );
+                          if (newItem) {
+                            newItem.nftAmount = event.target.value;
+                          }
+
+                          return newItems;
+                        });
+                      }}
+                    ></TextField>
+                    <LoadingButton
+                      variant="contained"
+                      loading={item.loading ? item.loading : false}
+                      onClick={() => {
+                        setMintList((items) => {
+                          const newItems = [...items];
+                          const newItem: any = _.find(
+                            newItems,
+                            (mintItem: any) => {
+                              return mintItem.account === item.account;
+                            }
+                          );
+                          if (newItem) {
+                            newItem.loading = true;
+                            newItem.nftBtnText = "Wait...";
+                          }
+                          return newItems;
+                        });
+                        mintNFT(item);
+                      }}
+                    >
+                      {item.nftBtnText}
+                    </LoadingButton>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       <div className={styles.TransactionTable}>

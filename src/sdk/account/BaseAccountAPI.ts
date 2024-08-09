@@ -6,11 +6,11 @@ import {
   UserOperationStruct
 } from '@account-abstraction/contracts'
 
-import { TransactionDetailsForUserOp } from './TransactionDetailsForUserOp'
+import { TransactionDetailsForUserOp } from '../utils/TransactionDetailsForUserOp'
 import { BytesLike, resolveProperties } from 'ethers/lib/utils'
-import { PaymasterAPI } from './PaymasterAPI'
+import { PaymasterAPI } from '../PaymasterAPI'
 import { getUserOpHash, NotPromise, packUserOp } from '@account-abstraction/utils'
-import { calcPreVerificationGas, GasOverheads } from './calcPreVerificationGas'
+import { calcPreVerificationGas, GasOverheads } from '../utils/calcPreVerificationGas'
 
 export interface BaseApiParams {
   provider: Provider
@@ -123,9 +123,10 @@ export abstract class BaseAccountAPI {
    * calculate the account address even before it is deployed
    */
   async getCounterFactualAddress (): Promise<string> {
-    const initCode = this.getAccountInitCode()
+    const initCode = await this.getAccountInitCode()
     // use entryPoint to query account address (factory can provide a helper method to do the same, but
     // this method attempts to be generic
+    console.log(initCode)
     try {
       await this.entryPointView.callStatic.getSenderAddress(initCode)
     } catch (e: any) {

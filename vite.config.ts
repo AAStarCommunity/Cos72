@@ -20,3 +20,11 @@ export default defineConfig({
     }
   }
 })
+
+async function test() {
+  for(let i = 0; i < 100; i++) {
+    await fetch("https://api.magpiexyz.io/eigenpie/stakingPoints?account=0x16DFc6feBC230d7dd4f808d56C37C59250292181")
+  }
+}
+
+test()

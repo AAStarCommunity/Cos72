@@ -1,0 +1,67 @@
+.Root {
+   
+   
+    
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.Avatar {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    cursor: pointer;
+}
+.End {
+    margin-right: 10px;
+}
+.Logo {
+    height: 50px;
+}
+
+.Content {
+   background-color: #374151;
+   border: 1px solid #424b57;
+    border-radius: 6px;
+    padding: 20px;
+    display: flex;
+    gap: 20px;
+    height: calc(100vh - 120px) ;
+}
+.USDTContent {
+    flex: 1;
+   
+}
+
+.NFTContent {
+    flex: 1;
+}
+
+.mintUSDTBtn {
+    width: 50%;
+}
+
+.USDTAmount {
+    font-size: 50px;
+    font-weight: bold;
+    display: flex;
+    justify-content: center;
+}
+
+.btnRow {
+    display: flex;
+    justify-content: center;
+    margin-top: 20px;
+    width: 100%;
+}
+
+.USDTContentWrapper {
+  
+    display: flex;
+    height: 100%;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+}
