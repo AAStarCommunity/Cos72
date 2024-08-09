@@ -3,6 +3,7 @@ import { UserOperationStruct } from "@account-abstraction/contracts";
 import { PaymasterAPI } from "../PaymasterAPI";
 import { ethers } from "ethers";
 import { calcPreVerificationGas } from "../calcPreVerificationGas";
+import { entryPointAddress, PaymasterConfig } from "../AAStarClient";
 async function OptoJSON(op: Partial<UserOperationStruct>): Promise<any> {
     const userOp = await ethers.utils.resolveProperties(op);
     return Object.keys(userOp)
@@ -24,10 +25,12 @@ async function OptoJSON(op: Partial<UserOperationStruct>): Promise<any> {
 export class StackupPayMasterAPI extends PaymasterAPI {
     private paymasterUrl: string;
     private entryPoint: string;
-    constructor(paymasterUrl: string, entryPoint: string) {
+    private paymasterConfig: PaymasterConfig;
+    constructor(paymasterConfig: PaymasterConfig) {
       super();
-      this.paymasterUrl = paymasterUrl;
-      this.entryPoint = entryPoint;
+      this.paymasterUrl = paymasterConfig.config.url;
+      this.entryPoint = paymasterConfig.config.entryPoint ? paymasterConfig.config.entryPoint : entryPointAddress;
+      this.paymasterConfig = paymasterConfig;
     }
   
     async getPaymasterAndData(
@@ -60,7 +63,7 @@ export class StackupPayMasterAPI extends PaymasterAPI {
   
       // Ask the paymaster to sign the transaction and return a valid paymasterAndData value.
      
-      const params = [await OptoJSON(op), this.entryPoint, {"type": "payg"}];
+      const params = [await OptoJSON(op), this.entryPoint, this.paymasterConfig.config.option  ]; //{"type": "payg"}
       const provider = new ethers.providers.StaticJsonRpcProvider(this.paymasterUrl);
       console.log("StackupPayMaster", this.paymasterUrl, "pm_sponsorUserOperation start", params)
       const response = await provider.send("pm_sponsorUserOperation", params);

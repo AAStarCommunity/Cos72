@@ -3,6 +3,7 @@ import { UserOperationStruct } from "@account-abstraction/contracts";
 import { PaymasterAPI } from "../PaymasterAPI";
 import { ethers } from "ethers";
 import { calcPreVerificationGas } from "../calcPreVerificationGas";
+import { entryPointAddress, PaymasterConfig } from "../AAStarClient";
 async function OptoJSON(op: Partial<UserOperationStruct>): Promise<any> {
     const userOp = await ethers.utils.resolveProperties(op);
     return Object.keys(userOp)
@@ -22,14 +23,14 @@ async function OptoJSON(op: Partial<UserOperationStruct>): Promise<any> {
         );
 }
 export class PimlicoPayMasterAPI extends PaymasterAPI {
-    private paymasterUrl: string;
-    private entryPoint: string;
-    constructor(paymasterUrl: string, entryPoint: string) {
-      super();
-      this.paymasterUrl = paymasterUrl;
-      this.entryPoint = entryPoint;
-    }
-  
+  private paymasterUrl: string;
+  private entryPoint: string;
+  constructor(paymasterConfig: PaymasterConfig) {
+    super();
+    this.paymasterUrl = paymasterConfig.config.url;
+    this.entryPoint = paymasterConfig.config.entryPoint ? paymasterConfig.config.entryPoint : entryPointAddress;
+  }
+
     async getPaymasterAndData(
       userOp: Partial<UserOperationStruct>
     ): Promise<string> {

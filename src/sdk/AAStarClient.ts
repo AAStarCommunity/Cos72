@@ -16,6 +16,8 @@ export interface BundlerConfig {
   provider: Provider;
   config: {
     url: string;
+    option? : any;
+   
   };
 }
 
@@ -23,6 +25,8 @@ export interface PaymasterConfig {
   provider: Provider;
   config: {
     url: string;
+    option? : any;
+    entryPoint?: string;
   };
 }
 
@@ -38,8 +42,8 @@ export interface SmartAccountParams {
   signer: ethers.Wallet;
   aaConfig?: AAWalletConfig;
 }
-const entryPointAddress = "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789";
-const factoryAddress = "0x9406Cc6185a346906296840746125a0E44976454";
+export const entryPointAddress = "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789";
+export const factoryAddress = "0x9406Cc6185a346906296840746125a0E44976454";
 
 export class AAStarClient {
   bundler: BundlerConfig;
@@ -100,30 +104,20 @@ export class AAStarClient {
     switch (this.paymaster.provider) {
       case "stackup": {
         paymasterAPI = new StackupPayMasterAPI(
-          this.paymaster.config.url,
-          this.aaConfig.entryPointAddress
+          this.paymaster
         );
         break;
       }
       case "pimlico": {
-        paymasterAPI = new PimlicoPayMasterAPI(
-          this.paymaster.config.url,
-          this.aaConfig.entryPointAddress
-        );
+        paymasterAPI = new PimlicoPayMasterAPI(this.paymaster);
         break;
       }
       case "aastar": {
-        paymasterAPI = new AAStarPayMasterAPI(
-          this.paymaster.config.url,
-          this.aaConfig.entryPointAddress
-        );
+        paymasterAPI = new AAStarPayMasterAPI(this.paymaster);
         break;
       }
       case "biconomy": {
-        paymasterAPI = new BiconomyPayMasterAPI(
-          this.paymaster.config.url,
-          this.aaConfig.entryPointAddress
-        );
+        paymasterAPI = new BiconomyPayMasterAPI(this.paymaster);
         break;
       }
     }

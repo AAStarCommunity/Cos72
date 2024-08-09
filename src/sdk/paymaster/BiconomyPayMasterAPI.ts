@@ -3,6 +3,7 @@ import { UserOperationStruct } from "@account-abstraction/contracts";
 import { PaymasterAPI } from "../PaymasterAPI";
 import { ethers } from "ethers";
 import { calcPreVerificationGas } from "../calcPreVerificationGas";
+import { PaymasterConfig } from "../AAStarClient";
 async function OptoJSON(op: Partial<UserOperationStruct>): Promise<any> {
   const userOp = await ethers.utils.resolveProperties(op);
   return Object.keys(userOp)
@@ -24,13 +25,14 @@ async function OptoJSON(op: Partial<UserOperationStruct>): Promise<any> {
 }
 export class BiconomyPayMasterAPI extends PaymasterAPI {
   private paymasterUrl: string;
+  private paymasterConfig: PaymasterConfig;
 //   private entryPoint: string;
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  constructor(paymasterUrl: string, _entryPoint: string) {
+  constructor(paymasterConfig: PaymasterConfig) {
     super();
 
-    this.paymasterUrl = paymasterUrl;
-  //  this.entryPoint = entryPoint;
+    this.paymasterUrl = paymasterConfig.config.url;
+    this.paymasterConfig = paymasterConfig;
   }
 
   async getPaymasterAndData(
@@ -67,18 +69,19 @@ export class BiconomyPayMasterAPI extends PaymasterAPI {
 
     const params = [
       await OptoJSON(op),
-      {
-        "mode": "SPONSORED",
-        "calculateGasLimits": true,
-        "expiryDuration": 300 ,
-        "sponsorshipInfo": {
-            "webhookData": {},
-            "smartAccountInfo": {
-                "name": "BICONOMY",
-                "version": "2.0.0"
-            }
-        }
-      },
+      this.paymasterConfig.config.option,
+      // {
+      //   "mode": "SPONSORED",
+      //   "calculateGasLimits": true,
+      //   "expiryDuration": 300 ,
+      //   "sponsorshipInfo": {
+      //       "webhookData": {},
+      //       "smartAccountInfo": {
+      //           "name": "BICONOMY",
+      //           "version": "2.0.0"
+      //       }
+      //   }
+      // },
     ];
     console.log(
       "BiconomyPayMasterAPI",

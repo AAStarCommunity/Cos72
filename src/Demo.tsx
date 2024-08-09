@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { ethers } from "ethers";
 import { useEffect, useState } from "react";
-import TetherTokenABI from "./ABI/TetherToken.json";
+import TetherToken from "./contracts/TetherToken.json";
 import styles from "./Demo.module.css";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -20,17 +20,18 @@ import {
   TableRow,
   TextField,
 } from "@mui/material";
-import _ from "lodash";
+import _, { find } from "lodash";
 
 import { ToastContainer, toast } from "react-toastify";
 
 import { AAStarClient } from "./sdk";
-import { BundlerConfig, PaymasterConfig } from "./sdk/AAStarClient";
 
-const ethereumSepoliaRpcUrl =
-  "https://public.stackup.sh/api/v1/node/ethereum-sepolia";
+import { ConnectButton } from "@rainbow-me/rainbowkit";
 
-const TestUSDT = "0x7169D38820dfd117C3FA1f22a697dBA58d90BA06";
+import { NetworkdConfig, NetworkId } from "./config";
+
+const TetherTokenABI = TetherToken.abi;
+
 const getWallet = () => {
   const signingKey = localStorage.getItem("signingKey");
   let signer: ethers.Wallet | null = null;
@@ -76,66 +77,64 @@ interface TransactionLog {
   userOpHash: string;
   transactionHash: string;
 }
-function getPayMasterConfig(url: string) {
-  const config: PaymasterConfig = {
-    provider:
-      url.indexOf("aastar") >= 0
-        ? "aastar"
-        : url.indexOf("pimlico") >= 0
-        ? "pimlico"
-        : url.indexOf("biconomy") >= 0
-        ? "biconomy"
-        : "stackup",
-    config: {
-      url: url,
-    },
-  };
-  return config;
-}
+// function getPayMasterConfig(url: string) {
+//   const config: PaymasterConfig = {
+//     provider:
+//       url.indexOf("aastar") >= 0
+//         ? "aastar"
+//         : url.indexOf("pimlico") >= 0
+//         ? "pimlico"
+//         : url.indexOf("biconomy") >= 0
+//         ? "biconomy"
+//         : "stackup",
+//     config: {
+//       url: url,
+//     },
+//   };
+//   return config;
+// }
 
-function getBundlerConfig(url: string) {
-  const config: BundlerConfig = {
-    provider:
-      url.indexOf("aastar") >= 0
-        ? "aastar"
-        : url.indexOf("pimlico") >= 0
-        ? "pimlico"
-        : url.indexOf("biconomy") >= 0
-        ? "biconomy"
-        : "stackup",
-    config: {
-      url: url,
-    },
-  };
-  return config;
-}
+// function getBundlerConfig(url: string) {
+//   const config: BundlerConfig = {
+//     provider:
+//       url.indexOf("aastar") >= 0
+//         ? "aastar"
+//         : url.indexOf("pimlico") >= 0
+//         ? "pimlico"
+//         : url.indexOf("biconomy") >= 0
+//         ? "biconomy"
+//         : "stackup",
+//     config: {
+//       url: url,
+//     },
+//   };
+//   return config;
+// }
 function Demo() {
+  
+  const [currentChainId, setCurrentChainId] = useState(Object.values(NetworkdConfig)[0].chainId)
   const [transactionLogs, setTransactionLogs] = useState<TransactionLog[]>([]);
-  const [bundler, setBundler] = useState(
-    "https://public.stackup.sh/api/v1/node/ethereum-sepolia"
-  );
-  const [payMaster, setPayMaseter] = useState(
-    "https://api.stackup.sh/v1/paymaster/e008121e92221cb49073b5bca65d434fbeb2162e73f42a9e3ea01d00b606fcba"
-  );
+  const [bundler, setBundler] = useState(NetworkdConfig[Object.values(NetworkdConfig)[0].chainId as NetworkId].bundler[0].config.url);
+  const [payMaster, setPayMaseter] = useState(NetworkdConfig[Object.values(NetworkdConfig)[0].chainId as NetworkId].paymaster[0].config.url);
   // const [batchLoading, setBatchLoading] = useState(false);
   const [mintList, setMintList] = useState<MintItem[]>([
     {
       account: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
       amount: null,
       balance: null,
-      mintBtnText: "Mint USDT"
+      mintBtnText: "Mint USDT",
     },
     {
       account: "0x6Ecbe1DB9EF729CBe972C83Fb886247691Fb6beb",
       amount: null,
       balance: null,
-      mintBtnText: "Mint USDT"
+      mintBtnText: "Mint USDT",
     },
     {
       account: "0x5409ED021D9299bf6814279A6A1411A7e866A631",
       amount: null,
       balance: null,
-      mintBtnText: "Mint USDT"
+      mintBtnText: "Mint USDT",
     },
     {
       account: "0x47E51256Fc9C7e87fd23b3444091D7A877C919B4",
@@ -144,12 +143,15 @@ function Demo() {
       mintBtnText: "Mint USDT",
     },
   ]);
+  
 
   const updateUSDTBalance = async () => {
     const TestnetERC20 = new ethers.Contract(
-      TestUSDT,
+      NetworkdConfig[currentChainId as NetworkId].contracts.USDT,
       TetherTokenABI,
-      new ethers.providers.JsonRpcProvider(ethereumSepoliaRpcUrl)
+      new ethers.providers.JsonRpcProvider(
+        NetworkdConfig[currentChainId as NetworkId].rpc
+      )
     );
     for (let i = 0, l = mintList.length; i < l; i++) {
       TestnetERC20.balanceOf(mintList[i].account).then(
@@ -172,27 +174,41 @@ function Demo() {
       const wallet = getWallet();
 
       // 第一步 创建 AAStarClient
+      const bundlerConfig = find(NetworkdConfig[currentChainId as NetworkId].bundler, ((item) => {
+        return item.config.url === bundler;
+      }))
+      if (!bundlerConfig) {
+        alert("Please select bundler");
+      }
+      const payMasterConfig = find(NetworkdConfig[currentChainId as NetworkId].paymaster, ((item) => {
+        return item.config.url === payMaster;
+      }))
+      if (!payMasterConfig) {
+        alert("Please select paymaster");
+      }
+      console.log(bundlerConfig, payMasterConfig)
       const smartAccount = new AAStarClient({
-        bundler: getBundlerConfig(bundler) , // bunder 配置
-        paymaster: getPayMasterConfig(payMaster), // payMaserter 配置
+        bundler: bundlerConfig as any, // bunder 配置
+        paymaster: payMasterConfig as any, // payMaserter 配置
         signer: wallet, // EOA 钱包,
-        rpc: ethereumSepoliaRpcUrl // rpc节点地址, 
+        rpc: NetworkdConfig[currentChainId as NetworkId].rpc, // rpc节点地址,
       });
 
       // 第二步 创建合约调用参数
       const TestnetERC20 = new ethers.Contract(
-        TestUSDT,
+        NetworkdConfig[currentChainId as NetworkId].contracts.USDT,
         TetherTokenABI,
-        new ethers.providers.JsonRpcProvider(ethereumSepoliaRpcUrl)
+        new ethers.providers.JsonRpcProvider(
+          NetworkdConfig[currentChainId as NetworkId].rpc
+        )
       );
       // Encode the calls
-      const callTo = [TestUSDT];
+      const callTo = [NetworkdConfig[currentChainId as NetworkId].contracts.USDT];
       const callData = [
         TestnetERC20.interface.encodeFunctionData("_mint", [
           data.account,
           ethers.utils.parseUnits(data.amount ? data.amount : "0", 6),
         ]),
-     
       ];
       console.log("Waiting for transaction...");
       // 第三步 发送 UserOperation
@@ -236,28 +252,105 @@ function Demo() {
       });
     }
   };
-  
 
   useEffect(() => {
+    
     updateUSDTBalance();
     const TransactionLogs = localStorage.getItem("TransactionLogs");
     if (TransactionLogs) {
       setTransactionLogs(JSON.parse(TransactionLogs));
     }
-  }, []);
+  }, [currentChainId]);
+  // const deploy = async () => {
+  //   try {
+  //     if (connector) {
+  //       const _provider: any = await connector.getProvider();
+  //       const provider = new ethers.providers.Web3Provider(_provider);
+  //       console.log(_provider, provider)
+  //       const factory = new ethers.ContractFactory(
+  //         TetherToken.abi,
+  //         TetherToken.bytecode,
+  //         provider.getSigner()
+  //       );
+  //     //   function TetherToken(uint _initialSupply, string _name, string _symbol, uint _decimals) public {
+  //     //     _totalSupply = _initialSupply;
+  //     //     name = _name;
+  //     //     symbol = _symbol;
+  //     //     decimals = _decimals;
+  //     //     balances[owner] = _initialSupply;
+  //     //     deprecated = false;
+  //     // }
+
+  //       // const deployTransaction = await factory.getDeployTransaction(
+  //       //   ethers.constants.MaxInt256,
+  //       //   "Test Tether USD",
+  //       //   "USDT",
+  //       //   6
+  //       // );
+  //       // const gasLimit = await provider.estimateGas(deployTransaction);
+  //       // const newGasLimit = gasLimit
+  //       //   .mul(ethers.utils.parseEther("1.9"))
+  //       //   .div(ethers.utils.parseEther("1"));
+
+  //       const contract = await factory.deploy(
+  //         ethers.constants.MaxInt256,
+  //         "Test Tether USD",
+  //         "USDT",
+  //         6,
+
+  //         // {
+  //         //   gasLimit: newGasLimit,
+  //         // }
+  //       );
+  //       console.log(contract);
+
+  //       await contract.deployTransaction.wait();
+  //     }
+
+  //     //  message.success("url update success");
+  //   } catch (error: any) {
+  //     console.log(error);
+  //   }
+  // };
 
   return (
     <div className={styles.root}>
       {/* <div>EOA Account: {currentWalletAddress}</div>
       <div>Smart Account: {currentSmartAccountAddress}</div> */}
-      <a
-        className={styles.contractLink}
-        href="https://sepolia.etherscan.io/address/0x7169d38820dfd117c3fa1f22a697dba58d90ba06"
-        target="_blank"
-      >
-        Contract : {TestUSDT}
-      </a>
+
+      <div className={styles.header}>
+        <a
+          className={styles.contractLink}
+          href={`${NetworkdConfig[currentChainId as NetworkId].blockExplorerURL}/address/${NetworkdConfig[currentChainId as NetworkId].contracts.USDT}`}
+          target="_blank"
+        >
+          Contract :{" "}
+          {NetworkdConfig[currentChainId as NetworkId].contracts.USDT}
+        </a>
+        <ConnectButton></ConnectButton>
+      </div>
+      {/* <button onClick={deploy}>Deploy</button> */}
       <div className={styles.selectRow}>
+      <FormControl fullWidth>
+          <InputLabel id="chain-label">Chain</InputLabel>
+          <Select
+            labelId="chain-label"
+            label="Chain"
+            value={currentChainId}
+            onChange={(event) => {
+              setCurrentChainId(event.target.value as any);
+            }}
+          >
+            {Object.values(NetworkdConfig).map((item) => {
+              return (
+                <MenuItem key={item.chainId} value={item.chainId}>
+                  {item.name}
+                </MenuItem>
+              );
+            })}
+
+          </Select>
+        </FormControl>
         <FormControl fullWidth>
           <InputLabel id="bundler-label">Bundler</InputLabel>
           <Select
@@ -268,7 +361,14 @@ function Demo() {
               setBundler(event.target.value as string);
             }}
           >
-            <MenuItem
+            {NetworkdConfig[currentChainId as NetworkId].bundler.map((item) => {
+              return (
+                <MenuItem key={item.provider} value={item.config.url}>
+                  {item.provider}
+                </MenuItem>
+              );
+            })}
+            {/* <MenuItem
               value={"https://public.stackup.sh/api/v1/node/ethereum-sepolia"}
             >
               Stackup
@@ -293,7 +393,7 @@ function Demo() {
               }
             >
               Alchemy
-            </MenuItem>
+            </MenuItem> */}
           </Select>
         </FormControl>
         <FormControl fullWidth>
@@ -306,34 +406,15 @@ function Demo() {
               setPayMaseter(event.target.value as string);
             }}
           >
-            <MenuItem
-              value={
-                "https://api.stackup.sh/v1/paymaster/e008121e92221cb49073b5bca65d434fbeb2162e73f42a9e3ea01d00b606fcba"
+            {NetworkdConfig[currentChainId as NetworkId].paymaster.map(
+              (item) => {
+                return (
+                  <MenuItem key={item.provider} value={item.config.url}>
+                    {item.provider}
+                  </MenuItem>
+                );
               }
-            >
-              Stackup
-            </MenuItem>
-            <MenuItem
-              value={
-                "https://api.pimlico.io/v2/11155111/rpc?apikey=7dc438e7-8de7-47f0-9d71-3372e57694ca"
-              }
-            >
-              Pimlico
-            </MenuItem>
-            <MenuItem
-              value={
-                "https://paymaster.aastar.io/api/v1/paymaster/ethereum-sepolia?apiKey=fe6017a4-9e13-4750-ae69-a7568f633eb5"
-              }
-            >
-              AAStar
-            </MenuItem>
-            <MenuItem
-              value={
-                "https://paymaster.biconomy.io/api/v1/11155111/sbA6OmcPO.016e1abd-0db6-4909-a806-175f617f1cb9"
-              }
-            >
-              Biconomy
-            </MenuItem>
+            )}
           </Select>
         </FormControl>
       </div>
@@ -416,12 +497,15 @@ function Demo() {
                   key={row.userOpHash}
                   sx={{ "&:last-child td, &:last-child th": { border: 0 } }}
                 >
-                  <TableCell> <a
+                  <TableCell>
+                    {" "}
+                    <a
                       href={`https://sepolia.etherscan.io/address/${row.aaAccount}`}
                       target="_blank"
                     >
                       {row.aaAccount}
-                    </a></TableCell>
+                    </a>
+                  </TableCell>
                   <TableCell>{row.userOpHash}</TableCell>
                   <TableCell>
                     <a

@@ -3,6 +3,7 @@ import { UserOperationStruct } from "@account-abstraction/contracts";
 import { PaymasterAPI } from "../PaymasterAPI";
 import { ethers } from "ethers";
 import { calcPreVerificationGas } from "../calcPreVerificationGas";
+import { PaymasterConfig } from "../AAStarClient";
 async function OptoJSON(op: Partial<UserOperationStruct>): Promise<any> {
   const userOp = await ethers.utils.resolveProperties(op);
   return Object.keys(userOp)
@@ -23,12 +24,14 @@ async function OptoJSON(op: Partial<UserOperationStruct>): Promise<any> {
 }
 export class AAStarPayMasterAPI extends PaymasterAPI {
   private paymasterUrl: string;
+  private paymasterConfig: PaymasterConfig;
   //private entryPoint: string;
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  constructor(paymasterUrl: string, _entryPoint: string) {
+  constructor( paymasterConfig: PaymasterConfig) {
     super();
 
-    this.paymasterUrl = paymasterUrl;
+    this.paymasterUrl = paymasterConfig.config.url;
+    this.paymasterConfig = paymasterConfig;
     //  this.entryPoint = entryPoint;
   }
 
@@ -66,10 +69,11 @@ export class AAStarPayMasterAPI extends PaymasterAPI {
 
     const params = [
       await OptoJSON(op),
-      {
-        strategy_code: "a__d7MwJ",
-        version: "v0.6",
-      },
+      this.paymasterConfig.config.option
+      // {
+      //   strategy_code: "a__d7MwJ",
+      //   version: "v0.6",
+      // },
     ];
     console.log(
       "AAStarPayMasterAPI",

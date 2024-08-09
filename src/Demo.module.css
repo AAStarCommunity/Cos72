@@ -8,7 +8,7 @@
 .mintRow {
     display: flex;
     gap: 10px;
-    align-items: center;
+    margin-bottom: 20px;
 }
 
 .mintList {
@@ -34,10 +34,17 @@
 
 .contractLink {
     font-weight: bold;
-    margin-bottom: 20px;
+    
     display: block;
 }
 
 .TransactionTable {
     margin-top: 20px;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
 }
