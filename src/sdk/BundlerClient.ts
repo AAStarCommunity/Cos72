@@ -7,7 +7,7 @@ import { deepHexlify } from '@account-abstraction/utils'
 
 const debug = Debug('aa.rpc')
 
-export class HttpRpcClient {
+export class BundlerClient {
   private readonly userOpJsonRpcProvider: JsonRpcProvider
 
   initializing: Promise<void>

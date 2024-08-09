@@ -1,435 +1,35 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { ethers } from "ethers";
 import { useEffect, useState } from "react";
-import { HttpRpcClient, SimpleAccountAPI } from "./sdk";
+import TetherTokenABI from "./ABI/TetherToken.json";
 import styles from "./Demo.module.css";
-import 'react-toastify/dist/ReactToastify.css';
-import { StackupPayMasterAPI } from "./sdk/paymaster/StackupPayMasterAPI";
+import "react-toastify/dist/ReactToastify.css";
+
 import { LoadingButton } from "@mui/lab";
-import { FormControl, InputLabel, MenuItem, Paper, Select, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField } from "@mui/material";
+import {
+  FormControl,
+  InputLabel,
+  MenuItem,
+  Paper,
+  Select,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  TextField,
+} from "@mui/material";
 import _ from "lodash";
-import { AAStarPayMasterAPI } from "./sdk/paymaster/AAStarPayMasterAPI";
-import { PimlicoPayMasterAPI } from "./sdk/paymaster/PimlicoPayMasterAPI";
-import { ToastContainer, toast } from 'react-toastify';
-import { BiconomyPayMasterAPI } from "./sdk/paymaster/BiconomyPayMasterAPI";
 
- 
-const entryPointAddress = "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789";
+import { ToastContainer, toast } from "react-toastify";
 
-const factoryAddress = "0x9406Cc6185a346906296840746125a0E44976454";
-const ethereumSepoliaRpcUrl = "https://public.stackup.sh/api/v1/node/ethereum-sepolia";
+import { AAStarClient } from "./sdk";
+import { BundlerConfig, PaymasterConfig } from "./sdk/AAStarClient";
 
-const TestnetERC20ABI = [
-  {
-    constant: true,
-    inputs: [],
-    name: "name",
-    outputs: [{ name: "", type: "string" }],
-    payable: false,
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    constant: false,
-    inputs: [{ name: "_upgradedAddress", type: "address" }],
-    name: "deprecate",
-    outputs: [],
-    payable: false,
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    constant: false,
-    inputs: [
-      { name: "_spender", type: "address" },
-      { name: "_value", type: "uint256" },
-    ],
-    name: "approve",
-    outputs: [],
-    payable: false,
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    constant: true,
-    inputs: [],
-    name: "deprecated",
-    outputs: [{ name: "", type: "bool" }],
-    payable: false,
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    constant: false,
-    inputs: [{ name: "_evilUser", type: "address" }],
-    name: "addBlackList",
-    outputs: [],
-    payable: false,
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    constant: true,
-    inputs: [],
-    name: "totalSupply",
-    outputs: [{ name: "", type: "uint256" }],
-    payable: false,
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    constant: false,
-    inputs: [
-      { name: "_from", type: "address" },
-      { name: "_to", type: "address" },
-      { name: "_value", type: "uint256" },
-    ],
-    name: "transferFrom",
-    outputs: [],
-    payable: false,
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    constant: true,
-    inputs: [],
-    name: "upgradedAddress",
-    outputs: [{ name: "", type: "address" }],
-    payable: false,
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    constant: true,
-    inputs: [{ name: "", type: "address" }],
-    name: "balances",
-    outputs: [{ name: "", type: "uint256" }],
-    payable: false,
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    constant: true,
-    inputs: [],
-    name: "decimals",
-    outputs: [{ name: "", type: "uint256" }],
-    payable: false,
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    constant: true,
-    inputs: [],
-    name: "maximumFee",
-    outputs: [{ name: "", type: "uint256" }],
-    payable: false,
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    constant: true,
-    inputs: [],
-    name: "_totalSupply",
-    outputs: [{ name: "", type: "uint256" }],
-    payable: false,
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    constant: false,
-    inputs: [],
-    name: "unpause",
-    outputs: [],
-    payable: false,
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    constant: false,
-    inputs: [
-      { name: "receiver", type: "address" },
-      { name: "amount", type: "uint256" },
-    ],
-    name: "_mint",
-    outputs: [],
-    payable: false,
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    constant: true,
-    inputs: [{ name: "_maker", type: "address" }],
-    name: "getBlackListStatus",
-    outputs: [{ name: "", type: "bool" }],
-    payable: false,
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    constant: true,
-    inputs: [
-      { name: "", type: "address" },
-      { name: "", type: "address" },
-    ],
-    name: "allowed",
-    outputs: [{ name: "", type: "uint256" }],
-    payable: false,
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    constant: true,
-    inputs: [],
-    name: "paused",
-    outputs: [{ name: "", type: "bool" }],
-    payable: false,
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    constant: true,
-    inputs: [{ name: "who", type: "address" }],
-    name: "balanceOf",
-    outputs: [{ name: "", type: "uint256" }],
-    payable: false,
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    constant: false,
-    inputs: [],
-    name: "pause",
-    outputs: [],
-    payable: false,
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    constant: true,
-    inputs: [],
-    name: "getOwner",
-    outputs: [{ name: "", type: "address" }],
-    payable: false,
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    constant: true,
-    inputs: [],
-    name: "owner",
-    outputs: [{ name: "", type: "address" }],
-    payable: false,
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    constant: true,
-    inputs: [],
-    name: "symbol",
-    outputs: [{ name: "", type: "string" }],
-    payable: false,
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    constant: false,
-    inputs: [
-      { name: "_to", type: "address" },
-      { name: "_value", type: "uint256" },
-    ],
-    name: "transfer",
-    outputs: [],
-    payable: false,
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    constant: false,
-    inputs: [
-      { name: "newBasisPoints", type: "uint256" },
-      { name: "newMaxFee", type: "uint256" },
-    ],
-    name: "setParams",
-    outputs: [],
-    payable: false,
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    constant: false,
-    inputs: [{ name: "amount", type: "uint256" }],
-    name: "issue",
-    outputs: [],
-    payable: false,
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    constant: false,
-    inputs: [{ name: "amount", type: "uint256" }],
-    name: "redeem",
-    outputs: [],
-    payable: false,
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    constant: true,
-    inputs: [
-      { name: "_owner", type: "address" },
-      { name: "_spender", type: "address" },
-    ],
-    name: "allowance",
-    outputs: [{ name: "remaining", type: "uint256" }],
-    payable: false,
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    constant: true,
-    inputs: [],
-    name: "basisPointsRate",
-    outputs: [{ name: "", type: "uint256" }],
-    payable: false,
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    constant: true,
-    inputs: [{ name: "", type: "address" }],
-    name: "isBlackListed",
-    outputs: [{ name: "", type: "bool" }],
-    payable: false,
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    constant: false,
-    inputs: [{ name: "_clearedUser", type: "address" }],
-    name: "removeBlackList",
-    outputs: [],
-    payable: false,
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    constant: true,
-    inputs: [],
-    name: "MAX_UINT",
-    outputs: [{ name: "", type: "uint256" }],
-    payable: false,
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    constant: false,
-    inputs: [{ name: "newOwner", type: "address" }],
-    name: "transferOwnership",
-    outputs: [],
-    payable: false,
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    constant: false,
-    inputs: [{ name: "_blackListedUser", type: "address" }],
-    name: "destroyBlackFunds",
-    outputs: [],
-    payable: false,
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    constant: false,
-    inputs: [{ name: "amount", type: "uint256" }],
-    name: "_giveMeATokens",
-    outputs: [],
-    payable: false,
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [
-      { name: "_initialSupply", type: "uint256" },
-      { name: "_name", type: "string" },
-      { name: "_symbol", type: "string" },
-      { name: "_decimals", type: "uint256" },
-    ],
-    payable: false,
-    stateMutability: "nonpayable",
-    type: "constructor",
-  },
-  {
-    anonymous: false,
-    inputs: [{ indexed: false, name: "amount", type: "uint256" }],
-    name: "Issue",
-    type: "event",
-  },
-  {
-    anonymous: false,
-    inputs: [{ indexed: false, name: "amount", type: "uint256" }],
-    name: "Redeem",
-    type: "event",
-  },
-  {
-    anonymous: false,
-    inputs: [{ indexed: false, name: "newAddress", type: "address" }],
-    name: "Deprecate",
-    type: "event",
-  },
-  {
-    anonymous: false,
-    inputs: [
-      { indexed: false, name: "feeBasisPoints", type: "uint256" },
-      { indexed: false, name: "maxFee", type: "uint256" },
-    ],
-    name: "Params",
-    type: "event",
-  },
-  {
-    anonymous: false,
-    inputs: [
-      { indexed: false, name: "_blackListedUser", type: "address" },
-      { indexed: false, name: "_balance", type: "uint256" },
-    ],
-    name: "DestroyedBlackFunds",
-    type: "event",
-  },
-  {
-    anonymous: false,
-    inputs: [{ indexed: false, name: "_user", type: "address" }],
-    name: "AddedBlackList",
-    type: "event",
-  },
-  {
-    anonymous: false,
-    inputs: [{ indexed: false, name: "_user", type: "address" }],
-    name: "RemovedBlackList",
-    type: "event",
-  },
-  {
-    anonymous: false,
-    inputs: [
-      { indexed: true, name: "owner", type: "address" },
-      { indexed: true, name: "spender", type: "address" },
-      { indexed: false, name: "value", type: "uint256" },
-    ],
-    name: "Approval",
-    type: "event",
-  },
-  {
-    anonymous: false,
-    inputs: [
-      { indexed: true, name: "from", type: "address" },
-      { indexed: true, name: "to", type: "address" },
-      { indexed: false, name: "value", type: "uint256" },
-    ],
-    name: "Transfer",
-    type: "event",
-  },
-  { anonymous: false, inputs: [], name: "Pause", type: "event" },
-  { anonymous: false, inputs: [], name: "Unpause", type: "event" },
-];
+const ethereumSepoliaRpcUrl =
+  "https://public.stackup.sh/api/v1/node/ethereum-sepolia";
+
 const TestUSDT = "0x7169D38820dfd117C3FA1f22a697dBA58d90BA06";
 const getWallet = () => {
   const signingKey = localStorage.getItem("signingKey");
@@ -443,26 +43,26 @@ const getWallet = () => {
   return signer;
 };
 
-const getSimpleAccount = (
-  wallet: ethers.Wallet,
-  paymasterUrl: string
-) => {
-  const accountAPI = new SimpleAccountAPI({
-    provider: new ethers.providers.JsonRpcProvider(ethereumSepoliaRpcUrl),
-    entryPointAddress,
-    owner: wallet,
-    factoryAddress,
-    paymasterAPI:
-      paymasterUrl.indexOf("aastar") >= 0
-        ? new AAStarPayMasterAPI(paymasterUrl, entryPointAddress)
-        : paymasterUrl.indexOf("pimlico") >= 0
-        ? new PimlicoPayMasterAPI(paymasterUrl, entryPointAddress)
-        : paymasterUrl.indexOf("biconomy") >= 0
-        ? new BiconomyPayMasterAPI(paymasterUrl, entryPointAddress)
-        : new StackupPayMasterAPI(paymasterUrl, entryPointAddress),
-  });
-  return accountAPI;
-};
+// const getSimpleAccount = (
+//   wallet: ethers.Wallet,
+//   paymasterUrl: string
+// ) => {
+//   const accountAPI = new SimpleAccountAPI({
+//     provider: new ethers.providers.JsonRpcProvider(ethereumSepoliaRpcUrl),
+//     entryPointAddress,
+//     owner: wallet,
+//     factoryAddress,
+//     paymasterAPI:
+//       paymasterUrl.indexOf("aastar") >= 0
+//         ? new AAStarPayMasterAPI(paymasterUrl, entryPointAddress)
+//         : paymasterUrl.indexOf("pimlico") >= 0
+//         ? new PimlicoPayMasterAPI(paymasterUrl, entryPointAddress)
+//         : paymasterUrl.indexOf("biconomy") >= 0
+//         ? new BiconomyPayMasterAPI(paymasterUrl, entryPointAddress)
+//         : new StackupPayMasterAPI(paymasterUrl, entryPointAddress),
+//   });
+//   return accountAPI;
+// };
 interface MintItem {
   account: string;
   amount: string | null;
@@ -472,63 +72,83 @@ interface MintItem {
 }
 
 interface TransactionLog {
-  userOpHash: string
-  transactionHash: string
+  aaAccount: string;
+  userOpHash: string;
+  transactionHash: string;
+}
+function getPayMasterConfig(url: string) {
+  const config: PaymasterConfig = {
+    provider:
+      url.indexOf("aastar") >= 0
+        ? "aastar"
+        : url.indexOf("pimlico") >= 0
+        ? "pimlico"
+        : url.indexOf("biconomy") >= 0
+        ? "biconomy"
+        : "stackup",
+    config: {
+      url: url,
+    },
+  };
+  return config;
 }
 
+function getBundlerConfig(url: string) {
+  const config: BundlerConfig = {
+    provider:
+      url.indexOf("aastar") >= 0
+        ? "aastar"
+        : url.indexOf("pimlico") >= 0
+        ? "pimlico"
+        : url.indexOf("biconomy") >= 0
+        ? "biconomy"
+        : "stackup",
+    config: {
+      url: url,
+    },
+  };
+  return config;
+}
 function Demo() {
-  const [transactionLogs, setTransactionLogs] = useState<TransactionLog[]>([])
-  const [bundler, setBundler] = useState("https://public.stackup.sh/api/v1/node/ethereum-sepolia");
-  const [payMaster, setPayMaseter] = useState("https://api.stackup.sh/v1/paymaster/e008121e92221cb49073b5bca65d434fbeb2162e73f42a9e3ea01d00b606fcba");
- // const [batchLoading, setBatchLoading] = useState(false);
+  const [transactionLogs, setTransactionLogs] = useState<TransactionLog[]>([]);
+  const [bundler, setBundler] = useState(
+    "https://public.stackup.sh/api/v1/node/ethereum-sepolia"
+  );
+  const [payMaster, setPayMaseter] = useState(
+    "https://api.stackup.sh/v1/paymaster/e008121e92221cb49073b5bca65d434fbeb2162e73f42a9e3ea01d00b606fcba"
+  );
+  // const [batchLoading, setBatchLoading] = useState(false);
   const [mintList, setMintList] = useState<MintItem[]>([
-    // {
-    //   account: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
-    //   amount: null,
-    //   balance: null,
-    //   mintBtnText: "Mint USDT"
-    // },
-    // {
-    //   account: "0x6Ecbe1DB9EF729CBe972C83Fb886247691Fb6beb",
-    //   amount: null,
-    //   balance: null,
-    //   mintBtnText: "Mint USDT"
-    // },
-    // {
-    //   account: "0x5409ED021D9299bf6814279A6A1411A7e866A631",
-    //   amount: null,
-    //   balance: null,
-    //   mintBtnText: "Mint USDT"
-    // },
     {
-      account: "0x47E51256Fc9C7e87fd23b3444091D7A877C919B4",
+      account: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
       amount: null,
       balance: null,
       mintBtnText: "Mint USDT"
     },
+    {
+      account: "0x6Ecbe1DB9EF729CBe972C83Fb886247691Fb6beb",
+      amount: null,
+      balance: null,
+      mintBtnText: "Mint USDT"
+    },
+    {
+      account: "0x5409ED021D9299bf6814279A6A1411A7e866A631",
+      amount: null,
+      balance: null,
+      mintBtnText: "Mint USDT"
+    },
+    {
+      account: "0x47E51256Fc9C7e87fd23b3444091D7A877C919B4",
+      amount: null,
+      balance: null,
+      mintBtnText: "Mint USDT",
+    },
   ]);
-  // const [currentWalletAddress, setCurrentWalletAddress] = useState<string>(
-  //   ethers.constants.AddressZero
-  // );
-  // //  const [currentSmartAccount, setCurrentSmartAccount] = useState<BaseAccountAPI | null>(null)
-  // const [currentSmartAccountAddress, setCurrentSmartAccountAddress] =
-  //   useState<string>(ethers.constants.AddressZero);
-  // useEffect(() => {
-  //   const init = async () => {
-  //     const wallet = getWallet();
-  //   //  setCurrentWalletAddress(wallet.address);
-  //     const simpleAccount = getSimpleAccount(wallet, payMaster);
-  //     // setCurrentSmartAccount(accountAPI);
-  //     const smartAddress = await simpleAccount.getCounterFactualAddress();
-  //   //  setCurrentSmartAccountAddress(smartAddress);
-  //   };
-  //   init();
-  // }, []);
-  const updateUSDTBalance = async () => {
 
+  const updateUSDTBalance = async () => {
     const TestnetERC20 = new ethers.Contract(
       TestUSDT,
-      TestnetERC20ABI,
+      TetherTokenABI,
       new ethers.providers.JsonRpcProvider(ethereumSepoliaRpcUrl)
     );
     for (let i = 0, l = mintList.length; i < l; i++) {
@@ -544,18 +164,25 @@ function Demo() {
       );
     }
   };
+
   const mintUSDT = async (data: MintItem) => {
-    const id = toast.loading("Please wait...")
+    const id = toast.loading("Please wait...");
     //do something else
     try {
       const wallet = getWallet();
-      const smartAccount = getSimpleAccount(wallet, payMaster);
-      const address = await smartAccount.getCounterFactualAddress();
-      console.log("mintUSDT", address)
-      // const smartAccountContract = await smartAccount._getAccountContract();
+
+      // 第一步 创建 AAStarClient
+      const smartAccount = new AAStarClient({
+        bundler: getBundlerConfig(bundler) , // bunder 配置
+        paymaster: getPayMasterConfig(payMaster), // payMaserter 配置
+        signer: wallet, // EOA 钱包,
+        rpc: ethereumSepoliaRpcUrl // rpc节点地址, 
+      });
+
+      // 第二步 创建合约调用参数
       const TestnetERC20 = new ethers.Contract(
         TestUSDT,
-        TestnetERC20ABI,
+        TetherTokenABI,
         new ethers.providers.JsonRpcProvider(ethereumSepoliaRpcUrl)
       );
       // Encode the calls
@@ -565,24 +192,18 @@ function Demo() {
           data.account,
           ethers.utils.parseUnits(data.amount ? data.amount : "0", 6),
         ]),
+     
       ];
-      // const encodeCallData = smartAccountContract.interface.encodeFunctionData("executeBatch", [callTo, callData]);
-      //console.log([callTo, callData], encodeCallData)
-      const op = await smartAccount.createSignedUserOp({
-        target: address,
-        data: [callTo, callData],
-      });
-  
-      const chainId = await smartAccount.provider
-        .getNetwork()
-        .then((net) => net.chainId);
-      const client = new HttpRpcClient(bundler, entryPointAddress, chainId);
-      const userOpHash = await client.sendUserOpToBundler(op);
-  
       console.log("Waiting for transaction...");
-      const transactionHash = await smartAccount.getUserOpReceipt(userOpHash);
-      console.log(`Transaction hash: ${transactionHash}`);
-      toast.update(id, { render: "Success", type: "success", isLoading: false, autoClose: 5000 });
+      // 第三步 发送 UserOperation
+      const response = await smartAccount.sendUserOperation(callTo, callData);
+      console.log(`Transaction hash: ${response.transactionHash}`);
+      toast.update(id, {
+        render: "Success",
+        type: "success",
+        isLoading: false,
+        autoClose: 5000,
+      });
       await updateUSDTBalance();
       setMintList((items) => {
         const newItems = [...items];
@@ -591,85 +212,37 @@ function Demo() {
         });
         if (newItem) {
           newItem.loading = false;
-          newItem.mintBtnText = "Mint USDT"
+          newItem.mintBtnText = "Mint USDT";
         }
         return newItems;
       });
       setTransactionLogs((items) => {
-        const newItems = [...items]
+        const newItems = [...items];
         newItems.unshift({
-          userOpHash: userOpHash,
-          transactionHash: `${transactionHash}`
-        })
-        localStorage.setItem("TransactionLogs", JSON.stringify(newItems))
+          aaAccount: response.aaAccountAddress,
+          userOpHash: response.userOpHash,
+          transactionHash: `${response.transactionHash}`,
+        });
+        localStorage.setItem("TransactionLogs", JSON.stringify(newItems));
         return newItems;
-      })
-    }
-    catch(error) {
+      });
+    } catch (error) {
       console.log(error);
-      toast.update(id, { render: "Transaction Fail", type: "error", isLoading: false, autoClose: 5000 });
+      toast.update(id, {
+        render: "Transaction Fail",
+        type: "error",
+        isLoading: false,
+        autoClose: 5000,
+      });
     }
-   
-    //console.log(`View here: https://jiffyscan.xyz/userOpHash/${userOpHash}`);
   };
-  // const batchMintUSDT = async () => {
-  //   setBatchLoading(true);
-  //   const wallet = getWallet();
-  //   const smartAccount = getSimpleAccount(wallet, bundler, payMaster);
-  //   const address = await smartAccount.getCounterFactualAddress();
-  //   // const smartAccountContract = await smartAccount._getAccountContract();
-  //   const TestnetERC20 = new ethers.Contract(
-  //     TestUSDT,
-  //     TestnetERC20ABI,
-  //     smartAccount.provider
-  //   );
-  //   // Encode the calls
-
-  //   const callTo = mintList.map(() => {
-  //     return TestUSDT
-  //   });
-  //   const callData = mintList.map((item) => {
-  //     return  TestnetERC20.interface.encodeFunctionData("_mint", [
-  //       item.account,
-  //       ethers.utils.parseUnits(item.amount ? item.amount : "0", 6),
-  //     ])
-  //   })
-  //   // const encodeCallData = smartAccountContract.interface.encodeFunctionData("executeBatch", [callTo, callData]);
-  //   //console.log([callTo, callData], encodeCallData)
-  //   const op = await smartAccount.createSignedUserOp({
-  //     target: address,
-  //     data: [callTo, callData],
-  //   });
-
-  //   const chainId = await smartAccount.provider
-  //     .getNetwork()
-  //     .then((net) => net.chainId);
-  //   const client = new HttpRpcClient(rpcUrl, entryPointAddress, chainId);
-  //   const userOpHash = await client.sendUserOpToBundler(op);
-
-  //   console.log("Waiting for transaction...");
-  //   const transactionHash = await smartAccount.getUserOpReceipt(userOpHash);
-  //   console.log(`Transaction hash: ${transactionHash}`);
-  //   await updateUSDTBalance();
-  //   setBatchLoading(false);
-  //   setTransactionLogs((items) => {
-  //     const newItems = [...items]
-  //     newItems.unshift({
-  //       userOpHash: userOpHash,
-  //       transactionHash: `${transactionHash}`
-  //     })
-  //     localStorage.setItem("TransactionLogs", JSON.stringify(newItems))
-  //     return newItems;
-  //   })
-   
-  //   //console.log(`View here: https://jiffyscan.xyz/userOpHash/${userOpHash}`);
-  // };
   
+
   useEffect(() => {
     updateUSDTBalance();
     const TransactionLogs = localStorage.getItem("TransactionLogs");
     if (TransactionLogs) {
-      setTransactionLogs(JSON.parse(TransactionLogs))
+      setTransactionLogs(JSON.parse(TransactionLogs));
     }
   }, []);
 
@@ -714,8 +287,13 @@ function Demo() {
             >
               Biconomy
             </MenuItem>
-
-            
+            <MenuItem
+              value={
+                "https://eth-sepolia.g.alchemy.com/v2/tlovr50YMFVheDJSuOJJj0RyvCHothDO"
+              }
+            >
+              Alchemy
+            </MenuItem>
           </Select>
         </FormControl>
         <FormControl fullWidth>
@@ -821,23 +399,13 @@ function Demo() {
           );
         })}
       </div>
-      {/* <div className={styles.batchMintUsdtBtn}>
-        <LoadingButton
-          loading={batchLoading}
-          size="large"
-          variant="contained"
-          onClick={() => {
-            batchMintUSDT();
-          }}
-        >
-          Batch Mint USDT
-        </LoadingButton>
-      </div> */}
+
       <div className={styles.TransactionTable}>
         <TableContainer component={Paper}>
           <Table size="small">
             <TableHead>
               <TableRow>
+                <TableCell>AA Acount</TableCell>
                 <TableCell>User Op Hash</TableCell>
                 <TableCell>Transaction</TableCell>
               </TableRow>
@@ -848,9 +416,14 @@ function Demo() {
                   key={row.userOpHash}
                   sx={{ "&:last-child td, &:last-child th": { border: 0 } }}
                 >
+                  <TableCell> <a
+                      href={`https://sepolia.etherscan.io/address/${row.aaAccount}`}
+                      target="_blank"
+                    >
+                      {row.aaAccount}
+                    </a></TableCell>
                   <TableCell>{row.userOpHash}</TableCell>
                   <TableCell>
-                    {" "}
                     <a
                       href={`https://sepolia.etherscan.io/tx/${row.transactionHash}`}
                       target="_blank"

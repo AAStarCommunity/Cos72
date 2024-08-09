@@ -29,7 +29,7 @@ export class AAStarPayMasterAPI extends PaymasterAPI {
     super();
 
     this.paymasterUrl = paymasterUrl;
-  //  this.entryPoint = entryPoint;
+    //  this.entryPoint = entryPoint;
   }
 
   async getPaymasterAndData(
