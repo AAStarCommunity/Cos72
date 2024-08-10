@@ -16,6 +16,7 @@ export interface INetwork {
   contracts: {
     USDT: string;
     NFT: string;
+    CommunityManager: string;
   };
   bundler: BundlerConfig[];
   paymaster: PaymasterConfig[];
@@ -28,7 +29,8 @@ export const NetworkdConfig: { [K in NetworkId]: INetwork } = {
     blockExplorerURL: "https://sepolia.etherscan.io",
     contracts: {
       USDT: "0x7169D38820dfd117C3FA1f22a697dBA58d90BA06",
-      NFT: "0xCEf599508abd274bab8F0D9D9149d9ceeD9a2A07"
+      NFT: "0xCEf599508abd274bab8F0D9D9149d9ceeD9a2A07",
+      CommunityManager: ethers.constants.AddressZero,
     },
     bundler: [
       {
@@ -103,7 +105,8 @@ export const NetworkdConfig: { [K in NetworkId]: INetwork } = {
     blockExplorerURL: "https://sepolia-optimism.etherscan.io",
     contracts: {
       USDT: "0x1927E2D716D7259d06006bFaF3dBFA22A12d6945",
-      NFT: "0x9194618d3695902a426bfacc9e2182d2cb6ad880"
+      NFT: "0x9194618d3695902a426bfacc9e2182d2cb6ad880",
+      CommunityManager: "0x0030573eE4cd93e3672544eB498FdfCaFA1CfcF2"
     },
     bundler: [
       {
@@ -132,7 +135,8 @@ export const NetworkdConfig: { [K in NetworkId]: INetwork } = {
     blockExplorerURL: "https://sepolia-explorer.arbitrum.io",
     contracts: {
       USDT: "0x1927E2D716D7259d06006bFaF3dBFA22A12d6945",
-      NFT: ethers.constants.AddressZero
+      NFT: ethers.constants.AddressZero,
+      CommunityManager: ethers.constants.AddressZero,
     },
     bundler: [
       {

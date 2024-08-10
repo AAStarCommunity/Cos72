@@ -19,7 +19,7 @@ interface AccountSignDialogParams {
 
 function AccountSignDialog({ onHide, visible }: AccountSignDialogParams) {
     const toast = useRef<Toast>(null);
-  const [email, setEmail] = useState<string | null>(null);
+  const [email, setEmail] = useState<string | null>(localStorage.getItem("email"));
   const [loading, setLoading] = useState(false);
   const [captchaSuccess, sendCaptchaSuccess] = useState(false);
   const [captcha, setCaptcha] = useState<string | null>(null);
@@ -70,8 +70,11 @@ function AccountSignDialog({ onHide, visible }: AccountSignDialogParams) {
           <InputText
             value={email}
             className={styles.input}
+            
+            autoComplete={"on"}
             onChange={(event) => {
               setEmail(event.target.value);
+              localStorage.setItem("email", event.target.value)
             }}
           ></InputText>
           </div>

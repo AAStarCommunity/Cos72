@@ -15,6 +15,7 @@ import { MenuItem } from "primereact/menuitem";
 import { Button } from "primereact/button";
 import TetherToken from "./contracts/TetherToken.json";
 import AAStarDemoNFT from "./contracts/AAStarDemoNFT.json";
+import CommunityManager from "./contracts/CommunityManager.json";
 import { toast, ToastContainer } from "react-toastify";
 import { Chip } from "primereact/chip";
 import { DataView } from "primereact/dataview";
@@ -24,6 +25,7 @@ import SendTokenDialog from "./components/SendTokenDialog";
 import { DataTable } from "primereact/datatable";
 import { Column } from "primereact/column";
 import SendNFTDialog from "./components/SendNFTDialog";
+import CreateCommunityDialog from "./components/CreateCommunityDialog";
 
 interface TransactionLog {
   aaAccount: string;
@@ -32,6 +34,8 @@ interface TransactionLog {
 }
 const TetherTokenABI = TetherToken.abi;
 const AAStarDemoNFTABI = AAStarDemoNFT.abi;
+const CommunityManagerABI = CommunityManager.abi;
+
 function App() {
   const menuLeft = useRef<Menu>(null);
   const [userInfo, setUserIfno] = useState<any>(null);
@@ -44,6 +48,8 @@ function App() {
   const [isShowAccountSignDialog, setIsShowAccountSignDialog] = useState(false);
   const [isShowSendTokenDialog, setIsShowSendTokenDialog] = useState(false);
   const [isShowSendNFTDialog, setIsShowSendNFTDialog] = useState(false);
+  const [isShowCreateCommunityDialog, setIsShowCreateCommunityDialog] =
+    useState(false);
   const [currentSendNFTId, setCurrentSendNFTId] = useState(null);
   const [usdtAmount, setUsdtAmount] = useState("0");
   const [transactionLogs, setTransactionLogs] = useState<TransactionLog[]>([]);
@@ -189,7 +195,76 @@ function App() {
       });
     }
   };
-  
+
+
+  const createCommunity = async (community : any) => {
+    const id = toast.loading("Please wait...");
+
+    //do something else
+    try {
+      //     const wallet = getWallet();
+
+      // 第一步 创建 AAStarClient
+      const bundlerConfig = NetworkdConfig[networkIds.OP_SEPOLIA].bundler[0];
+
+      const payMasterConfig =
+        NetworkdConfig[networkIds.OP_SEPOLIA].paymaster[0];
+
+      const smartAccount = new AAStarClient({
+        bundler: bundlerConfig as any, // bunder 配置
+        paymaster: payMasterConfig as any, // payMaserter 配置
+
+        rpc: NetworkdConfig[networkIds.OP_SEPOLIA].rpc, // rpc节点地址,
+      });
+
+      // 第二步 创建合约调用参数
+      const CommunityManagerContract = new ethers.Contract(
+        NetworkdConfig[networkIds.OP_SEPOLIA].contracts.CommunityManager,
+        CommunityManagerABI,
+        new ethers.providers.JsonRpcProvider(
+          NetworkdConfig[networkIds.OP_SEPOLIA].rpc
+        )
+      );
+      // Encode the calls
+      const callTo = [NetworkdConfig[networkIds.OP_SEPOLIA].contracts.CommunityManager];
+      const callData = [
+        CommunityManagerContract.interface.encodeFunctionData("createCommunity", [
+          community,
+        ]),
+      ];
+      console.log("Waiting for transaction...");
+      // 第三步 发送 UserOperation
+      const response = await smartAccount.sendUserOperation(callTo, callData);
+      console.log(`Transaction hash: ${response.transactionHash}`);
+      toast.update(id, {
+        render: "Success",
+        type: "success",
+        isLoading: false,
+        autoClose: 5000,
+      });
+      await loadCommunityManagerList();
+
+      setTransactionLogs((items) => {
+        const newItems = [...items];
+        newItems.unshift({
+          aaAccount: response.aaAccountAddress,
+          userOpHash: response.userOpHash,
+          transactionHash: `${response.transactionHash}`,
+        });
+        localStorage.setItem("TransactionLogs", JSON.stringify(newItems));
+        return newItems;
+      });
+    } catch (error) {
+      console.log(error);
+      toast.update(id, {
+        render: "Transaction Fail",
+        type: "error",
+        isLoading: false,
+        autoClose: 5000,
+      });
+    }
+  };
+
   const mintNFT = async () => {
     setMintNFTLoading(true);
     const id = toast.loading("Please wait...");
@@ -267,7 +342,7 @@ function App() {
     setMintNFTLoading(false);
   };
   const sendNFT = async (account: string, tokenId: number) => {
-   // setMintNFTLoading(true);
+    // setMintNFTLoading(true);
     const id = toast.loading("Please wait...");
     //do something else
     try {
@@ -307,7 +382,7 @@ function App() {
         NFTContract.interface.encodeFunctionData("transferFrom", [
           userInfo.aa,
           account,
-          tokenId
+          tokenId,
         ]),
       ];
       console.log("Waiting for transaction...");
@@ -452,8 +527,8 @@ function App() {
         )
       );
       const allTokenIds = await NFTContract.getAccountTokenIds(userInfo.aa);
-      const tokenIds: any = []
-      for(let i = 0, l = allTokenIds.length; i < l; i++) {
+      const tokenIds: any = [];
+      for (let i = 0, l = allTokenIds.length; i < l; i++) {
         const owner = await NFTContract.ownerOf(allTokenIds[i]);
         if (owner === userInfo.aa) {
           tokenIds.push(allTokenIds[i]);
@@ -470,7 +545,7 @@ function App() {
       );
       // .then((tokenIds: any) => {
       //   console.log("tokenIds", tokenIds);
-       
+
       //   // for(let i = 0; i < tokenIds.length; i++) {
       //   //   NFTContract.tokenURI(tokenIds[i]).then((tokenUrl: string) => {
       //   //     return fetch(tokenUrl)
@@ -501,16 +576,32 @@ function App() {
       ),
       entryPointAddress: entryPointAddress,
     });
-    const result = await airAccount.getAccountInfo();
-    if (result) {
-      setUserIfno(result);
-      console.log(result);
-    } else {
+    try {
+      const result = await airAccount.getAccountInfo();
+      if (result) {
+        setUserIfno(result);
+        console.log(result);
+      } else {
+        setUserIfno(null);
+      }
+    } catch (error) {
       setUserIfno(null);
     }
   };
+  const loadCommunityManagerList = async () => {
+    const communityManager = new ethers.Contract(
+      NetworkdConfig[networkIds.OP_SEPOLIA].contracts.CommunityManager,
+      CommunityManagerABI,
+      new ethers.providers.JsonRpcProvider(
+        NetworkdConfig[networkIds.OP_SEPOLIA].rpc
+      )
+    );
+    const xxx = await communityManager.getCommunityList();
+    console.log(xxx);
+  };
   useEffect(() => {
     loadUserInfo();
+    loadCommunityManagerList();
   }, []);
 
   useEffect(() => {
@@ -519,7 +610,6 @@ function App() {
   }, [userInfo]);
 
   useEffect(() => {
-    
     const TransactionLogs = localStorage.getItem("TransactionLogs");
     if (TransactionLogs) {
       setTransactionLogs(JSON.parse(TransactionLogs));
@@ -527,28 +617,36 @@ function App() {
   }, []);
   const items: MenuItem[] = [
     {
-      label: "Wallet",
+      label: "Account",
       icon: "pi pi-wallet",
-      className: currentPath == "wallet"? styles.menuActive : "",
+      className: currentPath == "wallet" ? styles.menuActive : "",
       command: () => {
-        setCurrentPath("wallet")
+        setCurrentPath("wallet");
       },
-    
+    },
+
+    {
+      label: "Community",
+      icon: "pi pi-comments",
+      className: currentPath == "community" ? styles.menuActive : "",
+      command: () => {
+        setCurrentPath("community");
+      },
     },
     {
       label: "Transaction",
       icon: "pi pi-bars",
-      className: currentPath == "transaction"? styles.menuActive : "",
+      className: currentPath == "transaction" ? styles.menuActive : "",
       command: () => {
-        setCurrentPath("transaction")
+        setCurrentPath("transaction");
       },
     },
     {
       label: "Setting",
       icon: "pi pi-cog",
-      className: currentPath == "setting"? styles.menuActive : "",
+      className: currentPath == "setting" ? styles.menuActive : "",
       command: () => {
-        setCurrentPath("setting")
+        setCurrentPath("setting");
       },
     },
   ];
@@ -618,10 +716,16 @@ function App() {
                 <img src={AAStarLogo}></img>
               </div>
               <div className={styles.NFTText}>Token Id #{token.tokenId}</div>
-              <div className={styles.NFTText}><Button label="Send" size="small" onClick={() => {
-                setCurrentSendNFTId(token.tokenId);
-                setIsShowSendNFTDialog(true);
-              }}></Button> </div>
+              <div className={styles.NFTText}>
+                <Button
+                  label="Send"
+                  size="small"
+                  onClick={() => {
+                    setCurrentSendNFTId(token.tokenId);
+                    setIsShowSendNFTDialog(true);
+                  }}
+                ></Button>{" "}
+              </div>
             </div>
           );
         })}
@@ -629,122 +733,152 @@ function App() {
     );
   };
   const TransactionLog = (log: TransactionLog) => {
-    return <a  href={`${NetworkdConfig[networkIds.OP_SEPOLIA].blockExplorerURL}/tx/${log.transactionHash}`}
-    target="_blank">{log.transactionHash}</a>;
- };
+    return (
+      <a
+        href={`${NetworkdConfig[networkIds.OP_SEPOLIA].blockExplorerURL}/tx/${
+          log.transactionHash
+        }`}
+        target="_blank"
+      >
+        {log.transactionHash}
+      </a>
+    );
+  };
   return (
     <div className={styles.Root}>
       <Menubar model={items} start={start} end={end} />
       <Menu model={accountItems} popup ref={menuLeft} />
       <div className={styles.Content}>
-       { currentPath === "wallet"  && <div className={styles.Wallet}>
-          <Card className={styles.USDTContent} title="USDT Balance">
-            <Chip
-              className={styles.ContractAddress}
-              onClick={() => {
-                window.open(
-                  `${
-                    NetworkdConfig[networkIds.OP_SEPOLIA].blockExplorerURL
-                  }/address/${
-                    NetworkdConfig[networkIds.OP_SEPOLIA].contracts.USDT
-                  }`,
-                  "_blank"
-                );
-              }}
-              label={`Contract ${
-                NetworkdConfig[networkIds.OP_SEPOLIA].contracts.USDT
-              }`}
-            ></Chip>
-            <div className={styles.USDTContentWrapper}>
-              <div className={styles.USDTAmount}>${usdtAmount}</div>
+        {currentPath === "wallet" && (
+          <div className={styles.Wallet}>
+            <Card className={styles.USDTContent} title="USDT Balance">
+              <Chip
+                className={styles.ContractAddress}
+                onClick={() => {
+                  window.open(
+                    `${
+                      NetworkdConfig[networkIds.OP_SEPOLIA].blockExplorerURL
+                    }/address/${
+                      NetworkdConfig[networkIds.OP_SEPOLIA].contracts.USDT
+                    }`,
+                    "_blank"
+                  );
+                }}
+                label={`Contract ${
+                  NetworkdConfig[networkIds.OP_SEPOLIA].contracts.USDT
+                }`}
+              ></Chip>
+              <div className={styles.USDTContentWrapper}>
+                <div className={styles.USDTAmount}>${usdtAmount}</div>
+                <div className={styles.btnRow}>
+                  <Button
+                    loading={mintLoading}
+                    label="Mint"
+                    className={styles.mintUSDTBtn}
+                    onClick={() => {
+                      if (userInfo) {
+                        mintUSDT();
+                      } else {
+                        setIsShowAccountSignDialog(true);
+                      }
+                    }}
+                  />
+                </div>
+
+                <div className={styles.btnRow}>
+                  <Button
+                    label="Send"
+                    className={styles.mintUSDTBtn}
+                    onClick={() => {
+                      setIsShowSendTokenDialog(true);
+                    }}
+                  />
+                </div>
+                <div className={styles.btnRow}>
+                  <Button
+                    loading={mintUSDTAndMintNFTLoading}
+                    label="Mint USDT And Mint NFT"
+                    className={styles.mintUSDTBtn}
+                    onClick={() => {
+                      if (userInfo) {
+                        mintUSDTAndMintNFT();
+                      } else {
+                        setIsShowAccountSignDialog(true);
+                      }
+                    }}
+                  />
+                </div>
+              </div>
+            </Card>
+            <Card className={styles.NFTContent} title="NFT List">
+              {/* <DataView value={products} listTemplate={listTemplate}  /> */}
+              <Chip
+                className={styles.ContractAddress}
+                onClick={() => {
+                  window.open(
+                    `${
+                      NetworkdConfig[networkIds.OP_SEPOLIA].blockExplorerURL
+                    }/address/${
+                      NetworkdConfig[networkIds.OP_SEPOLIA].contracts.NFT
+                    }`,
+                    "_blank"
+                  );
+                }}
+                label={`Contract ${
+                  NetworkdConfig[networkIds.OP_SEPOLIA].contracts.NFT
+                }`}
+              ></Chip>
+              <DataView
+                value={tokenList}
+                listTemplate={listTemplate as any}
+              ></DataView>
               <div className={styles.btnRow}>
                 <Button
-                  loading={mintLoading}
+                  loading={mintNFTLoading}
                   label="Mint"
                   className={styles.mintUSDTBtn}
                   onClick={() => {
                     if (userInfo) {
-                      mintUSDT();
+                      mintNFT();
                     } else {
                       setIsShowAccountSignDialog(true);
                     }
                   }}
                 />
               </div>
+            </Card>
+          </div>
+        )}
+        {currentPath === "transaction" && (
+          <div className={styles.Transaction}>
+            <DataTable
+              value={transactionLogs}
+              tableStyle={{ minWidth: "50rem" }}
+            >
+              <Column field="userOpHash" header="User Op Hash"></Column>
+              <Column
+                field="transactionHash"
+                header="Transaction Hash"
+                body={TransactionLog}
+              ></Column>
+            </DataTable>
+          </div>
+        )}
 
-              <div className={styles.btnRow}>
-                <Button
-                  label="Send"
-                  className={styles.mintUSDTBtn}
-                  onClick={() => {
-                    setIsShowSendTokenDialog(true);
-                  }}
-                />
-              </div>
-              <div className={styles.btnRow}>
-                <Button
-                  loading={mintUSDTAndMintNFTLoading}
-                  label="Mint USDT And Mint NFT"
-                  className={styles.mintUSDTBtn}
-                  onClick={() => {
-                    if (userInfo) {
-                      mintUSDTAndMintNFT();
-                    } else {
-                      setIsShowAccountSignDialog(true);
-                    }
-                  }}
-                />
-              </div>
-            </div>
-          </Card>
-          <Card className={styles.NFTContent} title="NFT List">
-            {/* <DataView value={products} listTemplate={listTemplate}  /> */}
-            <Chip
-              className={styles.ContractAddress}
-              onClick={() => {
-                window.open(
-                  `${
-                    NetworkdConfig[networkIds.OP_SEPOLIA].blockExplorerURL
-                  }/address/${
-                    NetworkdConfig[networkIds.OP_SEPOLIA].contracts.NFT
-                  }`,
-                  "_blank"
-                );
-              }}
-              label={`Contract ${
-                NetworkdConfig[networkIds.OP_SEPOLIA].contracts.NFT
-              }`}
-            ></Chip>
-            <DataView
-              value={tokenList}
-              listTemplate={listTemplate as any}
-            ></DataView>
+        {currentPath === "community" && (
+          <div>
             <div className={styles.btnRow}>
               <Button
-                loading={mintNFTLoading}
-                label="Mint"
+                loading={mintLoading}
+                label="Create"
                 className={styles.mintUSDTBtn}
                 onClick={() => {
-                  if (userInfo) {
-                    mintNFT();
-                  } else {
-                    setIsShowAccountSignDialog(true);
-                  }
+                  setIsShowCreateCommunityDialog(true)
                 }}
               />
             </div>
-          </Card>
-        </div>
-       }
-       {
-        currentPath === "transaction" && <div className={styles.Transaction}>
- <DataTable value={transactionLogs} tableStyle={{ minWidth: '50rem' }}>
-                <Column field="userOpHash" header="User Op Hash"></Column>
-                <Column field="transactionHash" header="Transaction Hash" body={TransactionLog}></Column>
-
-            </DataTable>
           </div>
-       }
+        )}
       </div>
       <AccountSignDialog
         visible={isShowAccountSignDialog}
@@ -764,7 +898,8 @@ function App() {
           callback();
         }}
       ></SendTokenDialog>
-      <SendNFTDialog    visible={isShowSendNFTDialog}
+      <SendNFTDialog
+        visible={isShowSendNFTDialog}
         onHide={() => {
           setCurrentSendNFTId(null);
           setIsShowSendNFTDialog(false);
@@ -775,10 +910,19 @@ function App() {
           setCurrentSendNFTId(null);
           setIsShowSendNFTDialog(false);
           callback();
-        }}>
-         
-
-      </SendNFTDialog>
+        }}
+      ></SendNFTDialog>
+      <CreateCommunityDialog
+        visible={isShowCreateCommunityDialog}
+        onHide={() => {
+          setIsShowCreateCommunityDialog(false);
+        }}
+        onCreate={async (data, callback: any) => {
+          await createCommunity(data);
+          callback();
+          setIsShowCreateCommunityDialog(false)
+        }}
+      ></CreateCommunityDialog>
       <ToastContainer />
     </div>
   );
