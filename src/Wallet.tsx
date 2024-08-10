@@ -19,6 +19,9 @@ import { toast, ToastContainer } from "react-toastify";
 import { Chip } from "primereact/chip";
 import { DataView } from "primereact/dataview";
 import { Skeleton } from "primereact/skeleton";
+import { find } from "lodash";
+import SendTokenDialog from "./components/SendTokenDialog";
+
 const TetherTokenABI = TetherToken.abi;
 const AAStarDemoNFTABI = AAStarDemoNFT.abi;
 function App() {
@@ -28,6 +31,7 @@ function App() {
   const [mintNFTLoading, setMintNFTLoading] = useState(false);
   const [tokenList, setTokenList] = useState([]);
   const [isShowAccountSignDialog, setIsShowAccountSignDialog] = useState(false);
+  const [isShowSendTokenDialog, setIsShowSendTokenDialog] = useState(false);
   const [usdtAmount, setUsdtAmount] = useState("0");
   const refreshUserInfo = () => {
     loadUserInfo();
@@ -102,6 +106,75 @@ function App() {
       });
     }
     setMintLoading(false);
+  };
+  const sendUSDT = async (account: string, amount: string) => {
+    const id = toast.loading("Please wait...");
+   
+    //do something else
+    try {
+      //     const wallet = getWallet();
+
+      // 第一步 创建 AAStarClient
+      const bundlerConfig = NetworkdConfig[networkIds.OP_SEPOLIA].bundler[0];
+
+      const payMasterConfig =
+        NetworkdConfig[networkIds.OP_SEPOLIA].paymaster[0];
+
+      const smartAccount = new AAStarClient({
+        bundler: bundlerConfig as any, // bunder 配置
+        paymaster: payMasterConfig as any, // payMaserter 配置
+
+        rpc: NetworkdConfig[networkIds.OP_SEPOLIA].rpc, // rpc节点地址,
+      });
+
+      // 第二步 创建合约调用参数
+      const TestnetERC20 = new ethers.Contract(
+        NetworkdConfig[networkIds.OP_SEPOLIA].contracts.USDT,
+        TetherTokenABI,
+        new ethers.providers.JsonRpcProvider(
+          NetworkdConfig[networkIds.OP_SEPOLIA].rpc
+        )
+      );
+      // Encode the calls
+      const callTo = [NetworkdConfig[networkIds.OP_SEPOLIA].contracts.USDT];
+      const callData = [
+        TestnetERC20.interface.encodeFunctionData("transfer", [
+          account,
+          ethers.utils.parseUnits(amount, 6),
+        ]),
+      ];
+      console.log("Waiting for transaction...");
+      // 第三步 发送 UserOperation
+      const response = await smartAccount.sendUserOperation(callTo, callData);
+      console.log(`Transaction hash: ${response.transactionHash}`);
+      toast.update(id, {
+        render: "Success",
+        type: "success",
+        isLoading: false,
+        autoClose: 5000,
+      });
+      await updateUSDTBalance();
+
+      // setTransactionLogs((items) => {
+      //   const newItems = [...items];
+      //   newItems.unshift({
+      //     aaAccount: response.aaAccountAddress,
+      //     userOpHash: response.userOpHash,
+      //     transactionHash: `${response.transactionHash}`,
+      //   });
+      //   localStorage.setItem("TransactionLogs", JSON.stringify(newItems));
+      //   return newItems;
+      // });
+    } catch (error) {
+      console.log(error);
+      toast.update(id, {
+        render: "Transaction Fail",
+        type: "error",
+        isLoading: false,
+        autoClose: 5000,
+      });
+    }
+    
   };
   const mintNFT = async () => {
     setMintNFTLoading(true);
@@ -207,14 +280,27 @@ function App() {
         setTokenList(tokenIds.map((item: any) => {
           return {
             tokenId: item.toNumber(),
-            loading: true
+            loading: true,
+            matadata: null
           }
         }))
         for(let i = 0; i < tokenIds.length; i++) {
-          NFTContract.tokenURI(tokenIds[0]).then((tokenUrl: string) => {
+          NFTContract.tokenURI(tokenIds[i]).then((tokenUrl: string) => {
             return fetch(tokenUrl)
-          }).then((response) => {
-
+          }).then((response: any) => {
+            return response.json()
+          }).then((matadata: any) => {
+            setTokenList((list) => {
+              const newList = [...list];
+              const tokenItem = find(newList, (item: any) => {
+                return item.tokenId == tokenIds[i].toNumber()
+              });
+              if (tokenItem) {
+                tokenItem.metadata = matadata;
+                tokenItem.loading = false;
+              }
+              return newList;
+            })
           })
         }
       });
@@ -304,7 +390,8 @@ function App() {
       return <div className={styles.NFTCardList}>{tokenIds.map((token: any) => {
         return <div className={styles.NFTCard} key={token.tokenId}>
           <div>{token.loading === true && <Skeleton height="100px"></Skeleton>}</div>
-          <div className={styles.NFTText}>NFT #{token.tokenId}</div></div>
+          <div>{token.metadata  && <img src={token.metadata.image}></img>}</div>
+          <div className={styles.NFTText}>{token.metadata && token.metadata.name}</div></div>
       })}</div>;
     };
    
@@ -327,6 +414,17 @@ function App() {
                   } else {
                     setIsShowAccountSignDialog(true);
                   }
+                }}
+              />
+            </div>
+  
+            <div className={styles.btnRow}>
+              <Button
+                loading={mintLoading}
+                label="Send"
+                className={styles.mintUSDTBtn}
+                onClick={() => {
+                  setIsShowSendTokenDialog(true);
                 }}
               />
             </div>
@@ -359,6 +457,17 @@ function App() {
           refreshUserInfo();
         }}
       ></AccountSignDialog>
+      <SendTokenDialog
+        visible={isShowSendTokenDialog}
+        onHide={() => {
+          setIsShowSendTokenDialog(false);
+        }}
+        onSend={async (account: string , amount: string, callback: any) => {
+          await sendUSDT(account, amount);
+          setIsShowSendTokenDialog(false);
+          callback()
+        }}
+      ></SendTokenDialog>
       <ToastContainer />
     </div>
   );
