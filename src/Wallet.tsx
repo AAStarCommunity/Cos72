@@ -23,6 +23,7 @@ import { DataView } from "primereact/dataview";
 import SendTokenDialog from "./components/SendTokenDialog";
 import { DataTable } from "primereact/datatable";
 import { Column } from "primereact/column";
+import SendNFTDialog from "./components/SendNFTDialog";
 
 interface TransactionLog {
   aaAccount: string;
@@ -42,6 +43,8 @@ function App() {
   const [tokenList, setTokenList] = useState([]);
   const [isShowAccountSignDialog, setIsShowAccountSignDialog] = useState(false);
   const [isShowSendTokenDialog, setIsShowSendTokenDialog] = useState(false);
+  const [isShowSendNFTDialog, setIsShowSendNFTDialog] = useState(false);
+  const [currentSendNFTId, setCurrentSendNFTId] = useState(null);
   const [usdtAmount, setUsdtAmount] = useState("0");
   const [transactionLogs, setTransactionLogs] = useState<TransactionLog[]>([]);
   const refreshUserInfo = () => {
@@ -186,6 +189,7 @@ function App() {
       });
     }
   };
+  
   const mintNFT = async () => {
     setMintNFTLoading(true);
     const id = toast.loading("Please wait...");
@@ -262,7 +266,83 @@ function App() {
     }
     setMintNFTLoading(false);
   };
+  const sendNFT = async (account: string, tokenId: number) => {
+   // setMintNFTLoading(true);
+    const id = toast.loading("Please wait...");
+    //do something else
+    try {
+      // const wallet = getWallet();
 
+      // 第一步 创建 AAStarClient
+      const bundlerConfig = NetworkdConfig[networkIds.OP_SEPOLIA].bundler[0];
+
+      const payMasterConfig =
+        NetworkdConfig[networkIds.OP_SEPOLIA].paymaster[0];
+
+      const smartAccount = new AAStarClient({
+        bundler: bundlerConfig as any, // bunder 配置
+        paymaster: payMasterConfig as any, // payMaserter 配置
+
+        rpc: NetworkdConfig[networkIds.OP_SEPOLIA].rpc, // rpc节点地址,
+      });
+
+      // const smartAccount = new AAStarClient({
+      //   bundler: bundlerConfig as any, // bunder 配置
+      //   paymaster: payMasterConfig as any, // payMaserter 配置
+      //   signer: wallet, // EOA 钱包,
+      //   rpc: NetworkdConfig[currentChainId as NetworkId].rpc, // rpc节点地址,
+      // });
+
+      // 第二步 创建合约调用参数
+      const NFTContract = new ethers.Contract(
+        NetworkdConfig[networkIds.OP_SEPOLIA].contracts.NFT,
+        AAStarDemoNFTABI,
+        new ethers.providers.JsonRpcProvider(
+          NetworkdConfig[networkIds.OP_SEPOLIA].rpc
+        )
+      );
+      // Encode the calls
+      const callTo = [NetworkdConfig[networkIds.OP_SEPOLIA].contracts.NFT];
+      const callData = [
+        NFTContract.interface.encodeFunctionData("transferFrom", [
+          userInfo.aa,
+          account,
+          tokenId
+        ]),
+      ];
+      console.log("Waiting for transaction...");
+      // 第三步 发送 UserOperation
+      const response = await smartAccount.sendUserOperation(callTo, callData);
+      console.log(`Transaction hash: ${response.transactionHash}`);
+      toast.update(id, {
+        render: "Success",
+        type: "success",
+        isLoading: false,
+        autoClose: 5000,
+      });
+      await updateNFTBalance();
+
+      setTransactionLogs((items) => {
+        const newItems = [...items];
+        newItems.unshift({
+          aaAccount: response.aaAccountAddress,
+          userOpHash: response.userOpHash,
+          transactionHash: `${response.transactionHash}`,
+        });
+        localStorage.setItem("TransactionLogs", JSON.stringify(newItems));
+        return newItems;
+      });
+    } catch (error) {
+      console.log(error);
+      toast.update(id, {
+        render: "Transaction Fail",
+        type: "error",
+        isLoading: false,
+        autoClose: 5000,
+      });
+    }
+    setMintNFTLoading(false);
+  };
   const mintUSDTAndMintNFT = async () => {
     const id = toast.loading("Please wait...");
     setMintUSDTAndMintNFTLoading(true);
@@ -371,37 +451,46 @@ function App() {
           NetworkdConfig[networkIds.OP_SEPOLIA].rpc
         )
       );
-      NFTContract.getAccountTokenIds(userInfo.aa).then((tokenIds: any) => {
-        console.log("tokenIds", tokenIds);
-        setTokenList(
-          tokenIds.map((item: any) => {
-            return {
-              tokenId: item.toNumber(),
-              loading: false,
-              matadata: null,
-            };
-          })
-        );
-        // for(let i = 0; i < tokenIds.length; i++) {
-        //   NFTContract.tokenURI(tokenIds[i]).then((tokenUrl: string) => {
-        //     return fetch(tokenUrl)
-        //   }).then((response: any) => {
-        //     return response.json()
-        //   }).then((matadata: any) => {
-        //     setTokenList((list) => {
-        //       const newList = [...list];
-        //       const tokenItem = find(newList, (item: any) => {
-        //         return item.tokenId == tokenIds[i].toNumber()
-        //       });
-        //       if (tokenItem) {
-        //         tokenItem.metadata = matadata;
-        //         tokenItem.loading = false;
-        //       }
-        //       return newList;
-        //     })
-        //   })
-        // }
-      });
+      const allTokenIds = await NFTContract.getAccountTokenIds(userInfo.aa);
+      const tokenIds: any = []
+      for(let i = 0, l = allTokenIds.length; i < l; i++) {
+        const owner = await NFTContract.ownerOf(allTokenIds[i]);
+        if (owner === userInfo.aa) {
+          tokenIds.push(allTokenIds[i]);
+        }
+      }
+      setTokenList(
+        tokenIds.map((item: any) => {
+          return {
+            tokenId: item.toNumber(),
+            loading: false,
+            matadata: null,
+          };
+        })
+      );
+      // .then((tokenIds: any) => {
+      //   console.log("tokenIds", tokenIds);
+       
+      //   // for(let i = 0; i < tokenIds.length; i++) {
+      //   //   NFTContract.tokenURI(tokenIds[i]).then((tokenUrl: string) => {
+      //   //     return fetch(tokenUrl)
+      //   //   }).then((response: any) => {
+      //   //     return response.json()
+      //   //   }).then((matadata: any) => {
+      //   //     setTokenList((list) => {
+      //   //       const newList = [...list];
+      //   //       const tokenItem = find(newList, (item: any) => {
+      //   //         return item.tokenId == tokenIds[i].toNumber()
+      //   //       });
+      //   //       if (tokenItem) {
+      //   //         tokenItem.metadata = matadata;
+      //   //         tokenItem.loading = false;
+      //   //       }
+      //   //       return newList;
+      //   //     })
+      //   //   })
+      //   // }
+      // });
     }
   };
   const loadUserInfo = async () => {
@@ -529,6 +618,10 @@ function App() {
                 <img src={AAStarLogo}></img>
               </div>
               <div className={styles.NFTText}>Token Id #{token.tokenId}</div>
+              <div className={styles.NFTText}><Button label="Send" size="small" onClick={() => {
+                setCurrentSendNFTId(token.tokenId);
+                setIsShowSendNFTDialog(true);
+              }}></Button> </div>
             </div>
           );
         })}
@@ -671,6 +764,21 @@ function App() {
           callback();
         }}
       ></SendTokenDialog>
+      <SendNFTDialog    visible={isShowSendNFTDialog}
+        onHide={() => {
+          setCurrentSendNFTId(null);
+          setIsShowSendNFTDialog(false);
+        }}
+        tokenId={currentSendNFTId}
+        onSend={async (account: string, tokenId: number, callback: any) => {
+          await sendNFT(account, tokenId);
+          setCurrentSendNFTId(null);
+          setIsShowSendNFTDialog(false);
+          callback();
+        }}>
+         
+
+      </SendNFTDialog>
       <ToastContainer />
     </div>
   );
