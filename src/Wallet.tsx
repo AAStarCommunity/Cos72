@@ -32,6 +32,12 @@ interface TransactionLog {
   userOpHash: string;
   transactionHash: string;
 }
+interface Community {
+  name: string;
+  symbol: string;
+  desc: string;
+  logo: string;
+}
 const TetherTokenABI = TetherToken.abi;
 const AAStarDemoNFTABI = AAStarDemoNFT.abi;
 const CommunityManagerABI = CommunityManager.abi;
@@ -45,6 +51,7 @@ function App() {
   const [mintUSDTAndMintNFTLoading, setMintUSDTAndMintNFTLoading] =
     useState(false);
   const [tokenList, setTokenList] = useState([]);
+  const [communityList, setCommunityList] = useState<Community[]>([]);
   const [isShowAccountSignDialog, setIsShowAccountSignDialog] = useState(false);
   const [isShowSendTokenDialog, setIsShowSendTokenDialog] = useState(false);
   const [isShowSendNFTDialog, setIsShowSendNFTDialog] = useState(false);
@@ -198,6 +205,9 @@ function App() {
 
 
   const createCommunity = async (community : any) => {
+  
+    community.id = 0;
+    community.owner = ethers.constants.AddressZero;
     const id = toast.loading("Please wait...");
 
     //do something else
@@ -596,8 +606,9 @@ function App() {
         NetworkdConfig[networkIds.OP_SEPOLIA].rpc
       )
     );
-    const xxx = await communityManager.getCommunityList();
-    console.log(xxx);
+    const result = await communityManager.getCommunityList();
+    setCommunityList(result)
+  
   };
   useEffect(() => {
     loadUserInfo();
@@ -726,6 +737,40 @@ function App() {
                   }}
                 ></Button>{" "}
               </div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
+  const communityTemplate = (communityList: Community []) => {
+    //console.log(tokenList, tokenIds);
+    return (
+      <div className={styles.CommunityCardList}>
+        {communityList.map((community: any) => {
+          return (
+            <div className={styles.CommunityCard} key={community.id}>
+              {/* <div>{token.loading === true && <Skeleton height="100px"></Skeleton>}</div> */}
+              <div className={styles.CommunityImg}>
+                <img src={community.logo}></img>
+              </div>
+              <div>
+              <div className={styles.CommunityText}>{community.name}</div>
+              <div className={styles.CommunityText}>{community.desc}</div>
+              <div className={styles.CommunityText}>
+               
+              </div>
+             
+              </div>
+              <div> <Button
+                  label="Join"
+                  size="small"
+                  onClick={() => {
+                  
+                  }}
+                ></Button></div>
+             
             </div>
           );
         })}
@@ -866,7 +911,7 @@ function App() {
         )}
 
         {currentPath === "community" && (
-          <div>
+          <div className={styles.Community}>
             <div className={styles.btnRow}>
               <Button
                 loading={mintLoading}
@@ -876,7 +921,12 @@ function App() {
                   setIsShowCreateCommunityDialog(true)
                 }}
               />
+             
             </div>
+            <DataView
+                value={communityList}
+                listTemplate={communityTemplate as any}
+              ></DataView>
           </div>
         )}
       </div>

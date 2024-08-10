@@ -1,52 +1,67 @@
-# Cos72
-## Introduction
-Yet Another DAO/Community Tool, BUT: get a Gasless, NFT, Contract Account, and ENS, with your email on any Super Chain.
-Initiate for ETHGlobal Hackathon 2024.
-Build based on:
-Super Chain(Optimism OP Stack)
-ETHPaymaster
-AirAccount
-CometENS （ENS)
 
-## Install
-### Install on local
-All data are saved on-chain. So you can run it anywhere with a one-key install script.
 
+# Getting started
+
+
+# Usage
+
+```javascript
+   type Provider = "stackup" | "pimlico" | "aastar" | "biconomy";
+   // 设置 bunder 配置
+   const bundlerConfig: BundlerConfig = {
+    provider: "stackup"
+    config: {
+      url: url,
+    }
+   }
+  const paymasterConfig: BundlerConfig = {
+    provider: "aastar"
+    config: {
+      url: url,
+    }
+   }
+   // 设置 payMaserter 配置
+   // 第一步 创建 AAStarClient
+    const smartAccount = new AAStarClient({
+      bundler: bundlerConfig , // bunder 配置
+      paymaster: paymasterConfig, // payMaserter 配置
+      signer: wallet, // EOA 钱包,
+      rpc: ethereumSepoliaRpcUrl // rpc节点地址, 
+    });
+
+    // 第二步 创建合约调用参数
+    const TestnetERC20 = new ethers.Contract(
+      TestUSDT,
+      TetherTokenABI,
+      new ethers.providers.JsonRpcProvider(ethereumSepoliaRpcUrl)
+    );
+    // Encode the calls
+    const callTo = [TestUSDT];
+    const callData = [
+      TestnetERC20.interface.encodeFunctionData("_mint", [
+        data.account,
+        ethers.utils.parseUnits(data.amount ? data.amount : "0", 6),
+      ]),
+    
+    ];
+    console.log("Waiting for transaction...");
+    // 第三步 发送 UserOperation
+    const response = await smartAccount.sendUserOperation(callTo, callData);
+    console.log(`Transaction hash: ${response.transactionHash}`);
 ```
-git clone git@github.com:AAStarCommunity/Cos72.git
-```
 
-### Access to AAStar version
-AAStar clones and runs a version online. It is open-source and free for all.
 
-# React + TypeScript + Vite
+## Prerequisites
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
-Currently, two official plugins are available:
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Setup
 
-## Expanding the ESLint configuration
 
-If you are developing a production application, we recommend updating the configuration to enable type aware lint rules:
 
-- Configure the top-level `parserOptions` property like this:
+# License
 
-```js
-export default {
-  // other rules...
-  parserOptions: {
-    ecmaVersion: 'latest',
-    sourceType: 'module',
-    project: ['./tsconfig.json', './tsconfig.node.json'],
-    tsconfigRootDir: __dirname,
-  },
-}
-```
 
-- Replace `plugin:@typescript-eslint/recommended` to `plugin:@typescript-eslint/recommended-type-checked` or `plugin:@typescript-eslint/strict-type-checked`
-- Optionally add `plugin:@typescript-eslint/stylistic-type-checked`
-- Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and add `plugin:react/recommended` & `plugin:react/jsx-runtime` to the `extends` list
+
+# Contact
 

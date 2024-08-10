@@ -92,6 +92,21 @@
         width: 100px;
     }
 }
+.CommunityCardList {
+    margin-top: 10px;
+}
+.CommunityCard {
+    border-radius: 10px;
+    background-color: #424b57;
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    gap: 10px;
+}
+
+.CommunityImg img {
+    width: 100px;
+}
 .NFTText {
     text-align: center;
     font-size: 20px;
