@@ -874,6 +874,7 @@ function App() {
                 }`}
               ></Chip>
               <DataView
+                
                 value={tokenList}
                 listTemplate={listTemplate as any}
               ></DataView>
@@ -924,6 +925,7 @@ function App() {
              
             </div>
             <DataView
+            className={styles.CommunityDataView}
                 value={communityList}
                 listTemplate={communityTemplate as any}
               ></DataView>

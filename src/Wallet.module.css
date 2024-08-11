@@ -92,8 +92,21 @@
         width: 100px;
     }
 }
+.Community {
+    background-color: #1f2937;
+    border: 1px solid #424b57;
+    border-radius: 6px;
+    padding: 20px;
+  
+    height: calc(100vh - 180px) ;
+}
+.CommunityDataView {
+    background-color: transparent;
+}
 .CommunityCardList {
     margin-top: 10px;
+    display: flex;
+    gap: 30px;
 }
 .CommunityCard {
     border-radius: 10px;
@@ -102,6 +115,8 @@
     align-items: center;
     padding: 10px;
     gap: 10px;
+    width: 50%;
+    
 }
 
 .CommunityImg img {
