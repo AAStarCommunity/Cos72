@@ -28,6 +28,7 @@ export interface SimpleAccountApiParams extends BaseApiParams {
   factoryAddress?: string;
   index?: BigNumberish;
   apiBaseUrl?: string;
+  network?: string;
 }
 const generateRandomString = function (length = 6) {
   return Math.random().toString(20).substr(2, length);
@@ -42,6 +43,7 @@ const generateRandomString = function (length = 6) {
 export class AirAccountAPI extends BaseAccountAPI {
   index: BigNumberish;
   apiBaseUrl: string;
+  network: string;
 
   /**
    * our account contract.
@@ -57,6 +59,7 @@ export class AirAccountAPI extends BaseAccountAPI {
       ? params.apiBaseUrl
       : "https://anotherairaccountcommunitynode.onrender.com";
     this.index = BigNumber.from(params.index ?? 0);
+    this.network = params.network ? params.network : "optimism-sepolia";
   }
 
   async sendCaptcha(email: string) {
@@ -106,7 +109,7 @@ export class AirAccountAPI extends BaseAccountAPI {
         };
 
         const response2 = await fetch(
-          `${this.apiBaseUrl}/api/passkey/v1/reg/verify?email=${email}&origin=${window.location.origin}&network=optimism-sepolia`,
+          `${this.apiBaseUrl}/api/passkey/v1/reg/verify?email=${email}&origin=${window.location.origin}&network=${this.network}`,
           requestOptions as any
         );
         if (response2.ok) {
@@ -137,7 +140,7 @@ export class AirAccountAPI extends BaseAccountAPI {
               };
 
               const response2 = await fetch(
-                `${this.apiBaseUrl}/api/passkey/v1/sign/verify?email=${email}&origin=${window.location.origin}&network=optimism-sepolia`,
+                `${this.apiBaseUrl}/api/passkey/v1/sign/verify?email=${email}&origin=${window.location.origin}&network=${this.network}`,
                 requestOptions as any
               );
               if (response2.ok) {
@@ -171,7 +174,7 @@ export class AirAccountAPI extends BaseAccountAPI {
     };
 
     const response = await fetch(
-      `${this.apiBaseUrl}/api/passkey/v1/account/info?network=optimism-sepolia`,
+      `${this.apiBaseUrl}/api/passkey/v1/account/info?network=${this.network}`,
       requestOptions
     );
     if (response.ok) {
@@ -203,7 +206,7 @@ export class AirAccountAPI extends BaseAccountAPI {
   //         encodeURIComponent(origin) +
   //         "&email=" +
   //         email +
-  //         "&network=optimism-sepolia",
+  //         "&network=${this.network}",
   //       attest
   //     );
   //     const signInRlt = verifyResp.status === 200 && verifyResp.data.code === 200;

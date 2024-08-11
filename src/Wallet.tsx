@@ -7,7 +7,7 @@ import { Menubar } from "primereact/menubar";
 import AAStarLogo from "./assets/logo-aastar.png";
 import { Card } from "primereact/card";
 import { ethers } from "ethers";
-import { NetworkdConfig, networkIds } from "./config";
+import { INetwork, NetworkdConfig, NetworkId, networkIds } from "./config";
 import { AAStarClient, entryPointAddress } from "./sdk/AAStarClient";
 import { AirAccountAPI } from "./sdk/account/AirAccountAPI";
 import { Menu } from "primereact/menu";
@@ -16,6 +16,7 @@ import { Button } from "primereact/button";
 import TetherToken from "./contracts/TetherToken.json";
 import AAStarDemoNFT from "./contracts/AAStarDemoNFT.json";
 import CommunityManager from "./contracts/CommunityManager.json";
+import EventManager from "./contracts/EventManager.json";
 import { toast, ToastContainer } from "react-toastify";
 import { Chip } from "primereact/chip";
 import { DataView } from "primereact/dataview";
@@ -26,6 +27,8 @@ import { DataTable } from "primereact/datatable";
 import { Column } from "primereact/column";
 import SendNFTDialog from "./components/SendNFTDialog";
 import CreateCommunityDialog from "./components/CreateCommunityDialog";
+import { Dropdown } from "primereact/dropdown";
+import CreateEventDialog from "./components/CreateEventDialog";
 
 interface TransactionLog {
   aaAccount: string;
@@ -38,12 +41,41 @@ interface Community {
   desc: string;
   logo: string;
 }
+
+interface Event {
+  id: number;
+  name: string;
+  link: string;
+  desc: string;
+  logo: string;
+  creator: string;
+  joinerList: string[];
+}
 const TetherTokenABI = TetherToken.abi;
 const AAStarDemoNFTABI = AAStarDemoNFT.abi;
 const CommunityManagerABI = CommunityManager.abi;
+const EventManagerABI = EventManager.abi;
+const ChainList = [
+  NetworkdConfig[networkIds.OP_SEPOLIA], 
+  NetworkdConfig[networkIds.BASE_SEPOLIA]]
 
+console.log(ChainList)
+const saveCurrentChain = (currentChain: INetwork) => {
+  localStorage.setItem("__currentChain__", `${currentChain.chainId}`)
+}
+const getCurrentChain = () => {
+  const chain = localStorage.getItem("__currentChain__");
+  if (chain) {
+    return NetworkdConfig[parseInt(chain)  as NetworkId];
+  }
+  else {
+    return NetworkdConfig[networkIds.OP_SEPOLIA]
+  }
+}
 function App() {
   const menuLeft = useRef<Menu>(null);
+  const [currentChain, setCurrentChain] = useState<INetwork>(getCurrentChain());
+  const currentChainId: NetworkId = currentChain.chainId as NetworkId;
   const [userInfo, setUserIfno] = useState<any>(null);
   const [currentPath, setCurrentPath] = useState("wallet");
   const [mintLoading, setMintLoading] = useState(false);
@@ -52,10 +84,13 @@ function App() {
     useState(false);
   const [tokenList, setTokenList] = useState([]);
   const [communityList, setCommunityList] = useState<Community[]>([]);
+  const [eventList, setEventList] = useState<Event[]>([]);
   const [isShowAccountSignDialog, setIsShowAccountSignDialog] = useState(false);
   const [isShowSendTokenDialog, setIsShowSendTokenDialog] = useState(false);
   const [isShowSendNFTDialog, setIsShowSendNFTDialog] = useState(false);
   const [isShowCreateCommunityDialog, setIsShowCreateCommunityDialog] =
+    useState(false);
+  const [isShowCreateEventDialog, setIsShowCreateEventDialog] =
     useState(false);
   const [currentSendNFTId, setCurrentSendNFTId] = useState(null);
   const [usdtAmount, setUsdtAmount] = useState("0");
@@ -73,28 +108,29 @@ function App() {
       //     const wallet = getWallet();
 
       // 第一步 创建 AAStarClient
-      const bundlerConfig = NetworkdConfig[networkIds.OP_SEPOLIA].bundler[0];
+      const bundlerConfig = NetworkdConfig[currentChainId].bundler[0];
 
       const payMasterConfig =
-        NetworkdConfig[networkIds.OP_SEPOLIA].paymaster[0];
+        NetworkdConfig[currentChainId].paymaster[0];
 
       const smartAccount = new AAStarClient({
         bundler: bundlerConfig as any, // bunder 配置
         paymaster: payMasterConfig as any, // payMaserter 配置
 
-        rpc: NetworkdConfig[networkIds.OP_SEPOLIA].rpc, // rpc节点地址,
+        rpc: NetworkdConfig[currentChainId].rpc, // rpc节点地址,
+        
       });
 
       // 第二步 创建合约调用参数
       const TestnetERC20 = new ethers.Contract(
-        NetworkdConfig[networkIds.OP_SEPOLIA].contracts.USDT,
+        NetworkdConfig[currentChainId].contracts.USDT,
         TetherTokenABI,
         new ethers.providers.JsonRpcProvider(
-          NetworkdConfig[networkIds.OP_SEPOLIA].rpc
+          NetworkdConfig[currentChainId].rpc
         )
       );
       // Encode the calls
-      const callTo = [NetworkdConfig[networkIds.OP_SEPOLIA].contracts.USDT];
+      const callTo = [NetworkdConfig[currentChainId].contracts.USDT];
       const callData = [
         TestnetERC20.interface.encodeFunctionData("_mint", [
           userInfo.aa,
@@ -142,28 +178,29 @@ function App() {
       //     const wallet = getWallet();
 
       // 第一步 创建 AAStarClient
-      const bundlerConfig = NetworkdConfig[networkIds.OP_SEPOLIA].bundler[0];
+      const bundlerConfig = NetworkdConfig[currentChainId].bundler[0];
 
       const payMasterConfig =
-        NetworkdConfig[networkIds.OP_SEPOLIA].paymaster[0];
+        NetworkdConfig[currentChainId].paymaster[0];
 
       const smartAccount = new AAStarClient({
         bundler: bundlerConfig as any, // bunder 配置
         paymaster: payMasterConfig as any, // payMaserter 配置
 
-        rpc: NetworkdConfig[networkIds.OP_SEPOLIA].rpc, // rpc节点地址,
+        rpc: NetworkdConfig[currentChainId].rpc, // rpc节点地址,
+        
       });
 
       // 第二步 创建合约调用参数
       const TestnetERC20 = new ethers.Contract(
-        NetworkdConfig[networkIds.OP_SEPOLIA].contracts.USDT,
+        NetworkdConfig[currentChainId].contracts.USDT,
         TetherTokenABI,
         new ethers.providers.JsonRpcProvider(
-          NetworkdConfig[networkIds.OP_SEPOLIA].rpc
+          NetworkdConfig[currentChainId].rpc
         )
       );
       // Encode the calls
-      const callTo = [NetworkdConfig[networkIds.OP_SEPOLIA].contracts.USDT];
+      const callTo = [NetworkdConfig[currentChainId].contracts.USDT];
       const callData = [
         TestnetERC20.interface.encodeFunctionData("transfer", [
           account,
@@ -215,28 +252,29 @@ function App() {
       //     const wallet = getWallet();
 
       // 第一步 创建 AAStarClient
-      const bundlerConfig = NetworkdConfig[networkIds.OP_SEPOLIA].bundler[0];
+      const bundlerConfig = NetworkdConfig[currentChainId].bundler[0];
 
       const payMasterConfig =
-        NetworkdConfig[networkIds.OP_SEPOLIA].paymaster[0];
+        NetworkdConfig[currentChainId].paymaster[0];
 
       const smartAccount = new AAStarClient({
         bundler: bundlerConfig as any, // bunder 配置
         paymaster: payMasterConfig as any, // payMaserter 配置
 
-        rpc: NetworkdConfig[networkIds.OP_SEPOLIA].rpc, // rpc节点地址,
+        rpc: NetworkdConfig[currentChainId].rpc, // rpc节点地址,
+        
       });
 
       // 第二步 创建合约调用参数
       const CommunityManagerContract = new ethers.Contract(
-        NetworkdConfig[networkIds.OP_SEPOLIA].contracts.CommunityManager,
+        NetworkdConfig[currentChainId].contracts.CommunityManager,
         CommunityManagerABI,
         new ethers.providers.JsonRpcProvider(
-          NetworkdConfig[networkIds.OP_SEPOLIA].rpc
+          NetworkdConfig[currentChainId].rpc
         )
       );
       // Encode the calls
-      const callTo = [NetworkdConfig[networkIds.OP_SEPOLIA].contracts.CommunityManager];
+      const callTo = [NetworkdConfig[currentChainId].contracts.CommunityManager];
       const callData = [
         CommunityManagerContract.interface.encodeFunctionData("createCommunity", [
           community,
@@ -275,6 +313,149 @@ function App() {
     }
   };
 
+  const createEvent = async (event : any) => {
+  
+    event.id = 0;
+    event.creator = ethers.constants.AddressZero;
+    const id = toast.loading("Please wait...");
+
+    //do something else
+    try {
+      //     const wallet = getWallet();
+
+      // 第一步 创建 AAStarClient
+      const bundlerConfig = NetworkdConfig[currentChainId].bundler[0];
+
+      const payMasterConfig =
+        NetworkdConfig[currentChainId].paymaster[0];
+
+      const smartAccount = new AAStarClient({
+        bundler: bundlerConfig as any, // bunder 配置
+        paymaster: payMasterConfig as any, // payMaserter 配置
+
+        rpc: NetworkdConfig[currentChainId].rpc, // rpc节点地址,
+        
+      });
+
+      // 第二步 创建合约调用参数
+      const EventManagerContract = new ethers.Contract(
+        NetworkdConfig[currentChainId].contracts.EventManager,
+        EventManagerABI,
+        new ethers.providers.JsonRpcProvider(
+          NetworkdConfig[currentChainId].rpc
+        )
+      );
+      // Encode the calls
+      const callTo = [NetworkdConfig[currentChainId].contracts.EventManager];
+      const callData = [
+        EventManagerContract.interface.encodeFunctionData("createEvent", [
+          event,
+        ]),
+      ];
+      console.log("Waiting for transaction...");
+      // 第三步 发送 UserOperation
+      const response = await smartAccount.sendUserOperation(callTo, callData);
+      console.log(`Transaction hash: ${response.transactionHash}`);
+      toast.update(id, {
+        render: "Success",
+        type: "success",
+        isLoading: false,
+        autoClose: 5000,
+      });
+      await loadCommunityManagerList();
+
+      setTransactionLogs((items) => {
+        const newItems = [...items];
+        newItems.unshift({
+          aaAccount: response.aaAccountAddress,
+          userOpHash: response.userOpHash,
+          transactionHash: `${response.transactionHash}`,
+        });
+        localStorage.setItem("TransactionLogs", JSON.stringify(newItems));
+        return newItems;
+      });
+    } catch (error) {
+      console.log(error);
+      toast.update(id, {
+        render: "Transaction Fail",
+        type: "error",
+        isLoading: false,
+        autoClose: 5000,
+      });
+    }
+  };
+  const joinEvent = async (event : any) => {
+  
+  
+    const id = toast.loading("Please wait...");
+
+    //do something else
+    try {
+      //     const wallet = getWallet();
+
+      // 第一步 创建 AAStarClient
+      const bundlerConfig = NetworkdConfig[currentChainId].bundler[0];
+
+      const payMasterConfig =
+        NetworkdConfig[currentChainId].paymaster[0];
+
+      const smartAccount = new AAStarClient({
+        bundler: bundlerConfig as any, // bunder 配置
+        paymaster: payMasterConfig as any, // payMaserter 配置
+
+        rpc: NetworkdConfig[currentChainId].rpc, // rpc节点地址,
+        
+      });
+
+      // 第二步 创建合约调用参数
+      const EventManagerContract = new ethers.Contract(
+        NetworkdConfig[currentChainId].contracts.EventManager,
+        EventManagerABI,
+        new ethers.providers.JsonRpcProvider(
+          NetworkdConfig[currentChainId].rpc
+        )
+      );
+      // Encode the calls
+      const callTo = [NetworkdConfig[currentChainId].contracts.EventManager];
+      const callData = [
+        EventManagerContract.interface.encodeFunctionData("joinEvent", [
+          event.id,
+        ]),
+      ];
+      console.log("Waiting for transaction...");
+      // 第三步 发送 UserOperation
+      const response = await smartAccount.sendUserOperation(callTo, callData);
+      console.log(`Transaction hash: ${response.transactionHash}`);
+      toast.update(id, {
+        render: "Success",
+        type: "success",
+        isLoading: false,
+        autoClose: 5000,
+      });
+      await loadEventManagerList();
+
+      setTransactionLogs((items) => {
+        const newItems = [...items];
+        newItems.unshift({
+          aaAccount: response.aaAccountAddress,
+          userOpHash: response.userOpHash,
+          transactionHash: `${response.transactionHash}`,
+        });
+        localStorage.setItem("TransactionLogs", JSON.stringify(newItems));
+        return newItems;
+      });
+    } catch (error) {
+      console.log(error);
+      toast.update(id, {
+        render: "Transaction Fail",
+        type: "error",
+        isLoading: false,
+        autoClose: 5000,
+      });
+    }
+  };
+
+
   const mintNFT = async () => {
     setMintNFTLoading(true);
     const id = toast.loading("Please wait...");
@@ -283,16 +464,17 @@ function App() {
       // const wallet = getWallet();
 
       // 第一步 创建 AAStarClient
-      const bundlerConfig = NetworkdConfig[networkIds.OP_SEPOLIA].bundler[0];
+      const bundlerConfig = NetworkdConfig[currentChainId].bundler[0];
 
       const payMasterConfig =
-        NetworkdConfig[networkIds.OP_SEPOLIA].paymaster[0];
+        NetworkdConfig[currentChainId].paymaster[0];
 
       const smartAccount = new AAStarClient({
         bundler: bundlerConfig as any, // bunder 配置
         paymaster: payMasterConfig as any, // payMaserter 配置
 
-        rpc: NetworkdConfig[networkIds.OP_SEPOLIA].rpc, // rpc节点地址,
+        rpc: NetworkdConfig[currentChainId].rpc, // rpc节点地址,
+        
       });
 
       // const smartAccount = new AAStarClient({
@@ -304,14 +486,14 @@ function App() {
 
       // 第二步 创建合约调用参数
       const NFTContract = new ethers.Contract(
-        NetworkdConfig[networkIds.OP_SEPOLIA].contracts.NFT,
+        NetworkdConfig[currentChainId].contracts.NFT,
         AAStarDemoNFTABI,
         new ethers.providers.JsonRpcProvider(
-          NetworkdConfig[networkIds.OP_SEPOLIA].rpc
+          NetworkdConfig[currentChainId].rpc
         )
       );
       // Encode the calls
-      const callTo = [NetworkdConfig[networkIds.OP_SEPOLIA].contracts.NFT];
+      const callTo = [NetworkdConfig[currentChainId].contracts.NFT];
       const callData = [
         NFTContract.interface.encodeFunctionData("mint", [
           userInfo.aa,
@@ -359,16 +541,17 @@ function App() {
       // const wallet = getWallet();
 
       // 第一步 创建 AAStarClient
-      const bundlerConfig = NetworkdConfig[networkIds.OP_SEPOLIA].bundler[0];
+      const bundlerConfig = NetworkdConfig[currentChainId].bundler[0];
 
       const payMasterConfig =
-        NetworkdConfig[networkIds.OP_SEPOLIA].paymaster[0];
+        NetworkdConfig[currentChainId].paymaster[0];
 
       const smartAccount = new AAStarClient({
         bundler: bundlerConfig as any, // bunder 配置
         paymaster: payMasterConfig as any, // payMaserter 配置
 
-        rpc: NetworkdConfig[networkIds.OP_SEPOLIA].rpc, // rpc节点地址,
+        rpc: NetworkdConfig[currentChainId].rpc, // rpc节点地址,
+        
       });
 
       // const smartAccount = new AAStarClient({
@@ -380,14 +563,14 @@ function App() {
 
       // 第二步 创建合约调用参数
       const NFTContract = new ethers.Contract(
-        NetworkdConfig[networkIds.OP_SEPOLIA].contracts.NFT,
+        NetworkdConfig[currentChainId].contracts.NFT,
         AAStarDemoNFTABI,
         new ethers.providers.JsonRpcProvider(
-          NetworkdConfig[networkIds.OP_SEPOLIA].rpc
+          NetworkdConfig[currentChainId].rpc
         )
       );
       // Encode the calls
-      const callTo = [NetworkdConfig[networkIds.OP_SEPOLIA].contracts.NFT];
+      const callTo = [NetworkdConfig[currentChainId].contracts.NFT];
       const callData = [
         NFTContract.interface.encodeFunctionData("transferFrom", [
           userInfo.aa,
@@ -436,38 +619,39 @@ function App() {
       //     const wallet = getWallet();
 
       // 第一步 创建 AAStarClient
-      const bundlerConfig = NetworkdConfig[networkIds.OP_SEPOLIA].bundler[0];
+      const bundlerConfig = NetworkdConfig[currentChainId].bundler[0];
 
       const payMasterConfig =
-        NetworkdConfig[networkIds.OP_SEPOLIA].paymaster[0];
+        NetworkdConfig[currentChainId].paymaster[0];
 
       const smartAccount = new AAStarClient({
         bundler: bundlerConfig as any, // bunder 配置
         paymaster: payMasterConfig as any, // payMaserter 配置
 
-        rpc: NetworkdConfig[networkIds.OP_SEPOLIA].rpc, // rpc节点地址,
+        rpc: NetworkdConfig[currentChainId].rpc, // rpc节点地址,
+        
       });
 
       // 第二步 创建合约调用参数
       const TestnetERC20 = new ethers.Contract(
-        NetworkdConfig[networkIds.OP_SEPOLIA].contracts.USDT,
+        NetworkdConfig[currentChainId].contracts.USDT,
         TetherTokenABI,
         new ethers.providers.JsonRpcProvider(
-          NetworkdConfig[networkIds.OP_SEPOLIA].rpc
+          NetworkdConfig[currentChainId].rpc
         )
       );
       const NFTContract = new ethers.Contract(
-        NetworkdConfig[networkIds.OP_SEPOLIA].contracts.NFT,
+        NetworkdConfig[currentChainId].contracts.NFT,
         AAStarDemoNFTABI,
         new ethers.providers.JsonRpcProvider(
-          NetworkdConfig[networkIds.OP_SEPOLIA].rpc
+          NetworkdConfig[currentChainId].rpc
         )
       );
 
       // Encode the calls
       const callTo = [
-        NetworkdConfig[networkIds.OP_SEPOLIA].contracts.USDT,
-        NetworkdConfig[networkIds.OP_SEPOLIA].contracts.NFT,
+        NetworkdConfig[currentChainId].contracts.USDT,
+        NetworkdConfig[currentChainId].contracts.NFT,
       ];
       const callData = [
         TestnetERC20.interface.encodeFunctionData("_mint", [
@@ -516,10 +700,10 @@ function App() {
   const updateUSDTBalance = async () => {
     if (userInfo) {
       const TestnetERC20 = new ethers.Contract(
-        NetworkdConfig[networkIds.OP_SEPOLIA].contracts.USDT,
+        NetworkdConfig[currentChainId].contracts.USDT,
         TetherTokenABI,
         new ethers.providers.JsonRpcProvider(
-          NetworkdConfig[networkIds.OP_SEPOLIA].rpc
+          NetworkdConfig[currentChainId].rpc
         )
       );
       TestnetERC20.balanceOf(userInfo.aa).then((value: ethers.BigNumber) => {
@@ -530,10 +714,10 @@ function App() {
   const updateNFTBalance = async () => {
     if (userInfo) {
       const NFTContract = new ethers.Contract(
-        NetworkdConfig[networkIds.OP_SEPOLIA].contracts.NFT,
+        NetworkdConfig[currentChainId].contracts.NFT,
         AAStarDemoNFTABI,
         new ethers.providers.JsonRpcProvider(
-          NetworkdConfig[networkIds.OP_SEPOLIA].rpc
+          NetworkdConfig[currentChainId].rpc
         )
       );
       const allTokenIds = await NFTContract.getAccountTokenIds(userInfo.aa);
@@ -544,6 +728,7 @@ function App() {
           tokenIds.push(allTokenIds[i]);
         }
       }
+      console.log("all", currentChainId, allTokenIds)
       setTokenList(
         tokenIds.map((item: any) => {
           return {
@@ -582,9 +767,10 @@ function App() {
     const airAccount = new AirAccountAPI({
       //  apiBaseUrl: "https://anotherairaccountcommunitynode.onrender.com",
       provider: new ethers.providers.JsonRpcProvider(
-        NetworkdConfig[networkIds.OP_SEPOLIA].rpc
+        NetworkdConfig[currentChainId].rpc
       ),
       entryPointAddress: entryPointAddress,
+      
     });
     try {
       const result = await airAccount.getAccountInfo();
@@ -600,25 +786,57 @@ function App() {
   };
   const loadCommunityManagerList = async () => {
     const communityManager = new ethers.Contract(
-      NetworkdConfig[networkIds.OP_SEPOLIA].contracts.CommunityManager,
+      NetworkdConfig[currentChainId].contracts.CommunityManager,
       CommunityManagerABI,
       new ethers.providers.JsonRpcProvider(
-        NetworkdConfig[networkIds.OP_SEPOLIA].rpc
+        NetworkdConfig[currentChainId].rpc
       )
     );
     const result = await communityManager.getCommunityList();
     setCommunityList(result)
   
   };
+
+  const loadEventManagerList = async () => {
+    const eventManager = new ethers.Contract(
+      NetworkdConfig[currentChainId].contracts.EventManager,
+      EventManagerABI,
+      new ethers.providers.JsonRpcProvider(
+        NetworkdConfig[currentChainId].rpc
+      )
+    );
+    const result = await eventManager.getEventList();
+    const newList: Event [] = [];
+    for(let i = 0, l = result.length; i < l; i++) {
+      const item = result[i];
+      const newItem: Event = {
+        id: item.id,
+        name: item.name,
+        link: item.link,
+        desc: item.desc,
+        logo: item.logo,
+        creator: item.creator,
+        joinerList: []
+
+      }
+      newItem.joinerList = await eventManager.getEventJoinList(result[i].id);
+      newList.push(newItem)
+    }
+    setEventList(newList)
+
+  
+  };
   useEffect(() => {
     loadUserInfo();
-    loadCommunityManagerList();
+    
   }, []);
 
   useEffect(() => {
     updateUSDTBalance();
     updateNFTBalance();
-  }, [userInfo]);
+    loadCommunityManagerList();
+    loadEventManagerList();
+  }, [userInfo, currentChainId]);
 
   useEffect(() => {
     const TransactionLogs = localStorage.getItem("TransactionLogs");
@@ -645,6 +863,14 @@ function App() {
       },
     },
     {
+      label: "Event",
+      icon: "pi pi-calendar-plus",
+      className: currentPath == "event" ? styles.menuActive : "",
+      command: () => {
+        setCurrentPath("event");
+      },
+    },
+    {
       label: "Transaction",
       icon: "pi pi-bars",
       className: currentPath == "transaction" ? styles.menuActive : "",
@@ -665,6 +891,18 @@ function App() {
   const start = <img alt="logo" src={AAStarLogo} className={styles.Logo}></img>;
   const end = (
     <div className={styles.End}>
+      <div className={styles.NetworkDropdown}>
+        Network
+        <Dropdown
+          optionLabel="name"
+          options={ChainList}
+          value={currentChain}
+          onChange={(e) => {
+            setCurrentChain(e.value);
+            saveCurrentChain(e.value);
+          }}
+        />
+      </div>
       <div
         className={styles.Avatar}
         onClick={(event) => {
@@ -681,9 +919,7 @@ function App() {
           <Chip
             onClick={() => {
               window.open(
-                `${
-                  NetworkdConfig[networkIds.OP_SEPOLIA].blockExplorerURL
-                }/address/${userInfo.aa}`,
+                `${NetworkdConfig[currentChainId].blockExplorerURL}/address/${userInfo.aa}`,
                 "_blank"
               );
             }}
@@ -704,9 +940,10 @@ function App() {
             const airAccount = new AirAccountAPI({
               //  apiBaseUrl: "https://anotherairaccountcommunitynode.onrender.com",
               provider: new ethers.providers.JsonRpcProvider(
-                NetworkdConfig[networkIds.OP_SEPOLIA].rpc
+                NetworkdConfig[currentChainId].rpc
               ),
               entryPointAddress: entryPointAddress,
+              
             });
             airAccount.signOut();
             refreshUserInfo();
@@ -777,10 +1014,60 @@ function App() {
       </div>
     );
   };
+
+  const eventTemplate = (eventList: Event []) => {
+    //console.log(tokenList, tokenIds);
+    return (
+      <div className={styles.CommunityCardList}>
+        {eventList.map((community: any) => {
+          console.log(community)
+          return (
+            
+            <div className={styles.CommunityCard} key={community.id}>
+              {/* <div>{token.loading === true && <Skeleton height="100px"></Skeleton>}</div> */}
+              <div className={styles.CommunityDetailCard}>
+              <div className={styles.CommunityImg}>
+                <img src={community.logo}></img>
+              </div>
+              <div>
+              <div className={styles.CommunityText}>{community.name}</div>
+              <div className={styles.CommunityText}>{community.desc}</div>
+              <div className={styles.CommunityText}>{community.pos}</div>
+              <div className={styles.CommunityText}>
+               
+              </div>
+             
+              </div>
+              <div> <Button
+                  label="Join"
+                  size="small"
+                  onClick={() => {
+                    joinEvent(community)
+                  }}
+                ></Button></div>
+             
+            </div>
+            <div>
+            <DataTable size="small" value={community.joinerList.map((item: string) => {
+              return {
+                value: item
+              }
+            })} >
+              <Column field="value" header="Participants"></Column>
+           
+          </DataTable>
+            
+            </div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
   const TransactionLog = (log: TransactionLog) => {
     return (
       <a
-        href={`${NetworkdConfig[networkIds.OP_SEPOLIA].blockExplorerURL}/tx/${
+        href={`${NetworkdConfig[currentChainId].blockExplorerURL}/tx/${
           log.transactionHash
         }`}
         target="_blank"
@@ -789,6 +1076,7 @@ function App() {
       </a>
     );
   };
+  console.log(currentChainId)
   return (
     <div className={styles.Root}>
       <Menubar model={items} start={start} end={end} />
@@ -802,15 +1090,15 @@ function App() {
                 onClick={() => {
                   window.open(
                     `${
-                      NetworkdConfig[networkIds.OP_SEPOLIA].blockExplorerURL
+                      NetworkdConfig[currentChainId].blockExplorerURL
                     }/address/${
-                      NetworkdConfig[networkIds.OP_SEPOLIA].contracts.USDT
+                      NetworkdConfig[currentChainId].contracts.USDT
                     }`,
                     "_blank"
                   );
                 }}
                 label={`Contract ${
-                  NetworkdConfig[networkIds.OP_SEPOLIA].contracts.USDT
+                  NetworkdConfig[currentChainId].contracts.USDT
                 }`}
               ></Chip>
               <div className={styles.USDTContentWrapper}>
@@ -862,15 +1150,15 @@ function App() {
                 onClick={() => {
                   window.open(
                     `${
-                      NetworkdConfig[networkIds.OP_SEPOLIA].blockExplorerURL
+                      NetworkdConfig[currentChainId].blockExplorerURL
                     }/address/${
-                      NetworkdConfig[networkIds.OP_SEPOLIA].contracts.NFT
+                      NetworkdConfig[currentChainId].contracts.NFT
                     }`,
                     "_blank"
                   );
                 }}
                 label={`Contract ${
-                  NetworkdConfig[networkIds.OP_SEPOLIA].contracts.NFT
+                  NetworkdConfig[currentChainId].contracts.NFT
                 }`}
               ></Chip>
               <DataView
@@ -931,6 +1219,26 @@ function App() {
               ></DataView>
           </div>
         )}
+        {currentPath === "event" && (
+          <div className={styles.Community}>
+            <div className={styles.btnRow}>
+              <Button
+                loading={mintLoading}
+                label="Create"
+                className={styles.mintUSDTBtn}
+                onClick={() => {
+                  setIsShowCreateEventDialog(true)
+                }}
+              />
+             
+            </div>
+            <DataView
+            className={styles.CommunityDataView}
+                value={eventList}
+                listTemplate={eventTemplate as any}
+              ></DataView>
+          </div>
+        )}
       </div>
       <AccountSignDialog
         visible={isShowAccountSignDialog}
@@ -975,6 +1283,17 @@ function App() {
           setIsShowCreateCommunityDialog(false)
         }}
       ></CreateCommunityDialog>
+      <CreateEventDialog   visible={isShowCreateEventDialog}
+        onHide={() => {
+          setIsShowCreateEventDialog(false);
+        }}
+        onCreate={async (data, callback: any) => {
+          await createEvent(data);
+          callback();
+          setIsShowCreateEventDialog(false)
+        }}>
+
+      </CreateEventDialog>
       <ToastContainer />
     </div>
   );
