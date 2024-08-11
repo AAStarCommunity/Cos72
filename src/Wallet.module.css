@@ -149,3 +149,14 @@
     cursor: pointer;
     margin-bottom: 20px;
 }
+
+.Notification {
+    border: 1px solid #424b57;
+    border-radius: 6px;
+    padding: 20px;
+
+    height: calc(100vh - 180px) ;
+}
+.NotificationHelper {
+    padding: 5px 0 5px 0;
+}
