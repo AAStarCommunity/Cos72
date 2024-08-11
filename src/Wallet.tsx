@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { CONSTANTS, PushAPI } from "@pushprotocol/restapi";
 import { Avatar } from "primereact/avatar";
 import styles from "./Wallet.module.css";
 import AccountSignDialog from "./components/AccountSignDialog";
@@ -30,6 +31,10 @@ import CreateCommunityDialog from "./components/CreateCommunityDialog";
 import { Dropdown } from "primereact/dropdown";
 import CreateEventDialog from "./components/CreateEventDialog";
 
+import { InputText } from "primereact/inputtext";
+import { OrderList } from "primereact/orderlist";
+import { Fieldset } from "primereact/fieldset";
+
 interface TransactionLog {
   aaAccount: string;
   userOpHash: string;
@@ -56,24 +61,33 @@ const AAStarDemoNFTABI = AAStarDemoNFT.abi;
 const CommunityManagerABI = CommunityManager.abi;
 const EventManagerABI = EventManager.abi;
 const ChainList = [
-  NetworkdConfig[networkIds.OP_SEPOLIA], 
-  NetworkdConfig[networkIds.BASE_SEPOLIA]]
+  NetworkdConfig[networkIds.OP_SEPOLIA],
+  NetworkdConfig[networkIds.BASE_SEPOLIA],
+];
 
-console.log(ChainList)
+console.log(ChainList);
 const saveCurrentChain = (currentChain: INetwork) => {
-  localStorage.setItem("__currentChain__", `${currentChain.chainId}`)
-}
+  localStorage.setItem("__currentChain__", `${currentChain.chainId}`);
+};
 const getCurrentChain = () => {
   const chain = localStorage.getItem("__currentChain__");
   if (chain) {
-    return NetworkdConfig[parseInt(chain)  as NetworkId];
+    return NetworkdConfig[parseInt(chain) as NetworkId];
+  } else {
+    return NetworkdConfig[networkIds.OP_SEPOLIA];
   }
-  else {
-    return NetworkdConfig[networkIds.OP_SEPOLIA]
-  }
-}
+};
+
+let historyMsg : any[] = [];
+let receiverSigner: ethers.Wallet;
+let userAlice: PushAPI;
+
 function App() {
   const menuLeft = useRef<Menu>(null);
+  const [inputValue, setInputValue] = useState("");
+  const handleInputChange = (e:any) => {
+    setInputValue(e.target.value);
+  };
   const [currentChain, setCurrentChain] = useState<INetwork>(getCurrentChain());
   const currentChainId: NetworkId = currentChain.chainId as NetworkId;
   const [userInfo, setUserIfno] = useState<any>(null);
@@ -90,8 +104,7 @@ function App() {
   const [isShowSendNFTDialog, setIsShowSendNFTDialog] = useState(false);
   const [isShowCreateCommunityDialog, setIsShowCreateCommunityDialog] =
     useState(false);
-  const [isShowCreateEventDialog, setIsShowCreateEventDialog] =
-    useState(false);
+  const [isShowCreateEventDialog, setIsShowCreateEventDialog] = useState(false);
   const [currentSendNFTId, setCurrentSendNFTId] = useState(null);
   const [usdtAmount, setUsdtAmount] = useState("0");
   const [transactionLogs, setTransactionLogs] = useState<TransactionLog[]>([]);
@@ -110,24 +123,20 @@ function App() {
       // 第一步 创建 AAStarClient
       const bundlerConfig = NetworkdConfig[currentChainId].bundler[0];
 
-      const payMasterConfig =
-        NetworkdConfig[currentChainId].paymaster[0];
+      const payMasterConfig = NetworkdConfig[currentChainId].paymaster[0];
 
       const smartAccount = new AAStarClient({
         bundler: bundlerConfig as any, // bunder 配置
         paymaster: payMasterConfig as any, // payMaserter 配置
 
         rpc: NetworkdConfig[currentChainId].rpc, // rpc节点地址,
-        
       });
 
       // 第二步 创建合约调用参数
       const TestnetERC20 = new ethers.Contract(
         NetworkdConfig[currentChainId].contracts.USDT,
         TetherTokenABI,
-        new ethers.providers.JsonRpcProvider(
-          NetworkdConfig[currentChainId].rpc
-        )
+        new ethers.providers.JsonRpcProvider(NetworkdConfig[currentChainId].rpc)
       );
       // Encode the calls
       const callTo = [NetworkdConfig[currentChainId].contracts.USDT];
@@ -180,24 +189,20 @@ function App() {
       // 第一步 创建 AAStarClient
       const bundlerConfig = NetworkdConfig[currentChainId].bundler[0];
 
-      const payMasterConfig =
-        NetworkdConfig[currentChainId].paymaster[0];
+      const payMasterConfig = NetworkdConfig[currentChainId].paymaster[0];
 
       const smartAccount = new AAStarClient({
         bundler: bundlerConfig as any, // bunder 配置
         paymaster: payMasterConfig as any, // payMaserter 配置
 
         rpc: NetworkdConfig[currentChainId].rpc, // rpc节点地址,
-        
       });
 
       // 第二步 创建合约调用参数
       const TestnetERC20 = new ethers.Contract(
         NetworkdConfig[currentChainId].contracts.USDT,
         TetherTokenABI,
-        new ethers.providers.JsonRpcProvider(
-          NetworkdConfig[currentChainId].rpc
-        )
+        new ethers.providers.JsonRpcProvider(NetworkdConfig[currentChainId].rpc)
       );
       // Encode the calls
       const callTo = [NetworkdConfig[currentChainId].contracts.USDT];
@@ -240,9 +245,7 @@ function App() {
     }
   };
 
-
-  const createCommunity = async (community : any) => {
-  
+  const createCommunity = async (community: any) => {
     community.id = 0;
     community.owner = ethers.constants.AddressZero;
     const id = toast.loading("Please wait...");
@@ -254,31 +257,30 @@ function App() {
       // 第一步 创建 AAStarClient
       const bundlerConfig = NetworkdConfig[currentChainId].bundler[0];
 
-      const payMasterConfig =
-        NetworkdConfig[currentChainId].paymaster[0];
+      const payMasterConfig = NetworkdConfig[currentChainId].paymaster[0];
 
       const smartAccount = new AAStarClient({
         bundler: bundlerConfig as any, // bunder 配置
         paymaster: payMasterConfig as any, // payMaserter 配置
 
         rpc: NetworkdConfig[currentChainId].rpc, // rpc节点地址,
-        
       });
 
       // 第二步 创建合约调用参数
       const CommunityManagerContract = new ethers.Contract(
         NetworkdConfig[currentChainId].contracts.CommunityManager,
         CommunityManagerABI,
-        new ethers.providers.JsonRpcProvider(
-          NetworkdConfig[currentChainId].rpc
-        )
+        new ethers.providers.JsonRpcProvider(NetworkdConfig[currentChainId].rpc)
       );
       // Encode the calls
-      const callTo = [NetworkdConfig[currentChainId].contracts.CommunityManager];
+      const callTo = [
+        NetworkdConfig[currentChainId].contracts.CommunityManager,
+      ];
       const callData = [
-        CommunityManagerContract.interface.encodeFunctionData("createCommunity", [
-          community,
-        ]),
+        CommunityManagerContract.interface.encodeFunctionData(
+          "createCommunity",
+          [community]
+        ),
       ];
       console.log("Waiting for transaction...");
       // 第三步 发送 UserOperation
@@ -313,8 +315,7 @@ function App() {
     }
   };
 
-  const createEvent = async (event : any) => {
-  
+  const createEvent = async (event: any) => {
     event.id = 0;
     event.creator = ethers.constants.AddressZero;
     const id = toast.loading("Please wait...");
@@ -326,24 +327,20 @@ function App() {
       // 第一步 创建 AAStarClient
       const bundlerConfig = NetworkdConfig[currentChainId].bundler[0];
 
-      const payMasterConfig =
-        NetworkdConfig[currentChainId].paymaster[0];
+      const payMasterConfig = NetworkdConfig[currentChainId].paymaster[0];
 
       const smartAccount = new AAStarClient({
         bundler: bundlerConfig as any, // bunder 配置
         paymaster: payMasterConfig as any, // payMaserter 配置
 
         rpc: NetworkdConfig[currentChainId].rpc, // rpc节点地址,
-        
       });
 
       // 第二步 创建合约调用参数
       const EventManagerContract = new ethers.Contract(
         NetworkdConfig[currentChainId].contracts.EventManager,
         EventManagerABI,
-        new ethers.providers.JsonRpcProvider(
-          NetworkdConfig[currentChainId].rpc
-        )
+        new ethers.providers.JsonRpcProvider(NetworkdConfig[currentChainId].rpc)
       );
       // Encode the calls
       const callTo = [NetworkdConfig[currentChainId].contracts.EventManager];
@@ -384,9 +381,7 @@ function App() {
       });
     }
   };
-  const joinEvent = async (event : any) => {
-  
-  
+  const joinEvent = async (event: any) => {
     const id = toast.loading("Please wait...");
 
     //do something else
@@ -396,24 +391,20 @@ function App() {
       // 第一步 创建 AAStarClient
       const bundlerConfig = NetworkdConfig[currentChainId].bundler[0];
 
-      const payMasterConfig =
-        NetworkdConfig[currentChainId].paymaster[0];
+      const payMasterConfig = NetworkdConfig[currentChainId].paymaster[0];
 
       const smartAccount = new AAStarClient({
         bundler: bundlerConfig as any, // bunder 配置
         paymaster: payMasterConfig as any, // payMaserter 配置
 
         rpc: NetworkdConfig[currentChainId].rpc, // rpc节点地址,
-        
       });
 
       // 第二步 创建合约调用参数
       const EventManagerContract = new ethers.Contract(
         NetworkdConfig[currentChainId].contracts.EventManager,
         EventManagerABI,
-        new ethers.providers.JsonRpcProvider(
-          NetworkdConfig[currentChainId].rpc
-        )
+        new ethers.providers.JsonRpcProvider(NetworkdConfig[currentChainId].rpc)
       );
       // Encode the calls
       const callTo = [NetworkdConfig[currentChainId].contracts.EventManager];
@@ -455,7 +446,6 @@ function App() {
     }
   };
 
-
   const mintNFT = async () => {
     setMintNFTLoading(true);
     const id = toast.loading("Please wait...");
@@ -466,15 +456,13 @@ function App() {
       // 第一步 创建 AAStarClient
       const bundlerConfig = NetworkdConfig[currentChainId].bundler[0];
 
-      const payMasterConfig =
-        NetworkdConfig[currentChainId].paymaster[0];
+      const payMasterConfig = NetworkdConfig[currentChainId].paymaster[0];
 
       const smartAccount = new AAStarClient({
         bundler: bundlerConfig as any, // bunder 配置
         paymaster: payMasterConfig as any, // payMaserter 配置
 
         rpc: NetworkdConfig[currentChainId].rpc, // rpc节点地址,
-        
       });
 
       // const smartAccount = new AAStarClient({
@@ -488,9 +476,7 @@ function App() {
       const NFTContract = new ethers.Contract(
         NetworkdConfig[currentChainId].contracts.NFT,
         AAStarDemoNFTABI,
-        new ethers.providers.JsonRpcProvider(
-          NetworkdConfig[currentChainId].rpc
-        )
+        new ethers.providers.JsonRpcProvider(NetworkdConfig[currentChainId].rpc)
       );
       // Encode the calls
       const callTo = [NetworkdConfig[currentChainId].contracts.NFT];
@@ -543,15 +529,13 @@ function App() {
       // 第一步 创建 AAStarClient
       const bundlerConfig = NetworkdConfig[currentChainId].bundler[0];
 
-      const payMasterConfig =
-        NetworkdConfig[currentChainId].paymaster[0];
+      const payMasterConfig = NetworkdConfig[currentChainId].paymaster[0];
 
       const smartAccount = new AAStarClient({
         bundler: bundlerConfig as any, // bunder 配置
         paymaster: payMasterConfig as any, // payMaserter 配置
 
         rpc: NetworkdConfig[currentChainId].rpc, // rpc节点地址,
-        
       });
 
       // const smartAccount = new AAStarClient({
@@ -565,9 +549,7 @@ function App() {
       const NFTContract = new ethers.Contract(
         NetworkdConfig[currentChainId].contracts.NFT,
         AAStarDemoNFTABI,
-        new ethers.providers.JsonRpcProvider(
-          NetworkdConfig[currentChainId].rpc
-        )
+        new ethers.providers.JsonRpcProvider(NetworkdConfig[currentChainId].rpc)
       );
       // Encode the calls
       const callTo = [NetworkdConfig[currentChainId].contracts.NFT];
@@ -621,31 +603,25 @@ function App() {
       // 第一步 创建 AAStarClient
       const bundlerConfig = NetworkdConfig[currentChainId].bundler[0];
 
-      const payMasterConfig =
-        NetworkdConfig[currentChainId].paymaster[0];
+      const payMasterConfig = NetworkdConfig[currentChainId].paymaster[0];
 
       const smartAccount = new AAStarClient({
         bundler: bundlerConfig as any, // bunder 配置
         paymaster: payMasterConfig as any, // payMaserter 配置
 
         rpc: NetworkdConfig[currentChainId].rpc, // rpc节点地址,
-        
       });
 
       // 第二步 创建合约调用参数
       const TestnetERC20 = new ethers.Contract(
         NetworkdConfig[currentChainId].contracts.USDT,
         TetherTokenABI,
-        new ethers.providers.JsonRpcProvider(
-          NetworkdConfig[currentChainId].rpc
-        )
+        new ethers.providers.JsonRpcProvider(NetworkdConfig[currentChainId].rpc)
       );
       const NFTContract = new ethers.Contract(
         NetworkdConfig[currentChainId].contracts.NFT,
         AAStarDemoNFTABI,
-        new ethers.providers.JsonRpcProvider(
-          NetworkdConfig[currentChainId].rpc
-        )
+        new ethers.providers.JsonRpcProvider(NetworkdConfig[currentChainId].rpc)
       );
 
       // Encode the calls
@@ -702,9 +678,7 @@ function App() {
       const TestnetERC20 = new ethers.Contract(
         NetworkdConfig[currentChainId].contracts.USDT,
         TetherTokenABI,
-        new ethers.providers.JsonRpcProvider(
-          NetworkdConfig[currentChainId].rpc
-        )
+        new ethers.providers.JsonRpcProvider(NetworkdConfig[currentChainId].rpc)
       );
       TestnetERC20.balanceOf(userInfo.aa).then((value: ethers.BigNumber) => {
         setUsdtAmount(ethers.utils.formatUnits(value, 6));
@@ -716,9 +690,7 @@ function App() {
       const NFTContract = new ethers.Contract(
         NetworkdConfig[currentChainId].contracts.NFT,
         AAStarDemoNFTABI,
-        new ethers.providers.JsonRpcProvider(
-          NetworkdConfig[currentChainId].rpc
-        )
+        new ethers.providers.JsonRpcProvider(NetworkdConfig[currentChainId].rpc)
       );
       const allTokenIds = await NFTContract.getAccountTokenIds(userInfo.aa);
       const tokenIds: any = [];
@@ -728,7 +700,7 @@ function App() {
           tokenIds.push(allTokenIds[i]);
         }
       }
-      console.log("all", currentChainId, allTokenIds)
+      console.log("all", currentChainId, allTokenIds);
       setTokenList(
         tokenIds.map((item: any) => {
           return {
@@ -770,7 +742,6 @@ function App() {
         NetworkdConfig[currentChainId].rpc
       ),
       entryPointAddress: entryPointAddress,
-      
     });
     try {
       const result = await airAccount.getAccountInfo();
@@ -788,26 +759,154 @@ function App() {
     const communityManager = new ethers.Contract(
       NetworkdConfig[currentChainId].contracts.CommunityManager,
       CommunityManagerABI,
-      new ethers.providers.JsonRpcProvider(
-        NetworkdConfig[currentChainId].rpc
-      )
+      new ethers.providers.JsonRpcProvider(NetworkdConfig[currentChainId].rpc)
     );
     const result = await communityManager.getCommunityList();
-    setCommunityList(result)
-  
+    setCommunityList(result);
+  };
+  const connectPushNotification = async () => {
+    receiverSigner = ethers.Wallet.createRandom();
+    console.log("signer addr: " + receiverSigner.address);
+    const currentUser = await PushAPI.initialize(receiverSigner, {
+      env: CONSTANTS.ENV.PROD,
+    });
+    const stream = await currentUser.initStream([CONSTANTS.STREAM.CHAT]);
+    stream.on(CONSTANTS.STREAM.CHAT, (json) => {
+      try {
+        console.log(json);
+        const notificationPopup = toast.loading("Loading...");
+        console.log("from:", json.from);
+        console.log("msg:", json.message.content);
+        // save the message to the local storage
+        const messages = localStorage.getItem("wallet-messages");
+        if (messages) {
+          const messageList = JSON.parse(messages);
+          const msgObj = {
+            id: json.chatId,
+            from: json.from,
+            message: json.message.content,
+            timestamp: json.timestamp,
+          };
+          messageList.push(msgObj);
+          localStorage.setItem("wallet-messages", JSON.stringify(messageList));
+          console.log(msgObj);
+        } else {
+          localStorage.setItem(
+            "wallet-messages",
+            JSON.stringify([
+              {
+                id: json.chatId,
+                from: json.from,
+                message: json.message.content,
+                timestamp: json.timestamp,
+              },
+            ])
+          );
+        }
+        historyMsg.push({
+          id: json.chatId,
+          from: json.from,
+          message: json.message.content,
+          timestamp: json.timestamp,
+        });
+        toast.update(notificationPopup, {
+          render: json.message.content,
+          type: "success",
+          isLoading: false,
+          autoClose: 5000,
+        });
+      } catch (error) {
+        console.log(json);
+        console.log(error);
+      }
+    });
+    stream.connect();
+  };
+  const itemTemplate = (item: any) => {
+    console.log(item);
+    return (
+      <div className="flex flex-wrap p-2 align-items-center gap-3">
+        <div className="flex-1 flex flex-column gap-2 xl:mr-8">
+          <span className="font-bold">消息：{item.message}</span>
+          <div className="flex align-items-center gap-2">
+            <span>来源：{item.from}</span>
+          </div>
+        </div>
+        <span className="font-bold text-900">
+          时间：
+          {new Date(parseInt(item.timestamp))
+            .toLocaleString("zh-CN", {
+              year: "numeric",
+              month: "2-digit",
+              day: "2-digit",
+              hour: "2-digit",
+              minute: "2-digit",
+              second: "2-digit",
+              hour12: false,
+            })
+            .replace(/\//g, "-")}
+        </span>
+      </div>
+    );
+  };
+  const getNotificationHistory = () => {
+    const messages = localStorage.getItem("wallet-messages");
+    historyMsg = [];
+    if (messages) {
+      const messageList = JSON.parse(messages);
+      messageList.forEach((message: any) => {
+        historyMsg.push({
+          id: message.id,
+          from: message.from,
+          message: message.message,
+          timestamp: message.timestamp,
+        });
+      });
+    }
+  };
+  const sendNotification = async () => {
+    console.log("sendNotification");
+    const notificationPopup = toast.loading("Ready to broadcast...");
+    if (userAlice == null) {
+      const signerAlice = ethers.Wallet.createRandom();
+      userAlice = await PushAPI.initialize(signerAlice, {
+        env: CONSTANTS.ENV.PROD,
+      });
+    }
+    toast.update(notificationPopup, {
+      render: "Connected to the server...",
+      type: "info",
+      isLoading: false,
+      autoClose: 5000,
+    });
+    // const stream = await userAlice.initStream([CONSTANTS.STREAM.CHAT]);
+    // stream.on(CONSTANTS.STREAM.CHAT, (message) => {
+    //   console.log(message);
+    // });
+    // stream.connect();
+    const userBobAddress = receiverSigner.address;
+    await userAlice.chat.send(userBobAddress, {
+      content: inputValue,
+      type: "Text",
+    });
+    console.log("Message sent from Alice to ", userBobAddress);
+    toast.update(notificationPopup, {
+      render: "Send success",
+      type: "info",
+      isLoading: false,
+      autoClose: 1000,
+    });
   };
 
   const loadEventManagerList = async () => {
     const eventManager = new ethers.Contract(
       NetworkdConfig[currentChainId].contracts.EventManager,
       EventManagerABI,
-      new ethers.providers.JsonRpcProvider(
-        NetworkdConfig[currentChainId].rpc
-      )
+      new ethers.providers.JsonRpcProvider(NetworkdConfig[currentChainId].rpc)
     );
     const result = await eventManager.getEventList();
-    const newList: Event [] = [];
-    for(let i = 0, l = result.length; i < l; i++) {
+    const newList: Event[] = [];
+    for (let i = 0, l = result.length; i < l; i++) {
       const item = result[i];
       const newItem: Event = {
         id: item.id,
@@ -816,19 +915,17 @@ function App() {
         desc: item.desc,
         logo: item.logo,
         creator: item.creator,
-        joinerList: []
-
-      }
+        joinerList: [],
+      };
       newItem.joinerList = await eventManager.getEventJoinList(result[i].id);
-      newList.push(newItem)
+      newList.push(newItem);
     }
-    setEventList(newList)
-
-  
+    setEventList(newList);
   };
   useEffect(() => {
     loadUserInfo();
-    
+    connectPushNotification();
+    getNotificationHistory();
   }, []);
 
   useEffect(() => {
@@ -884,6 +981,14 @@ function App() {
       className: currentPath == "setting" ? styles.menuActive : "",
       command: () => {
         setCurrentPath("setting");
+      },
+    },
+    {
+      label: "Notification",
+      icon: "pi pi-bell",
+      className: currentPath == "notification" ? styles.menuActive : "",
+      command: () => {
+        setCurrentPath("notification");
       },
     },
   ];
@@ -943,7 +1048,6 @@ function App() {
                 NetworkdConfig[currentChainId].rpc
               ),
               entryPointAddress: entryPointAddress,
-              
             });
             airAccount.signOut();
             refreshUserInfo();
@@ -981,7 +1085,7 @@ function App() {
     );
   };
 
-  const communityTemplate = (communityList: Community []) => {
+  const communityTemplate = (communityList: Community[]) => {
     //console.log(tokenList, tokenIds);
     return (
       <div className={styles.CommunityCardList}>
@@ -993,21 +1097,14 @@ function App() {
                 <img src={community.logo}></img>
               </div>
               <div>
-              <div className={styles.CommunityText}>{community.name}</div>
-              <div className={styles.CommunityText}>{community.desc}</div>
-              <div className={styles.CommunityText}>
-               
+                <div className={styles.CommunityText}>{community.name}</div>
+                <div className={styles.CommunityText}>{community.desc}</div>
+                <div className={styles.CommunityText}></div>
               </div>
-             
+              <div>
+                {" "}
+                <Button label="Join" size="small" onClick={() => {}}></Button>
               </div>
-              <div> <Button
-                  label="Join"
-                  size="small"
-                  onClick={() => {
-                  
-                  }}
-                ></Button></div>
-             
             </div>
           );
         })}
@@ -1015,49 +1112,48 @@ function App() {
     );
   };
 
-  const eventTemplate = (eventList: Event []) => {
+  const eventTemplate = (eventList: Event[]) => {
     //console.log(tokenList, tokenIds);
     return (
       <div className={styles.CommunityCardList}>
         {eventList.map((community: any) => {
-          console.log(community)
+          console.log(community);
           return (
-            
             <div className={styles.CommunityCard} key={community.id}>
               {/* <div>{token.loading === true && <Skeleton height="100px"></Skeleton>}</div> */}
               <div className={styles.CommunityDetailCard}>
-              <div className={styles.CommunityImg}>
-                <img src={community.logo}></img>
+                <div className={styles.CommunityImg}>
+                  <img src={community.logo}></img>
+                </div>
+                <div>
+                  <div className={styles.CommunityText}>{community.name}</div>
+                  <div className={styles.CommunityText}>{community.desc}</div>
+                  <div className={styles.CommunityText}>{community.pos}</div>
+                  <div className={styles.CommunityText}></div>
+                </div>
+                <div>
+                  {" "}
+                  <Button
+                    label="Join"
+                    size="small"
+                    onClick={() => {
+                      joinEvent(community);
+                    }}
+                  ></Button>
+                </div>
               </div>
               <div>
-              <div className={styles.CommunityText}>{community.name}</div>
-              <div className={styles.CommunityText}>{community.desc}</div>
-              <div className={styles.CommunityText}>{community.pos}</div>
-              <div className={styles.CommunityText}>
-               
-              </div>
-             
-              </div>
-              <div> <Button
-                  label="Join"
+                <DataTable
                   size="small"
-                  onClick={() => {
-                    joinEvent(community)
-                  }}
-                ></Button></div>
-             
-            </div>
-            <div>
-            <DataTable size="small" value={community.joinerList.map((item: string) => {
-              return {
-                value: item
-              }
-            })} >
-              <Column field="value" header="Participants"></Column>
-           
-          </DataTable>
-            
-            </div>
+                  value={community.joinerList.map((item: string) => {
+                    return {
+                      value: item,
+                    };
+                  })}
+                >
+                  <Column field="value" header="Participants"></Column>
+                </DataTable>
+              </div>
             </div>
           );
         })}
@@ -1067,16 +1163,14 @@ function App() {
   const TransactionLog = (log: TransactionLog) => {
     return (
       <a
-        href={`${NetworkdConfig[currentChainId].blockExplorerURL}/tx/${
-          log.transactionHash
-        }`}
+        href={`${NetworkdConfig[currentChainId].blockExplorerURL}/tx/${log.transactionHash}`}
         target="_blank"
       >
         {log.transactionHash}
       </a>
     );
   };
-  console.log(currentChainId)
+  console.log(currentChainId);
   return (
     <div className={styles.Root}>
       <Menubar model={items} start={start} end={end} />
@@ -1089,17 +1183,11 @@ function App() {
                 className={styles.ContractAddress}
                 onClick={() => {
                   window.open(
-                    `${
-                      NetworkdConfig[currentChainId].blockExplorerURL
-                    }/address/${
-                      NetworkdConfig[currentChainId].contracts.USDT
-                    }`,
+                    `${NetworkdConfig[currentChainId].blockExplorerURL}/address/${NetworkdConfig[currentChainId].contracts.USDT}`,
                     "_blank"
                   );
                 }}
-                label={`Contract ${
-                  NetworkdConfig[currentChainId].contracts.USDT
-                }`}
+                label={`Contract ${NetworkdConfig[currentChainId].contracts.USDT}`}
               ></Chip>
               <div className={styles.USDTContentWrapper}>
                 <div className={styles.USDTAmount}>${usdtAmount}</div>
@@ -1149,20 +1237,13 @@ function App() {
                 className={styles.ContractAddress}
                 onClick={() => {
                   window.open(
-                    `${
-                      NetworkdConfig[currentChainId].blockExplorerURL
-                    }/address/${
-                      NetworkdConfig[currentChainId].contracts.NFT
-                    }`,
+                    `${NetworkdConfig[currentChainId].blockExplorerURL}/address/${NetworkdConfig[currentChainId].contracts.NFT}`,
                     "_blank"
                   );
                 }}
-                label={`Contract ${
-                  NetworkdConfig[currentChainId].contracts.NFT
-                }`}
+                label={`Contract ${NetworkdConfig[currentChainId].contracts.NFT}`}
               ></Chip>
               <DataView
-                
                 value={tokenList}
                 listTemplate={listTemplate as any}
               ></DataView>
@@ -1207,16 +1288,15 @@ function App() {
                 label="Create"
                 className={styles.mintUSDTBtn}
                 onClick={() => {
-                  setIsShowCreateCommunityDialog(true)
+                  setIsShowCreateCommunityDialog(true);
                 }}
               />
-             
             </div>
             <DataView
-            className={styles.CommunityDataView}
-                value={communityList}
-                listTemplate={communityTemplate as any}
-              ></DataView>
+              className={styles.CommunityDataView}
+              value={communityList}
+              listTemplate={communityTemplate as any}
+            ></DataView>
           </div>
         )}
         {currentPath === "event" && (
@@ -1227,16 +1307,51 @@ function App() {
                 label="Create"
                 className={styles.mintUSDTBtn}
                 onClick={() => {
-                  setIsShowCreateEventDialog(true)
+                  setIsShowCreateEventDialog(true);
                 }}
               />
-             
             </div>
             <DataView
-            className={styles.CommunityDataView}
-                value={eventList}
-                listTemplate={eventTemplate as any}
-              ></DataView>
+              className={styles.CommunityDataView}
+              value={eventList}
+              listTemplate={eventTemplate as any}
+            ></DataView>
+          </div>
+        )}
+        {currentPath === "notification" && (
+          <div className={styles.Notification}>
+            <div className="card xl:flex xl:justify-content-center">
+              <Fieldset legend="History Messages" toggleable>
+                <OrderList
+                  dataKey="id"
+                  value={historyMsg}
+                  // onChange={(e) => setProducts(e.value)}
+                  itemTemplate={itemTemplate}
+                  header="Message Center"
+                ></OrderList>
+              </Fieldset>
+            </div>
+            <Fieldset legend="Broadcast" toggleable>
+              <Card className={styles.USDTContent} title="Message">
+                <div className="flex flex-column gap-2">
+                  <InputText
+                    type="text"
+                    onChange={handleInputChange} 
+                    id="target"
+                    className="p-inputtext-lg"
+                    aria-describedby="target-help"
+                  />
+                  <Button
+                    label="Send"
+                    className="p-button-lg"
+                    onClick={sendNotification}
+                  />
+                  <div className={styles.NotificationHelper}>
+                    <small id="username-help">Enter message to broadcast</small>
+                  </div>
+                </div>
+              </Card>
+            </Fieldset>
           </div>
         )}
       </div>
@@ -1280,20 +1395,20 @@ function App() {
         onCreate={async (data, callback: any) => {
           await createCommunity(data);
           callback();
-          setIsShowCreateCommunityDialog(false)
+          setIsShowCreateCommunityDialog(false);
         }}
       ></CreateCommunityDialog>
-      <CreateEventDialog   visible={isShowCreateEventDialog}
+      <CreateEventDialog
+        visible={isShowCreateEventDialog}
         onHide={() => {
           setIsShowCreateEventDialog(false);
         }}
         onCreate={async (data, callback: any) => {
           await createEvent(data);
           callback();
-          setIsShowCreateEventDialog(false)
-        }}>
-
-      </CreateEventDialog>
+          setIsShowCreateEventDialog(false);
+        }}
+      ></CreateEventDialog>
       <ToastContainer />
     </div>
   );
