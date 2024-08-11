@@ -593,6 +593,83 @@ function App() {
     }
     setMintNFTLoading(false);
   };
+  const airdropNFT = async (accountList: string[]) => {
+   // setMintNFTLoading(true);
+    const id = toast.loading("Please wait...");
+    //do something else
+    try {
+      // const wallet = getWallet();
+
+      // 第一步 创建 AAStarClient
+      const bundlerConfig = NetworkdConfig[currentChainId].bundler[0];
+
+      const payMasterConfig = NetworkdConfig[currentChainId].paymaster[0];
+
+      const smartAccount = new AAStarClient({
+        bundler: bundlerConfig as any, // bunder 配置
+        paymaster: payMasterConfig as any, // payMaserter 配置
+
+        rpc: NetworkdConfig[currentChainId].rpc, // rpc节点地址,
+      });
+
+      // const smartAccount = new AAStarClient({
+      //   bundler: bundlerConfig as any, // bunder 配置
+      //   paymaster: payMasterConfig as any, // payMaserter 配置
+      //   signer: wallet, // EOA 钱包,
+      //   rpc: NetworkdConfig[currentChainId as NetworkId].rpc, // rpc节点地址,
+      // });
+
+      // 第二步 创建合约调用参数
+      const NFTContract = new ethers.Contract(
+        NetworkdConfig[currentChainId].contracts.NFT,
+        AAStarDemoNFTABI,
+        new ethers.providers.JsonRpcProvider(NetworkdConfig[currentChainId].rpc)
+      );
+      // Encode the calls
+      const callTo = accountList.map((_item: string) => {
+        return NetworkdConfig[currentChainId].contracts.NFT
+      }) ;
+      const callData = 
+        accountList.map((_item: string) => {
+          return NFTContract.interface.encodeFunctionData("mint", [
+            _item,
+            ethers.BigNumber.from("1"),
+          ])
+        })
+;
+      console.log("Waiting for transaction...");
+      // 第三步 发送 UserOperation
+      const response = await smartAccount.sendUserOperation(callTo, callData);
+      console.log(`Transaction hash: ${response.transactionHash}`);
+      toast.update(id, {
+        render: "Success",
+        type: "success",
+        isLoading: false,
+        autoClose: 5000,
+      });
+      await updateNFTBalance();
+
+      setTransactionLogs((items) => {
+        const newItems = [...items];
+        newItems.unshift({
+          aaAccount: response.aaAccountAddress,
+          userOpHash: response.userOpHash,
+          transactionHash: `${response.transactionHash}`,
+        });
+        localStorage.setItem("TransactionLogs", JSON.stringify(newItems));
+        return newItems;
+      });
+    } catch (error) {
+      console.log(error);
+      toast.update(id, {
+        render: "Transaction Fail",
+        type: "error",
+        isLoading: false,
+        autoClose: 5000,
+      });
+    }
+    setMintNFTLoading(false);
+  };
   const mintUSDTAndMintNFT = async () => {
     const id = toast.loading("Please wait...");
     setMintUSDTAndMintNFTLoading(true);
@@ -975,14 +1052,7 @@ function App() {
         setCurrentPath("transaction");
       },
     },
-    {
-      label: "Setting",
-      icon: "pi pi-cog",
-      className: currentPath == "setting" ? styles.menuActive : "",
-      command: () => {
-        setCurrentPath("setting");
-      },
-    },
+
     {
       label: "Notification",
       icon: "pi pi-bell",
@@ -1103,7 +1173,7 @@ function App() {
               </div>
               <div>
                 {" "}
-                <Button label="Join" size="small" onClick={() => {}}></Button>
+                {/* <Button label="Join" size="small" onClick={() => {}}></Button> */}
               </div>
             </div>
           );
@@ -1142,7 +1212,14 @@ function App() {
                   ></Button>
                 </div>
               </div>
-              <div>
+              <div className={styles.joinerList}>
+              <Button
+                    label="Airdrop NFT"
+                    size="small"
+                    onClick={() => {
+                      airdropNFT(community.joinerList);
+                    }}
+                  ></Button>
                 <DataTable
                   size="small"
                   value={community.joinerList.map((item: string) => {
@@ -1151,7 +1228,7 @@ function App() {
                     };
                   })}
                 >
-                  <Column field="value" header="Participants"></Column>
+                  <Column field="value" header="Address List"></Column>
                 </DataTable>
               </div>
             </div>

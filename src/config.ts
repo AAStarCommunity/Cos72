@@ -102,7 +102,7 @@ export const NetworkdConfig: { [K in NetworkId]: INetwork } = {
     ],
   },
   [networkIds.OP_SEPOLIA]: {
-    name: "OP Sepolia Testnet",
+    name: "OP Sepolia",
     rpc: "https://public.stackup.sh/api/v1/node/optimism-sepolia",
     chainId: networkIds.OP_SEPOLIA,
     blockExplorerURL: "https://sepolia-optimism.etherscan.io",
