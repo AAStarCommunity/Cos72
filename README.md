@@ -1,12 +1,36 @@
 # Cos72
 ## Introduction
-Yet Another DAO/Community Tool, BUT: get a Gasless, NFT, Contract Account, and ENS, with your email on any Super Chain.
-Initiate for ETHGlobal Hackathon 2024.
-Build based on:
-Super Chain(Optimism OP Stack)
-ETHPaymaster
-AirAccount
-CometENS （ENS)
+
+Yet Another DAO/Community Tool, BUT: get a Gasless,NFT,Contract Account, and ENS, with your Email on any Super Chain. 
+Initiate for Superhack 2024 hackathon. 
+Build based on: 
++ Super Chain(Optimism OP Stack)
++ Push Protocol
++ ETHPaymaster
++ AirAccount 
++ CometENS(ENS).
+
+### Version
+0.1.1
+
+### Abilities:
+1. Easy to get your Ethereum contract account by Email. ✓
+2. Create your community onchain in seconds. ✓（op+base）
+3. Launch a event and share with your members to join.（login and join）✓
+4. Drop event NFT by on-chain lists after event.(todo? batch send to fixed addresses?)
+5. Mint event NFT in any Superchain gasless.(Base gassless, paymaster deploy, airaccount support change network create account?) ✓
+6. Send and get on-chain message by EPNS protocol.(integration with Xu branch) ✓
+
+### Security:
+1. Using your Email to create a contract account.
+2. Encrypt and verify every action by your fingerprint(passkey).
+3. Community account would not save too much assets, NFT, SBT or community points.
+4. Social recovery support(developing).
+
+### Infra
+1. Use SuperChain from OP to Base and more, autodeploy.
+2. Use ETHPaymaster and AirAccount support gasless and account life management.
+3. Use Push Protocol(EPSN, Ethereum Push Notification Service) to send and get community nonitfications.
 
 ## Install
 ### Install on local
