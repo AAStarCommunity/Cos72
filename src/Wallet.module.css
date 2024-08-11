@@ -128,7 +128,12 @@
   
     gap: 10px;
 }
-
+.joinerList {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    margin-top: 20px;
+}
 .CommunityImg img {
     width: 100px;
 }
