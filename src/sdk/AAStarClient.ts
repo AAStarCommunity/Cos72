@@ -43,6 +43,7 @@ export interface SmartAccountParams {
   paymaster: PaymasterConfig;
   signer?: ethers.Wallet;
   aaConfig?: AAWalletConfig;
+  network?: string;
 }
 export const entryPointAddress = "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789";
 export const factoryAddress = "0x9406Cc6185a346906296840746125a0E44976454";
@@ -56,6 +57,7 @@ export class AAStarClient {
   signer: any;
   provider: ethers.providers.JsonRpcProvider;
   bundlerClient: BundlerClient | null;
+  
   constructor(params: SmartAccountParams) {
     this.bundler = params.bundler;
     this.paymaster = params.paymaster;
@@ -73,6 +75,7 @@ export class AAStarClient {
         : factoryAddress,
       provider: params.aaConfig?.provider ? params.aaConfig?.provider  : "AirAccount"
     };
+    
   }
 
   async sendUserOperation(callTo: string[], callData: string[]) {
@@ -92,6 +95,7 @@ export class AAStarClient {
           entryPointAddress,
           factoryAddress,
           paymasterAPI: this.buildPayMaster(),
+        
         });
       }
  

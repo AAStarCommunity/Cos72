@@ -3,7 +3,8 @@ import { ethers } from "ethers";
 import { useEffect, useState } from "react";
 import TetherToken from "./contracts/TetherToken.json";
 import AAStarDemoNFT from "./contracts/AAStarDemoNFT.json";
-// import CommunityManager from "./contracts/CommunityManager.json";
+import CommunityManager from "./contracts/CommunityManager.json";
+import EventManager from "./contracts/EventManager.json";
 import styles from "./Demo.module.css";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -516,49 +517,94 @@ function Demo() {
     }
   };
 
-  // const deployCommunityManager = async () => {
-  //   try {
-  //     if (connector) {
-  //       const _provider: any = await connector.getProvider();
-  //       const provider = new ethers.providers.Web3Provider(_provider);
-  //       console.log(_provider, provider);
-  //       const factory = new ethers.ContractFactory(
-  //         CommunityManager.abi,
-  //         CommunityManager.bytecode,
-  //         provider.getSigner()
-  //       );
-  //       //   function TetherToken(uint _initialSupply, string _name, string _symbol, uint _decimals) public {
-  //       //     _totalSupply = _initialSupply;
-  //       //     name = _name;
-  //       //     symbol = _symbol;
-  //       //     decimals = _decimals;
-  //       //     balances[owner] = _initialSupply;
-  //       //     deprecated = false;
-  //       // }
+  const deployCommunityManager = async () => {
+    try {
+      if (connector) {
+        const _provider: any = await connector.getProvider();
+        const provider = new ethers.providers.Web3Provider(_provider);
+        console.log(_provider, provider);
+        const factory = new ethers.ContractFactory(
+          CommunityManager.abi,
+          CommunityManager.bytecode,
+          provider.getSigner()
+        );
+        //   function TetherToken(uint _initialSupply, string _name, string _symbol, uint _decimals) public {
+        //     _totalSupply = _initialSupply;
+        //     name = _name;
+        //     symbol = _symbol;
+        //     decimals = _decimals;
+        //     balances[owner] = _initialSupply;
+        //     deprecated = false;
+        // }
 
-  //       // const deployTransaction = await factory.getDeployTransaction(
-  //       //   ethers.constants.MaxInt256,
-  //       //   "Test Tether USD",
-  //       //   "USDT",
-  //       //   6
-  //       // );
-  //       // const gasLimit = await provider.estimateGas(deployTransaction);
-  //       // const newGasLimit = gasLimit
-  //       //   .mul(ethers.utils.parseEther("1.9"))
-  //       //   .div(ethers.utils.parseEther("1"));
+        // const deployTransaction = await factory.getDeployTransaction(
+        //   ethers.constants.MaxInt256,
+        //   "Test Tether USD",
+        //   "USDT",
+        //   6
+        // );
+        // const gasLimit = await provider.estimateGas(deployTransaction);
+        // const newGasLimit = gasLimit
+        //   .mul(ethers.utils.parseEther("1.9"))
+        //   .div(ethers.utils.parseEther("1"));
 
-  //       const contract = await factory.deploy();
-  //       console.log(contract);
+        const contract = await factory.deploy();
+        console.log(contract);
 
-  //       await contract.deployTransaction.wait();
-  //       console.log(contract.address);
-  //     }
+        await contract.deployTransaction.wait();
+        console.log(contract.address);
+      }
 
-  //     //  message.success("url update success");
-  //   } catch (error: any) {
-  //     console.log(error);
-  //   }
-  // }
+      //  message.success("url update success");
+    } catch (error: any) {
+      console.log(error);
+    }
+  }
+
+
+  const deployEventManager = async () => {
+    try {
+      if (connector) {
+        const _provider: any = await connector.getProvider();
+        const provider = new ethers.providers.Web3Provider(_provider);
+        console.log(_provider, provider);
+        const factory = new ethers.ContractFactory(
+          EventManager.abi,
+          EventManager.bytecode,
+          provider.getSigner()
+        );
+        //   function TetherToken(uint _initialSupply, string _name, string _symbol, uint _decimals) public {
+        //     _totalSupply = _initialSupply;
+        //     name = _name;
+        //     symbol = _symbol;
+        //     decimals = _decimals;
+        //     balances[owner] = _initialSupply;
+        //     deprecated = false;
+        // }
+
+        // const deployTransaction = await factory.getDeployTransaction(
+        //   ethers.constants.MaxInt256,
+        //   "Test Tether USD",
+        //   "USDT",
+        //   6
+        // );
+        // const gasLimit = await provider.estimateGas(deployTransaction);
+        // const newGasLimit = gasLimit
+        //   .mul(ethers.utils.parseEther("1.9"))
+        //   .div(ethers.utils.parseEther("1"));
+
+        const contract = await factory.deploy();
+        console.log(contract);
+
+        await contract.deployTransaction.wait();
+        console.log(contract.address);
+      }
+
+      //  message.success("url update success");
+    } catch (error: any) {
+      console.log(error);
+    }
+  }
 
   return (
     <div className={styles.root}>
@@ -852,6 +898,70 @@ function Demo() {
                 );
               })}
             </div>
+          </CardContent>
+        </Card>
+      </div>
+      <div className={styles.nftCard}>
+        {" "}
+        <Card>
+          <CardHeader title="GET Community Manager"></CardHeader>
+          <CardContent>
+          <div className={styles.contractRow}>
+              {" "}
+              <a
+                className={styles.contractLink}
+                href={`${
+                  NetworkdConfig[currentChainId as NetworkId].blockExplorerURL
+                }/address/${
+                  NetworkdConfig[currentChainId as NetworkId].contracts.CommunityManager
+                }`}
+                target="_blank"
+              >
+                Contract :{" "}
+                {NetworkdConfig[currentChainId as NetworkId].contracts.CommunityManager}
+              </a>
+              <Button
+                onClick={() => {
+             //     deployNFT();
+                  deployCommunityManager()
+                }}
+              >
+                Deploy CommunityManager Contract
+              </Button>
+            </div>
+           
+          </CardContent>
+        </Card>
+      </div>
+      <div className={styles.nftCard}>
+        {" "}
+        <Card>
+          <CardHeader title="GET EventManager Manager"></CardHeader>
+          <CardContent>
+          <div className={styles.contractRow}>
+              {" "}
+              <a
+                className={styles.contractLink}
+                href={`${
+                  NetworkdConfig[currentChainId as NetworkId].blockExplorerURL
+                }/address/${
+                  NetworkdConfig[currentChainId as NetworkId].contracts.EventManager
+                }`}
+                target="_blank"
+              >
+                Contract :{" "}
+                {NetworkdConfig[currentChainId as NetworkId].contracts.EventManager}
+              </a>
+              <Button
+                onClick={() => {
+             //     deployNFT();
+                  deployEventManager()
+                }}
+              >
+                Deploy EventManager Contract
+              </Button>
+            </div>
+           
           </CardContent>
         </Card>
       </div>
