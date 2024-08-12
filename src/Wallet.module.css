@@ -32,7 +32,7 @@
     border-radius: 6px;
     padding: 20px;
   
-    height: calc(100vh - 130px) ;
+    min-height: calc(100vh - 130px) ;
 }
 
 .Wallet {
@@ -103,29 +103,33 @@
     border-radius: 6px;
     padding: 20px;
   
-    height: calc(100vh - 180px) ;
+    min-height: calc(100vh - 180px) ;
 }
 .CommunityDataView {
     background-color: transparent;
+}
+.CommunityCardListWrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
 }
 .CommunityCardList {
     margin-top: 10px;
     display: flex;
     gap: 30px;
+    justify-content: space-between;
 }
 .CommunityCard {
     border-radius: 10px;
     background-color: #424b57;
-  
+    width: 25%;
     padding: 10px;
-    gap: 10px;
-    width: 50%;
 }
 
 .CommunityDetailCard {
     display: flex;
     align-items: center;
-  
+    
     gap: 10px;
 }
 .joinerList {
