@@ -34,6 +34,7 @@ import CreateEventDialog from "./components/CreateEventDialog";
 import { InputText } from "primereact/inputtext";
 import { OrderList } from "primereact/orderlist";
 import { Fieldset } from "primereact/fieldset";
+import { chunk } from "lodash";
 
 interface TransactionLog {
   aaAccount: string;
@@ -1182,12 +1183,13 @@ function App() {
     );
   };
 
-  const eventTemplate = (eventList: Event[]) => {
+  const eventTemplate = (allEventList: Event[]) => {
     //console.log(tokenList, tokenIds);
     return (
-      <div className={styles.CommunityCardList}>
+      <div className={styles.CommunityCardListWrapper}> {chunk(allEventList, 4).map((eventList) => {
+        return   <div className={styles.CommunityCardList} >
         {eventList.map((community: any) => {
-          console.log(community);
+         
           return (
             <div className={styles.CommunityCard} key={community.id}>
               {/* <div>{token.loading === true && <Skeleton height="100px"></Skeleton>}</div> */}
@@ -1235,6 +1237,9 @@ function App() {
           );
         })}
       </div>
+      })}</div>
+     
+    
     );
   };
   const TransactionLog = (log: TransactionLog) => {
