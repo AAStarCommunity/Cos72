@@ -31,6 +31,7 @@ Build based on:
 1. Use SuperChain from OP to Base and more, autodeploy.
 2. Use ETHPaymaster and AirAccount support gasless and account life management.
 3. Use Push Protocol(EPSN, Ethereum Push Notification Service) to send and get community nonitfications.
+> here to [mint](https://sepolia.etherscan.io/token/0x37c779a1564DCc0e3914aB130e0e787d93e21804#writeContract) PUSH Token for create channel
 
 ## Install
 ### Install on local
