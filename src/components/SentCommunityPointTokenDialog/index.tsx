@@ -15,17 +15,17 @@ interface SendTokenDialogParams {
   visible: boolean;
 }
 
-function CreateCommunityDialog({
+function SentCommunityPointTokenDialog({
   onHide,
   visible,
   onCreate,
 }: SendTokenDialogParams) {
   const toast = useRef<Toast>(null);
 
-  const [name, setName] = useState<string | null>(null);
+  const [account, setAccount] = useState<string | null>(null);
  
-  const [desc, setDesc] = useState<string | null>(null);
-  const [logo, setLogo] = useState<string | null>(null);
+  const [amount, setAmount] = useState<string | null>(null);
+
   const [loading, setLoading] = useState(false);
 
   return (
@@ -33,41 +33,32 @@ function CreateCommunityDialog({
       className={styles.SignInDialog}
       onHide={onHide}
       visible={visible}
-      header={"Create Community"}
+      header={"Sent Point Token"}
     >
       <Toast ref={toast} />
       <div className={styles.Register}>
         <div className={styles.inputRow}>
-          <div>Name</div>
+          <div>Account</div>
           <InputText
-            value={name}
+            value={account}
             className={styles.input}
             onChange={(event) => {
-              setName(event.target.value);
+              setAccount(event.target.value);
             }}
           ></InputText>
         </div>
       
         <div className={styles.inputRow}>
-          <div>Description</div>
+          <div>Amount</div>
           <InputText
-            value={desc}
+            value={amount}
             className={styles.input}
             onChange={(event) => {
-              setDesc(event.target.value);
+              setAmount(event.target.value);
             }}
           ></InputText>
         </div>
-        <div className={styles.inputRow}>
-          <div>Logo</div>
-          <InputText
-            value={logo}
-            className={styles.input}
-            onChange={(event) => {
-              setLogo(event.target.value);
-            }}
-          ></InputText>
-        </div>
+   
 
         <div>
           <Button
@@ -75,13 +66,13 @@ function CreateCommunityDialog({
             label="Create"
             className={styles.SignInBtn}
             onClick={() => {
-              if (name  && desc && logo) {
+              if (account  && amount ) {
                 setLoading(true);
                 onCreate(
                   {
-                    name,
-                    desc,
-                    logo
+                    account,
+                    amount,
+                   
                   },
                   () => {
                     setLoading(false);
@@ -96,4 +87,4 @@ function CreateCommunityDialog({
   );
 }
 
-export default CreateCommunityDialog;
+export default SentCommunityPointTokenDialog;
