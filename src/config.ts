@@ -103,21 +103,20 @@ export const NetworkdConfig: { [K in NetworkId]: INetwork } = {
   },
   [networkIds.OP_SEPOLIA]: {
     name: "OP Sepolia",
-    rpc: "https://public.stackup.sh/api/v1/node/optimism-sepolia",
+    rpc: "https://sepolia.optimism.io",
     chainId: networkIds.OP_SEPOLIA,
     blockExplorerURL: "https://sepolia-optimism.etherscan.io",
     contracts: {
       USDT: "0x1927E2D716D7259d06006bFaF3dBFA22A12d6945",
       NFT: "0x9194618d3695902a426bfacc9e2182d2cb6ad880",
-      CommunityManager: "0x0030573eE4cd93e3672544eB498FdfCaFA1CfcF2",
-      EventManager: "0xd395e7293d2afeeeeae705d075b952c12315e510",
-      
+      CommunityManager: "0x83924f7a84257c808a5af8a2650fec77f96ec1f0",
+      EventManager: "0xd395e7293d2afeeeeae705d075b952c12315e510",   
     },
     bundler: [
       {
         provider: "stackup",
         config: {
-          url: "https://public.stackup.sh/api/v1/node/optimism-sepolia",
+          url: "https://api.stackup.sh/v1/node/7d139a21553146569a5bfb71478befa462bda69335e469cf25463ea6bc8b2366",
         },
       },
     ],
@@ -125,7 +124,7 @@ export const NetworkdConfig: { [K in NetworkId]: INetwork } = {
       {
         provider: "stackup",
         config: {
-          url: "https://api.stackup.sh/v1/paymaster/5309e1878a24d01f3998beb56b2357443f72d127ee224eab072bd2378168da01",
+          url: "https://api.stackup.sh/v1/paymaster/7d139a21553146569a5bfb71478befa462bda69335e469cf25463ea6bc8b2366",
           option: {
             type: "payg",
           },

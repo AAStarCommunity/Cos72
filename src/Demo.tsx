@@ -548,7 +548,7 @@ function Demo() {
         //   .mul(ethers.utils.parseEther("1.9"))
         //   .div(ethers.utils.parseEther("1"));
 
-        const contract = await factory.deploy();
+        const contract = await factory.deploy("0xB1A48c4F202d6e2c7aee9e01075f55c927e6A0d0");
         console.log(contract);
 
         await contract.deployTransaction.wait();

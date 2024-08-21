@@ -15,7 +15,7 @@ interface SendTokenDialogParams {
   visible: boolean;
 }
 
-function CreateCommunityDialog({
+function CreateCommunityPointTokenDialog({
   onHide,
   visible,
   onCreate,
@@ -24,8 +24,8 @@ function CreateCommunityDialog({
 
   const [name, setName] = useState<string | null>(null);
  
-  const [desc, setDesc] = useState<string | null>(null);
-  const [logo, setLogo] = useState<string | null>(null);
+  const [symbol, setSymbol] = useState<string | null>(null);
+
   const [loading, setLoading] = useState(false);
 
   return (
@@ -33,7 +33,7 @@ function CreateCommunityDialog({
       className={styles.SignInDialog}
       onHide={onHide}
       visible={visible}
-      header={"Create Community"}
+      header={"Create Point Token"}
     >
       <Toast ref={toast} />
       <div className={styles.Register}>
@@ -49,25 +49,16 @@ function CreateCommunityDialog({
         </div>
       
         <div className={styles.inputRow}>
-          <div>Description</div>
+          <div>Symbol</div>
           <InputText
-            value={desc}
+            value={symbol}
             className={styles.input}
             onChange={(event) => {
-              setDesc(event.target.value);
+              setSymbol(event.target.value);
             }}
           ></InputText>
         </div>
-        <div className={styles.inputRow}>
-          <div>Logo</div>
-          <InputText
-            value={logo}
-            className={styles.input}
-            onChange={(event) => {
-              setLogo(event.target.value);
-            }}
-          ></InputText>
-        </div>
+   
 
         <div>
           <Button
@@ -75,13 +66,13 @@ function CreateCommunityDialog({
             label="Create"
             className={styles.SignInBtn}
             onClick={() => {
-              if (name  && desc && logo) {
+              if (name  && symbol ) {
                 setLoading(true);
                 onCreate(
                   {
                     name,
-                    desc,
-                    logo
+                    symbol,
+                   
                   },
                   () => {
                     setLoading(false);
@@ -96,4 +87,4 @@ function CreateCommunityDialog({
   );
 }
 
-export default CreateCommunityDialog;
+export default CreateCommunityPointTokenDialog;

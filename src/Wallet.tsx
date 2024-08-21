@@ -17,6 +17,8 @@ import { Button } from "primereact/button";
 import TetherToken from "./contracts/TetherToken.json";
 import AAStarDemoNFT from "./contracts/AAStarDemoNFT.json";
 import CommunityManager from "./contracts/CommunityManager.json";
+import Community from "./contracts/Community.json";
+import CommunityNFT from "./contracts/CommunityNFT.json";
 import EventManager from "./contracts/EventManager.json";
 import { toast, ToastContainer } from "react-toastify";
 import { Chip } from "primereact/chip";
@@ -34,7 +36,10 @@ import CreateEventDialog from "./components/CreateEventDialog";
 import { InputText } from "primereact/inputtext";
 import { OrderList } from "primereact/orderlist";
 import { Fieldset } from "primereact/fieldset";
-import { chunk } from "lodash";
+import { chunk, find } from "lodash";
+import CreateCommunityNFTDialog from "./components/CreateCommunityNFTDialog";
+import CreateCommunityPointTokenDialog from "./components/CreateCommunityPointTokenDialog";
+import SentCommunityPointTokenDialog from "./components/SentCommunityPointTokenDialog";
 
 interface TransactionLog {
   aaAccount: string;
@@ -43,9 +48,19 @@ interface TransactionLog {
 }
 interface Community {
   name: string;
-  symbol: string;
+  address: string;
   desc: string;
   logo: string;
+  pointToken: string;
+  pointTokenBalance: ethers.BigNumber;
+  formatPointTokenBalance: string;
+  nftList: {
+    name: string;
+    symbol: string;
+    price: string;
+    address: string;
+  } []
+
 }
 
 interface Event {
@@ -61,6 +76,8 @@ const TetherTokenABI = TetherToken.abi;
 const AAStarDemoNFTABI = AAStarDemoNFT.abi;
 const CommunityManagerABI = CommunityManager.abi;
 const EventManagerABI = EventManager.abi;
+const CommunityABI = Community.abi;
+const CommunityNFTABI = CommunityNFT.abi;
 const ChainList = [
   NetworkdConfig[networkIds.OP_SEPOLIA],
   NetworkdConfig[networkIds.BASE_SEPOLIA],
@@ -99,11 +116,18 @@ function App() {
     useState(false);
   const [tokenList, setTokenList] = useState([]);
   const [communityList, setCommunityList] = useState<Community[]>([]);
+  const [currentCommunity, setCurrentCommunity] = useState<Community | null>(null);
   const [eventList, setEventList] = useState<Event[]>([]);
   const [isShowAccountSignDialog, setIsShowAccountSignDialog] = useState(false);
   const [isShowSendTokenDialog, setIsShowSendTokenDialog] = useState(false);
   const [isShowSendNFTDialog, setIsShowSendNFTDialog] = useState(false);
   const [isShowCreateCommunityDialog, setIsShowCreateCommunityDialog] =
+    useState(false);
+  const [isShowCreateCommunityNFTDialog, setIsShowCreateCommunityNFTDialog] =
+    useState(false);
+  const [isShowCreateCommunityPointTokenDialog, setIsShowCreateCommunityPointTokenDialog] =
+    useState(false);
+  const [isShowSentCommunityPointTokenDialog, setIsShowSentCommunityPointTokenDialog] =
     useState(false);
   const [isShowCreateEventDialog, setIsShowCreateEventDialog] = useState(false);
   const [currentSendNFTId, setCurrentSendNFTId] = useState(null);
@@ -247,8 +271,7 @@ function App() {
   };
 
   const createCommunity = async (community: any) => {
-    community.id = 0;
-    community.owner = ethers.constants.AddressZero;
+   
     const id = toast.loading("Please wait...");
 
     //do something else
@@ -315,6 +338,239 @@ function App() {
       });
     }
   };
+
+  const createCommunityNFT = async (currentCommunity:Community, communityNFT: any) => {
+   
+    const id = toast.loading("Please wait...");
+
+    //do something else
+    try {
+      //     const wallet = getWallet();
+
+      // 第一步 创建 AAStarClient
+      const bundlerConfig = NetworkdConfig[currentChainId].bundler[0];
+
+      const payMasterConfig = NetworkdConfig[currentChainId].paymaster[0];
+
+      const smartAccount = new AAStarClient({
+        bundler: bundlerConfig as any, // bunder 配置
+        paymaster: payMasterConfig as any, // payMaserter 配置
+
+        rpc: NetworkdConfig[currentChainId].rpc, // rpc节点地址,
+      });
+
+      // 第二步 创建合约调用参数
+      const CommunityContract = new ethers.Contract(
+        currentCommunity.address,
+        CommunityABI,
+        new ethers.providers.JsonRpcProvider(NetworkdConfig[currentChainId].rpc)
+      );
+      // Encode the calls
+      const callTo = [
+        currentCommunity.address,
+      ];
+    //   function createNFT(string memory _name, string memory _symbol, string memory _baseTokenURI, uint256 _price) external onlyOwner {
+    //     CommunityNFT token = new CommunityNFT(msg.sender, _name, _symbol, _baseTokenURI, pointToken, _price);
+    //     nftList.push(address(token));
+    // }
+      const callData = [
+        CommunityContract.interface.encodeFunctionData(
+          "createNFT",
+          [communityNFT.name, communityNFT.symbol, communityNFT.tokenURI, ethers.utils.parseEther(communityNFT.price)]
+        ),
+      ];
+      console.log("Waiting for transaction...");
+      // 第三步 发送 UserOperation
+      const response = await smartAccount.sendUserOperation(callTo, callData);
+      console.log(`Transaction hash: ${response.transactionHash}`);
+      toast.update(id, {
+        render: "Success",
+        type: "success",
+        isLoading: false,
+        autoClose: 5000,
+      });
+      await loadCommunityManagerList();
+
+      setTransactionLogs((items) => {
+        const newItems = [...items];
+        newItems.unshift({
+          aaAccount: response.aaAccountAddress,
+          userOpHash: response.userOpHash,
+          transactionHash: `${response.transactionHash}`,
+        });
+        localStorage.setItem("TransactionLogs", JSON.stringify(newItems));
+        return newItems;
+      });
+    } catch (error) {
+      console.log(error);
+      toast.update(id, {
+        render: "Transaction Fail",
+        type: "error",
+        isLoading: false,
+        autoClose: 5000,
+      });
+    }
+  };
+
+  const createCommunityPointToken = async (currentCommunity:Community, communityToken: any) => {
+   
+    const id = toast.loading("Please wait...");
+
+    //do something else
+    try {
+      //     const wallet = getWallet();
+
+      // 第一步 创建 AAStarClient
+      const bundlerConfig = NetworkdConfig[currentChainId].bundler[0];
+
+      const payMasterConfig = NetworkdConfig[currentChainId].paymaster[0];
+
+      const smartAccount = new AAStarClient({
+        bundler: bundlerConfig as any, // bunder 配置
+        paymaster: payMasterConfig as any, // payMaserter 配置
+
+        rpc: NetworkdConfig[currentChainId].rpc, // rpc节点地址,
+      });
+
+      // 第二步 创建合约调用参数
+      const CommunityContract = new ethers.Contract(
+        currentCommunity.address,
+        CommunityABI,
+        new ethers.providers.JsonRpcProvider(NetworkdConfig[currentChainId].rpc)
+      );
+      // Encode the calls
+      const callTo = [
+        currentCommunity.address,
+      ];
+    //   function createNFT(string memory _name, string memory _symbol, string memory _baseTokenURI, uint256 _price) external onlyOwner {
+    //     CommunityNFT token = new CommunityNFT(msg.sender, _name, _symbol, _baseTokenURI, pointToken, _price);
+    //     nftList.push(address(token));
+    // }
+
+
+  //   function createPointToken(string memory _name, string memory _symbol) external onlyOwner {
+  //     ERC20 token = new PointsToken(address(this), _name, _symbol);
+  //     pointToken = address(token);
+  // }
+      const callData = [
+        CommunityContract.interface.encodeFunctionData(
+          "createPointToken",
+          [communityToken.name, communityToken.symbol]
+        ),
+      ];
+      console.log("Waiting for transaction...");
+      // 第三步 发送 UserOperation
+      const response = await smartAccount.sendUserOperation(callTo, callData);
+      console.log(`Transaction hash: ${response.transactionHash}`);
+      toast.update(id, {
+        render: "Success",
+        type: "success",
+        isLoading: false,
+        autoClose: 5000,
+      });
+      await loadCommunityManagerList();
+
+      setTransactionLogs((items) => {
+        const newItems = [...items];
+        newItems.unshift({
+          aaAccount: response.aaAccountAddress,
+          userOpHash: response.userOpHash,
+          transactionHash: `${response.transactionHash}`,
+        });
+        localStorage.setItem("TransactionLogs", JSON.stringify(newItems));
+        return newItems;
+      });
+    } catch (error) {
+      console.log(error);
+      toast.update(id, {
+        render: "Transaction Fail",
+        type: "error",
+        isLoading: false,
+        autoClose: 5000,
+      });
+    }
+  };
+  const sendCommunityPointToken = async (currentCommunity:Community, communityToken: any) => {
+   
+    const id = toast.loading("Please wait...");
+
+    //do something else
+    try {
+      //     const wallet = getWallet();
+
+      // 第一步 创建 AAStarClient
+      const bundlerConfig = NetworkdConfig[currentChainId].bundler[0];
+
+      const payMasterConfig = NetworkdConfig[currentChainId].paymaster[0];
+
+      const smartAccount = new AAStarClient({
+        bundler: bundlerConfig as any, // bunder 配置
+        paymaster: payMasterConfig as any, // payMaserter 配置
+
+        rpc: NetworkdConfig[currentChainId].rpc, // rpc节点地址,
+      });
+
+      // 第二步 创建合约调用参数
+      const CommunityContract = new ethers.Contract(
+        currentCommunity.address,
+        CommunityABI,
+        new ethers.providers.JsonRpcProvider(NetworkdConfig[currentChainId].rpc)
+      );
+      // Encode the calls
+      const callTo = [
+        currentCommunity.address,
+      ];
+    //   function createNFT(string memory _name, string memory _symbol, string memory _baseTokenURI, uint256 _price) external onlyOwner {
+    //     CommunityNFT token = new CommunityNFT(msg.sender, _name, _symbol, _baseTokenURI, pointToken, _price);
+    //     nftList.push(address(token));
+    // }
+
+
+  //   function createPointToken(string memory _name, string memory _symbol) external onlyOwner {
+  //     ERC20 token = new PointsToken(address(this), _name, _symbol);
+  //     pointToken = address(token);
+  // }
+      const callData = [
+        CommunityContract.interface.encodeFunctionData(
+          "sendPointToken",
+          [communityToken.account, ethers.utils.parseEther(communityToken.amount)]
+        ),
+      ];
+      console.log("Waiting for transaction...");
+      // 第三步 发送 UserOperation
+      const response = await smartAccount.sendUserOperation(callTo, callData);
+      console.log(`Transaction hash: ${response.transactionHash}`);
+      toast.update(id, {
+        render: "Success",
+        type: "success",
+        isLoading: false,
+        autoClose: 5000,
+      });
+      await loadCommunityManagerList();
+
+      setTransactionLogs((items) => {
+        const newItems = [...items];
+        newItems.unshift({
+          aaAccount: response.aaAccountAddress,
+          userOpHash: response.userOpHash,
+          transactionHash: `${response.transactionHash}`,
+        });
+        localStorage.setItem("TransactionLogs", JSON.stringify(newItems));
+        return newItems;
+      });
+    } catch (error) {
+      console.log(error);
+      toast.update(id, {
+        render: "Transaction Fail",
+        type: "error",
+        isLoading: false,
+        autoClose: 5000,
+      });
+    }
+  };
+
+  
+
 
   const createEvent = async (event: any) => {
     event.id = 0;
@@ -840,7 +1096,69 @@ function App() {
       new ethers.providers.JsonRpcProvider(NetworkdConfig[currentChainId].rpc)
     );
     const result = await communityManager.getCommunityList();
-    setCommunityList(result);
+    const list: Community [] = []
+    for(let i = 0, l = result.length; i < l; i++) {
+      const community = new ethers.Contract(
+        result[i],
+        CommunityABI,
+        new ethers.providers.JsonRpcProvider(NetworkdConfig[currentChainId].rpc)
+      );
+      const name = await community.name();
+      const desc = await community.description();
+      const logo = await community.logo();
+      const nftAddressList = await community.getNFTList();
+      const pointToken = await community.pointToken();
+      const pointTokenContract = new ethers.Contract(
+        pointToken,
+        TetherTokenABI,
+        new ethers.providers.JsonRpcProvider(NetworkdConfig[currentChainId].rpc)
+      );
+      const pointTokenBalance = await (pointToken === ethers.constants.AddressZero ? Promise.resolve(ethers.constants.Zero) : pointTokenContract.balanceOf(userInfo.aa));
+      const nftList = [];
+      for(let m = 0, n = nftAddressList.length; m < n; m++) {
+        const communityNFT = new ethers.Contract(
+          nftAddressList[m],
+          CommunityNFTABI,
+          new ethers.providers.JsonRpcProvider(NetworkdConfig[currentChainId].rpc)
+        );
+        const name = await communityNFT.name();
+        const symbol = await communityNFT.symbol();
+        const price = await communityNFT.price();
+        nftList.push({
+          address: nftAddressList[m],
+          name,
+          symbol,
+          price
+        })
+        
+      }
+      list.push({
+        address: result[i],
+        name,
+        logo,
+        desc,
+        pointToken,
+        pointTokenBalance,
+        formatPointTokenBalance: ethers.utils.formatEther(pointTokenBalance),
+        nftList: nftList
+      })
+
+    }
+    setCommunityList(list);
+
+    setCurrentCommunity((item: Community | null) => {
+      if (item) {
+        const newItem = find(list, (listItem => {
+          return  listItem.address == item.address
+        }))
+        if (newItem) {
+          return newItem;
+        }
+      }
+      return item;
+    })
+    
+   
   };
   const connectPushNotification = async () => {
     receiverSigner = ethers.Wallet.createRandom();
@@ -1162,7 +1480,10 @@ function App() {
       <div className={styles.CommunityCardList}>
         {communityList.map((community: any) => {
           return (
-            <div className={styles.CommunityCard} key={community.id}>
+            <div className={styles.CommunityCard} key={community.address} onClick={() => {
+              setCurrentCommunity(community);
+              setCurrentPath("community-detail")
+            }}>
               {/* <div>{token.loading === true && <Skeleton height="100px"></Skeleton>}</div> */}
               <div className={styles.CommunityImg}>
                 <img src={community.logo}></img>
@@ -1170,11 +1491,10 @@ function App() {
               <div>
                 <div className={styles.CommunityText}>{community.name}</div>
                 <div className={styles.CommunityText}>{community.desc}</div>
-                <div className={styles.CommunityText}></div>
+                <div className={styles.CommunityText}>{community.address}</div>
               </div>
               <div>
-                {" "}
-                {/* <Button label="Join" size="small" onClick={() => {}}></Button> */}
+             
               </div>
             </div>
           );
@@ -1381,6 +1701,59 @@ function App() {
             ></DataView>
           </div>
         )}
+        {currentPath === "community-detail" && (
+          <div className={styles.Community}>
+            <div>{currentCommunity?.name}</div>
+            <div>{currentCommunity?.desc}</div>
+            <div>
+              Point Token : {currentCommunity?.pointToken}{" "}
+              <Button
+                label="Create"
+                onClick={() => {
+                  setIsShowCreateCommunityPointTokenDialog(true);
+                }}
+              />{" "}
+              <Button
+                label="Sent"
+                onClick={() => {
+                  setIsShowSentCommunityPointTokenDialog(true);
+                }}
+              ></Button>
+            </div>
+            <div>
+              Point Balance: {currentCommunity?.formatPointTokenBalance}{" "}
+            </div>
+            <Button
+                label="Create NFT"
+                onClick={() => {
+                  setIsShowCreateCommunityNFTDialog(true);
+                }}
+              ></Button>
+              <div>
+                {
+                  currentCommunity?.nftList.map(item => {
+                    return <div key={item.address} className={styles.CommunityNFT}>
+                      <div>Name : {item.name}</div>
+                      <div>Symbol : {item.symbol}</div>
+                      <div>Price: {ethers.utils.formatEther(item.price)}</div>
+                      <Button
+                        label="Approve"
+                        onClick={() => {
+                          setIsShowCreateCommunityNFTDialog(true);
+                        }}
+                      ></Button>
+                      <Button
+                        label="Buy"
+                        onClick={() => {
+                          setIsShowCreateCommunityNFTDialog(true);
+                        }}
+                      ></Button>
+                    </div>
+                  })
+                }
+              </div>
+          </div>
+        )}
         {currentPath === "event" && (
           <div className={styles.Community}>
             <div className={styles.btnRow}>
@@ -1418,7 +1791,7 @@ function App() {
                 <div className="flex flex-column gap-2">
                   <InputText
                     type="text"
-                    onChange={handleInputChange} 
+                    onChange={handleInputChange}
                     id="target"
                     className="p-inputtext-lg"
                     aria-describedby="target-help"
@@ -1491,6 +1864,47 @@ function App() {
           setIsShowCreateEventDialog(false);
         }}
       ></CreateEventDialog>
+      <CreateCommunityNFTDialog
+        visible={isShowCreateCommunityNFTDialog}
+        onHide={() => {
+          setIsShowCreateCommunityNFTDialog(false);
+        }}
+        onCreate={async (data: any, callback: any) => {
+          if (currentCommunity) {
+            await createCommunityNFT(currentCommunity, data);
+            callback();
+            setIsShowCreateCommunityNFTDialog(false);
+          }
+        }}
+      ></CreateCommunityNFTDialog>
+
+      <CreateCommunityPointTokenDialog
+        visible={isShowCreateCommunityPointTokenDialog}
+        onHide={() => {
+          setIsShowCreateCommunityPointTokenDialog(false);
+        }}
+        onCreate={async (data: any, callback: any) => {
+          if (currentCommunity) {
+            await createCommunityPointToken(currentCommunity, data);
+            callback();
+            setIsShowCreateCommunityPointTokenDialog(false);
+          }
+        }}
+      ></CreateCommunityPointTokenDialog>
+      <SentCommunityPointTokenDialog
+      visible={isShowSentCommunityPointTokenDialog}
+      onHide={() => {
+        setIsShowSentCommunityPointTokenDialog(false);
+      }}
+      onCreate={async (data: any, callback: any) => {
+        if (currentCommunity) {
+          await sendCommunityPointToken(currentCommunity, data);
+          callback();
+          setIsShowSentCommunityPointTokenDialog(false);
+        }
+      }}
+      ></SentCommunityPointTokenDialog>
+
       <ToastContainer />
     </div>
   );
