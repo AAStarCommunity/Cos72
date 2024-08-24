@@ -1113,7 +1113,11 @@ function App() {
         TetherTokenABI,
         new ethers.providers.JsonRpcProvider(NetworkdConfig[currentChainId].rpc)
       );
-      const pointTokenBalance = await (pointToken === ethers.constants.AddressZero ? Promise.resolve(ethers.constants.Zero) : pointTokenContract.balanceOf(userInfo.aa));
+      const pointTokenBalance = await(
+        pointToken === ethers.constants.AddressZero
+          ? Promise.resolve(ethers.constants.Zero)
+          : pointTokenContract.balanceOf(userInfo ? userInfo.aa: ethers.constants.AddressZero)
+      );
       const nftList = [];
       for(let m = 0, n = nftAddressList.length; m < n; m++) {
         const communityNFT = new ethers.Contract(
