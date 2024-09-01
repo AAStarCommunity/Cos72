@@ -17,10 +17,6 @@ import {
   PublicKeyCredentialCreationOptionsJSON,
   PublicKeyCredentialRequestOptionsJSON,
 } from "@simplewebauthn/types";
-import dotenv from "dotenv";
-
-dotenv.config();
-
 // const FACTORY_ADDRESS = "0x9406Cc6185a346906296840746125a0E44976454";
 /**
  * constructor params, added no top of base params:
@@ -31,6 +27,7 @@ dotenv.config();
 export interface SimpleAccountApiParams extends BaseApiParams {
   factoryAddress?: string;
   index?: BigNumberish;
+  apiBaseUrl?: string;
   network?: string;
 }
 const generateRandomString = function (length = 6) {
@@ -58,7 +55,9 @@ export class AirAccountAPI extends BaseAccountAPI {
 
   constructor(params: SimpleAccountApiParams) {
     super(params);
-    this.apiBaseUrl = process.env.AirAccountHost || "https://airaccount.onrender.com";
+    this.apiBaseUrl = params.apiBaseUrl
+      ? params.apiBaseUrl
+      : import.meta.env.VITE_VITE_AIR_ACCOUNT_HOST ?? "https://airaccount.onrender.com";
     this.index = BigNumber.from(params.index ?? 0);
     this.network = params.network ? params.network : "optimism-sepolia";
   }
@@ -123,7 +122,7 @@ export class AirAccountAPI extends BaseAccountAPI {
         }
         return null;
       } else {
-        console.log(body)
+        console.log(body);
         if (body.code === 0 && body.data[0] === "User already exists") {
           const signResponse = await fetch(
             `${this.apiBaseUrl}/api/passkey/v1/sign`,
@@ -155,7 +154,7 @@ export class AirAccountAPI extends BaseAccountAPI {
           }
         }
         if (body.code === 0 && body.data[1] === "invalid captcha") {
-          return "invalid captcha"
+          return "invalid captcha";
         }
       }
     } else {
