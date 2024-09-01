@@ -1,5 +1,8 @@
 import { ethers } from "ethers";
 import { BundlerConfig, PaymasterConfig } from "./sdk/AAStarClient";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export const networkIds = {
@@ -45,13 +48,13 @@ export const NetworkdConfig: { [K in NetworkId]: INetwork } = {
       {
         provider: "pimlico",
         config: {
-          url: "https://api.pimlico.io/v2/11155111/rpc?apikey=7dc438e7-8de7-47f0-9d71-3372e57694ca",
+          url: "https://api.pimlico.io/v2/11155111/rpc?apikey="+process.env.Bundler_Pimlico_ApiKey,
         },
       },
       {
         provider: "biconomy",
         config: {
-          url: "https://bundler.biconomy.io/api/v2/11155111/nJPK7B3ru.dd7f7861-190d-41bd-af80-6877f74b8f44",
+          url: "https://bundler.biconomy.io/api/v2/11155111/"+process.env.Bundler_Biconomy_ApiKey,
         },
       },
     ],
@@ -59,7 +62,7 @@ export const NetworkdConfig: { [K in NetworkId]: INetwork } = {
       {
         provider: "stackup",
         config: {
-          url: "https://api.stackup.sh/v1/paymaster/e008121e92221cb49073b5bca65d434fbeb2162e73f42a9e3ea01d00b606fcba",
+          url: "https://api.stackup.sh/v1/paymaster/"+process.env.Paymaster_Stackup_ApiKey,
           option: {
             type: "payg",
           },
@@ -68,13 +71,13 @@ export const NetworkdConfig: { [K in NetworkId]: INetwork } = {
       {
         provider: "pimlico",
         config: {
-          url: "https://api.pimlico.io/v2/11155111/rpc?apikey=7dc438e7-8de7-47f0-9d71-3372e57694ca",
+          url: "https://api.pimlico.io/v2/11155111/rpc?apikey="+process.env.Paymaster_Pimlico_ApiKey,
         },
       },
       {
         provider: "biconomy",
         config: {
-          url: "https://paymaster.biconomy.io/api/v1/11155111/sbA6OmcPO.016e1abd-0db6-4909-a806-175f617f1cb9",
+          url: "https://paymaster.biconomy.io/api/v1/11155111/"+process.env.Paymaster_Biconomy_ApiKey,
           option: {
             mode: "SPONSORED",
             calculateGasLimits: true,
@@ -92,7 +95,7 @@ export const NetworkdConfig: { [K in NetworkId]: INetwork } = {
       {
         provider: "aastar",
         config: {
-          url: "https://paymaster.aastar.io/api/v1/paymaster/ethereum-sepolia?apiKey=fe6017a4-9e13-4750-ae69-a7568f633eb5",
+          url: "https://paymaster.aastar.io/api/v1/paymaster/ethereum-sepolia?apiKey="+process.env.Paymaster_Aastar_ApiKey,
           option: {
             strategy_code: "a__d7MwJ",
             version: "v0.6",

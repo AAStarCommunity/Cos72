@@ -17,6 +17,10 @@ import {
   PublicKeyCredentialCreationOptionsJSON,
   PublicKeyCredentialRequestOptionsJSON,
 } from "@simplewebauthn/types";
+import dotenv from "dotenv";
+
+dotenv.config();
+
 // const FACTORY_ADDRESS = "0x9406Cc6185a346906296840746125a0E44976454";
 /**
  * constructor params, added no top of base params:
@@ -27,7 +31,6 @@ import {
 export interface SimpleAccountApiParams extends BaseApiParams {
   factoryAddress?: string;
   index?: BigNumberish;
-  apiBaseUrl?: string;
   network?: string;
 }
 const generateRandomString = function (length = 6) {
@@ -55,9 +58,7 @@ export class AirAccountAPI extends BaseAccountAPI {
 
   constructor(params: SimpleAccountApiParams) {
     super(params);
-    this.apiBaseUrl = params.apiBaseUrl
-      ? params.apiBaseUrl
-      : "https://airaccount.onrender.com";
+    this.apiBaseUrl = process.env.AirAccountHost || "https://airaccount.onrender.com";
     this.index = BigNumber.from(params.index ?? 0);
     this.network = params.network ? params.network : "optimism-sepolia";
   }
