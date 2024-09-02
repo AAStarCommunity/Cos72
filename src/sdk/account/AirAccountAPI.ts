@@ -57,7 +57,7 @@ export class AirAccountAPI extends BaseAccountAPI {
     super(params);
     this.apiBaseUrl = params.apiBaseUrl
       ? params.apiBaseUrl
-      : import.meta.env.VITE_AIR_ACCOUNT_API ? import.meta.env.VITE_AIR_ACCOUNT_API :  "https://airaccount.onrender.com";
+      : import.meta.env.VITE_VITE_AIR_ACCOUNT_HOST ?? "https://airaccount.onrender.com";
     this.index = BigNumber.from(params.index ?? 0);
     this.network = params.network ? params.network : "optimism-sepolia";
   }
@@ -122,7 +122,7 @@ export class AirAccountAPI extends BaseAccountAPI {
         }
         return null;
       } else {
-        console.log(body)
+        console.log(body);
         if (body.code === 0 && body.data[0] === "User already exists") {
           const signResponse = await fetch(
             `${this.apiBaseUrl}/api/passkey/v1/sign`,
@@ -154,7 +154,7 @@ export class AirAccountAPI extends BaseAccountAPI {
           }
         }
         if (body.code === 0 && body.data[1] === "invalid captcha") {
-          return "invalid captcha"
+          return "invalid captcha";
         }
       }
     } else {

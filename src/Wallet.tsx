@@ -1071,7 +1071,6 @@ function App() {
   };
   const loadUserInfo = async () => {
     const airAccount = new AirAccountAPI({
-      //  apiBaseUrl: "https://anotherairaccountcommunitynode.onrender.com",
       provider: new ethers.providers.JsonRpcProvider(
         NetworkdConfig[currentChainId].rpc
       ),
@@ -1436,7 +1435,6 @@ function App() {
           icon: "pi pi-refresh",
           command: () => {
             const airAccount = new AirAccountAPI({
-              //  apiBaseUrl: "https://anotherairaccountcommunitynode.onrender.com",
               provider: new ethers.providers.JsonRpcProvider(
                 NetworkdConfig[currentChainId].rpc
               ),

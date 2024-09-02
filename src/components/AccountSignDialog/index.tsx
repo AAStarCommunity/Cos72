@@ -25,7 +25,6 @@ function AccountSignDialog({ onHide, visible }: AccountSignDialogParams) {
   const [captcha, setCaptcha] = useState<string | null>(null);
   const register = async () => {
     const airAccount = new AirAccountAPI({
-    //  apiBaseUrl: "https://anotherairaccountcommunitynode.onrender.com",
       provider: new ethers.providers.JsonRpcProvider(
         NetworkdConfig[networkIds.OP_SEPOLIA].rpc
       ),
