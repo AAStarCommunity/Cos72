@@ -653,32 +653,7 @@ function Demo() {
                 </MenuItem>
               );
             })}
-            {/* <MenuItem
-              value={"https://public.stackup.sh/api/v1/node/ethereum-sepolia"}
-            >
-              Stackup
-            </MenuItem>
-            <MenuItem
-              value={
-                "https://api.pimlico.io/v2/11155111/rpc?apikey=7dc438e7-8de7-47f0-9d71-3372e57694ca"
-              }
-            >
-              Pimlico
-            </MenuItem>
-            <MenuItem
-              value={
-                "https://bundler.biconomy.io/api/v2/11155111/nJPK7B3ru.dd7f7861-190d-41bd-af80-6877f74b8f44"
-              }
-            >
-              Biconomy
-            </MenuItem>
-            <MenuItem
-              value={
-                "https://eth-sepolia.g.alchemy.com/v2/tlovr50YMFVheDJSuOJJj0RyvCHothDO"
-              }
-            >
-              Alchemy
-            </MenuItem> */}
+            {}
           </Select>
         </FormControl>
         <FormControl fullWidth>
