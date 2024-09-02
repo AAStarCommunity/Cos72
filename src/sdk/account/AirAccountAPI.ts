@@ -57,7 +57,7 @@ export class AirAccountAPI extends BaseAccountAPI {
     super(params);
     this.apiBaseUrl = params.apiBaseUrl
       ? params.apiBaseUrl
-      : "https://airaccount.onrender.com";
+      : import.meta.env.VITE_AIR_ACCOUNT_API ? import.meta.env.VITE_AIR_ACCOUNT_API :  "https://airaccount.onrender.com";
     this.index = BigNumber.from(params.index ?? 0);
     this.network = params.network ? params.network : "optimism-sepolia";
   }
