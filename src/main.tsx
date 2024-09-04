@@ -8,10 +8,11 @@ import "./index.css";
 import '@rainbow-me/rainbowkit/styles.css';
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { getDefaultConfig, RainbowKitProvider } from "@rainbow-me/rainbowkit";
-import { arbitrumSepolia, baseSepolia, optimismSepolia, sepolia } from "viem/chains";
+import { arbitrumSepolia, baseSepolia, optimism, optimismSepolia, sepolia } from "viem/chains";
 import { WagmiProvider } from "wagmi";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { PrimeReactProvider } from 'primereact/api';
+
 import "primereact/resources/themes/lara-dark-teal/theme.css";
 import 'primeicons/primeicons.css';
 const router = createBrowserRouter([
@@ -31,7 +32,7 @@ const router = createBrowserRouter([
 const config = getDefaultConfig({
   appName: "COS72",
   projectId: "413eed66ad9f8b3bf84e79de8bde9604",
-  chains: [sepolia, optimismSepolia, arbitrumSepolia, baseSepolia],
+  chains: [optimism, sepolia, optimismSepolia, arbitrumSepolia, baseSepolia],
   ssr: true, // If your dApp uses server side rendering (SSR)
 });
 const queryClient = new QueryClient();

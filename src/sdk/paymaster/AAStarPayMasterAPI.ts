@@ -61,9 +61,18 @@ export class AAStarPayMasterAPI extends PaymasterAPI {
     };
     const op = await ethers.utils.resolveProperties(pmOp);
     op.preVerificationGas = calcPreVerificationGas(op);
-    op.verificationGasLimit = ethers.BigNumber.from(
-      op.verificationGasLimit
-    ).mul(3);
+    if (this.paymasterUrl.indexOf("optimism-mainnet") > 0) {
+      op.verificationGasLimit = ethers.BigNumber.from(
+        op.verificationGasLimit
+      )
+    }
+    else {
+      op.verificationGasLimit = ethers.BigNumber.from(
+        op.verificationGasLimit
+      ).mul(3)
+    }
+
+    
 
     // Ask the paymaster to sign the transaction and return a valid paymasterAndData value.
 

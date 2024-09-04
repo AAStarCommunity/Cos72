@@ -5,10 +5,11 @@ import { BundlerConfig, PaymasterConfig } from "./sdk/AAStarClient";
 export const networkIds = {
   ETH_SEPOLIA: 11155111,
   OP_SEPOLIA: 11155420,
+  OP_MAINNET: 10,
   ARB_SEPOLIA: 421614,
   BASE_SEPOLIA: 84532
 } as const;
-export type NetworkId = 11155111 | 11155420 | 421614 | 84532;
+export type NetworkId = 11155111 | 11155420 | 421614 | 84532 | 10
 export interface INetwork {
   name: string;
   chainId: number;
@@ -45,7 +46,7 @@ export const NetworkdConfig: { [K in NetworkId]: INetwork } = {
       {
         provider: "pimlico",
         config: {
-          url: "https://api.pimlico.io/v2/11155111/rpc?apikey="+import.meta.env.VITE_BUNDLER_PIMLICO_APIKEY,
+          url: "https://api.pimlico.io/v2/11155111/rpc?apikey="+ import.meta.env.VITE_BUNDLER_PIMLICO_APIKEY,
         },
       },
       {
@@ -93,6 +94,38 @@ export const NetworkdConfig: { [K in NetworkId]: INetwork } = {
         provider: "aastar",
         config: {
           url: "https://paymaster.aastar.io/api/v1/paymaster/ethereum-sepolia?apiKey="+import.meta.env.VITE_PAYMASTER_AASTAR_APIKEY,
+          option: {
+            strategy_code: "a__d7MwJ",
+            version: "v0.6",
+          },
+        },
+      },
+    ],
+  },
+  [networkIds.OP_MAINNET]: {
+    name: "Sepolia",
+    rpc: "https://mainnet.optimism.io",
+    chainId: networkIds.OP_MAINNET,
+    blockExplorerURL: "https://explorer.optimism.io",
+    contracts: {
+      USDT: "0x1927e2d716d7259d06006bfaf3dbfa22a12d6945",
+      NFT: ethers.constants.AddressZero,
+      CommunityManager: ethers.constants.AddressZero,
+      EventManager: ethers.constants.AddressZero
+    },
+    bundler: [
+      {
+        provider: "pimlico",
+        config: {
+          url: `https://api.pimlico.io/v2/10/rpc?apikey=${import.meta.env.VITE_OP_MAINNET_BUNDLER_PIMLICO_APIKEY}`,
+        },
+      },
+    ],
+    paymaster: [
+      {
+        provider: "aastar",
+        config: {
+          url: `https://paymaster.aastar.io/api/v1/paymaster/optimism-mainnet?apiKey=${import.meta.env.VITE_OP_MAINNET_PAYMASTER_AASTAR_APIKEY}`,
           option: {
             strategy_code: "a__d7MwJ",
             version: "v0.6",

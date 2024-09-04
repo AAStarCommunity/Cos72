@@ -79,6 +79,7 @@ const EventManagerABI = EventManager.abi;
 const CommunityABI = Community.abi;
 const CommunityNFTABI = CommunityNFT.abi;
 const ChainList = [
+  NetworkdConfig[networkIds.OP_MAINNET],
   NetworkdConfig[networkIds.OP_SEPOLIA],
   NetworkdConfig[networkIds.BASE_SEPOLIA],
 ];
