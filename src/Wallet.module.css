@@ -169,3 +169,7 @@
 .NotificationHelper {
     padding: 5px 0 5px 0;
 }
+
+.configEditor textarea {
+    background-color: #FFF;
+}

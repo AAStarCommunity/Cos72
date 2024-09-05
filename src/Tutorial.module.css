@@ -1,0 +1,24 @@
+.Root {
+    display: flex;
+    gap: 20px;
+}
+
+.DemoPanel {
+    flex: 1;
+   
+}
+
+.SourcePanel {
+    flex: 1;
+}
+
+.Input {
+    margin-bottom: 10px;
+
+}
+
+.Input label {
+    display: inline-block;
+    width: 80px;
+}
+
