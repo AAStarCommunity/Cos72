@@ -8,7 +8,7 @@ import { Menubar } from "primereact/menubar";
 import AAStarLogo from "./assets/logo-aastar.png";
 import { Card } from "primereact/card";
 import { ethers } from "ethers";
-import { INetwork, NetworkdConfig, NetworkId, networkIds } from "./config";
+import { INetwork, currentNetworkdConfig, NetworkId, networkIds, NetworkdConfig } from "./config";
 import { AAStarClient, entryPointAddress } from "./sdk/AAStarClient";
 import { AirAccountAPI } from "./sdk/account/AirAccountAPI";
 import { Menu } from "primereact/menu";
@@ -40,6 +40,7 @@ import { chunk, find } from "lodash";
 import CreateCommunityNFTDialog from "./components/CreateCommunityNFTDialog";
 import CreateCommunityPointTokenDialog from "./components/CreateCommunityPointTokenDialog";
 import SentCommunityPointTokenDialog from "./components/SentCommunityPointTokenDialog";
+import { JsonEditor } from 'json-edit-react'
 
 interface TransactionLog {
   aaAccount: string;
@@ -103,6 +104,7 @@ let userAlice: PushAPI;
 
 function App() {
   const menuLeft = useRef<Menu>(null);
+  const [currentNetworkdConfig , setCurrentNetworkdConfig] = useState(NetworkdConfig);
   const [inputValue, setInputValue] = useState("");
   const handleInputChange = (e:any) => {
     setInputValue(e.target.value);
@@ -147,25 +149,25 @@ function App() {
       //     const wallet = getWallet();
 
       // 第一步 创建 AAStarClient
-      const bundlerConfig = NetworkdConfig[currentChainId].bundler[0];
+      const bundlerConfig = currentNetworkdConfig[currentChainId].bundler[0];
 
-      const payMasterConfig = NetworkdConfig[currentChainId].paymaster[0];
+      const payMasterConfig = currentNetworkdConfig[currentChainId].paymaster[0];
 
       const smartAccount = new AAStarClient({
         bundler: bundlerConfig as any, // bunder 配置
         paymaster: payMasterConfig as any, // payMaserter 配置
 
-        rpc: NetworkdConfig[currentChainId].rpc, // rpc节点地址,
+        rpc: currentNetworkdConfig[currentChainId].rpc, // rpc节点地址,
       });
 
       // 第二步 创建合约调用参数
       const TestnetERC20 = new ethers.Contract(
-        NetworkdConfig[currentChainId].contracts.USDT,
+        currentNetworkdConfig[currentChainId].contracts.USDT,
         TetherTokenABI,
-        new ethers.providers.JsonRpcProvider(NetworkdConfig[currentChainId].rpc)
+        new ethers.providers.JsonRpcProvider(currentNetworkdConfig[currentChainId].rpc)
       );
       // Encode the calls
-      const callTo = [NetworkdConfig[currentChainId].contracts.USDT];
+      const callTo = [currentNetworkdConfig[currentChainId].contracts.USDT];
       const callData = [
         TestnetERC20.interface.encodeFunctionData("_mint", [
           userInfo.aa,
@@ -213,25 +215,25 @@ function App() {
       //     const wallet = getWallet();
 
       // 第一步 创建 AAStarClient
-      const bundlerConfig = NetworkdConfig[currentChainId].bundler[0];
+      const bundlerConfig = currentNetworkdConfig[currentChainId].bundler[0];
 
-      const payMasterConfig = NetworkdConfig[currentChainId].paymaster[0];
+      const payMasterConfig = currentNetworkdConfig[currentChainId].paymaster[0];
 
       const smartAccount = new AAStarClient({
         bundler: bundlerConfig as any, // bunder 配置
         paymaster: payMasterConfig as any, // payMaserter 配置
 
-        rpc: NetworkdConfig[currentChainId].rpc, // rpc节点地址,
+        rpc: currentNetworkdConfig[currentChainId].rpc, // rpc节点地址,
       });
 
       // 第二步 创建合约调用参数
       const TestnetERC20 = new ethers.Contract(
-        NetworkdConfig[currentChainId].contracts.USDT,
+        currentNetworkdConfig[currentChainId].contracts.USDT,
         TetherTokenABI,
-        new ethers.providers.JsonRpcProvider(NetworkdConfig[currentChainId].rpc)
+        new ethers.providers.JsonRpcProvider(currentNetworkdConfig[currentChainId].rpc)
       );
       // Encode the calls
-      const callTo = [NetworkdConfig[currentChainId].contracts.USDT];
+      const callTo = [currentNetworkdConfig[currentChainId].contracts.USDT];
       const callData = [
         TestnetERC20.interface.encodeFunctionData("transfer", [
           account,
@@ -280,26 +282,26 @@ function App() {
       //     const wallet = getWallet();
 
       // 第一步 创建 AAStarClient
-      const bundlerConfig = NetworkdConfig[currentChainId].bundler[0];
+      const bundlerConfig = currentNetworkdConfig[currentChainId].bundler[0];
 
-      const payMasterConfig = NetworkdConfig[currentChainId].paymaster[0];
+      const payMasterConfig = currentNetworkdConfig[currentChainId].paymaster[0];
 
       const smartAccount = new AAStarClient({
         bundler: bundlerConfig as any, // bunder 配置
         paymaster: payMasterConfig as any, // payMaserter 配置
 
-        rpc: NetworkdConfig[currentChainId].rpc, // rpc节点地址,
+        rpc: currentNetworkdConfig[currentChainId].rpc, // rpc节点地址,
       });
 
       // 第二步 创建合约调用参数
       const CommunityManagerContract = new ethers.Contract(
-        NetworkdConfig[currentChainId].contracts.CommunityManager,
+        currentNetworkdConfig[currentChainId].contracts.CommunityManager,
         CommunityManagerABI,
-        new ethers.providers.JsonRpcProvider(NetworkdConfig[currentChainId].rpc)
+        new ethers.providers.JsonRpcProvider(currentNetworkdConfig[currentChainId].rpc)
       );
       // Encode the calls
       const callTo = [
-        NetworkdConfig[currentChainId].contracts.CommunityManager,
+        currentNetworkdConfig[currentChainId].contracts.CommunityManager,
       ];
       const callData = [
         CommunityManagerContract.interface.encodeFunctionData(
@@ -349,22 +351,22 @@ function App() {
       //     const wallet = getWallet();
 
       // 第一步 创建 AAStarClient
-      const bundlerConfig = NetworkdConfig[currentChainId].bundler[0];
+      const bundlerConfig = currentNetworkdConfig[currentChainId].bundler[0];
 
-      const payMasterConfig = NetworkdConfig[currentChainId].paymaster[0];
+      const payMasterConfig = currentNetworkdConfig[currentChainId].paymaster[0];
 
       const smartAccount = new AAStarClient({
         bundler: bundlerConfig as any, // bunder 配置
         paymaster: payMasterConfig as any, // payMaserter 配置
 
-        rpc: NetworkdConfig[currentChainId].rpc, // rpc节点地址,
+        rpc: currentNetworkdConfig[currentChainId].rpc, // rpc节点地址,
       });
 
       // 第二步 创建合约调用参数
       const CommunityContract = new ethers.Contract(
         currentCommunity.address,
         CommunityABI,
-        new ethers.providers.JsonRpcProvider(NetworkdConfig[currentChainId].rpc)
+        new ethers.providers.JsonRpcProvider(currentNetworkdConfig[currentChainId].rpc)
       );
       // Encode the calls
       const callTo = [
@@ -422,22 +424,22 @@ function App() {
       //     const wallet = getWallet();
 
       // 第一步 创建 AAStarClient
-      const bundlerConfig = NetworkdConfig[currentChainId].bundler[0];
+      const bundlerConfig = currentNetworkdConfig[currentChainId].bundler[0];
 
-      const payMasterConfig = NetworkdConfig[currentChainId].paymaster[0];
+      const payMasterConfig = currentNetworkdConfig[currentChainId].paymaster[0];
 
       const smartAccount = new AAStarClient({
         bundler: bundlerConfig as any, // bunder 配置
         paymaster: payMasterConfig as any, // payMaserter 配置
 
-        rpc: NetworkdConfig[currentChainId].rpc, // rpc节点地址,
+        rpc: currentNetworkdConfig[currentChainId].rpc, // rpc节点地址,
       });
 
       // 第二步 创建合约调用参数
       const CommunityContract = new ethers.Contract(
         currentCommunity.address,
         CommunityABI,
-        new ethers.providers.JsonRpcProvider(NetworkdConfig[currentChainId].rpc)
+        new ethers.providers.JsonRpcProvider(currentNetworkdConfig[currentChainId].rpc)
       );
       // Encode the calls
       const callTo = [
@@ -500,22 +502,22 @@ function App() {
       //     const wallet = getWallet();
 
       // 第一步 创建 AAStarClient
-      const bundlerConfig = NetworkdConfig[currentChainId].bundler[0];
+      const bundlerConfig = currentNetworkdConfig[currentChainId].bundler[0];
 
-      const payMasterConfig = NetworkdConfig[currentChainId].paymaster[0];
+      const payMasterConfig = currentNetworkdConfig[currentChainId].paymaster[0];
 
       const smartAccount = new AAStarClient({
         bundler: bundlerConfig as any, // bunder 配置
         paymaster: payMasterConfig as any, // payMaserter 配置
 
-        rpc: NetworkdConfig[currentChainId].rpc, // rpc节点地址,
+        rpc: currentNetworkdConfig[currentChainId].rpc, // rpc节点地址,
       });
 
       // 第二步 创建合约调用参数
       const CommunityContract = new ethers.Contract(
         currentCommunity.address,
         CommunityABI,
-        new ethers.providers.JsonRpcProvider(NetworkdConfig[currentChainId].rpc)
+        new ethers.providers.JsonRpcProvider(currentNetworkdConfig[currentChainId].rpc)
       );
       // Encode the calls
       const callTo = [
@@ -583,25 +585,25 @@ function App() {
       //     const wallet = getWallet();
 
       // 第一步 创建 AAStarClient
-      const bundlerConfig = NetworkdConfig[currentChainId].bundler[0];
+      const bundlerConfig = currentNetworkdConfig[currentChainId].bundler[0];
 
-      const payMasterConfig = NetworkdConfig[currentChainId].paymaster[0];
+      const payMasterConfig = currentNetworkdConfig[currentChainId].paymaster[0];
 
       const smartAccount = new AAStarClient({
         bundler: bundlerConfig as any, // bunder 配置
         paymaster: payMasterConfig as any, // payMaserter 配置
 
-        rpc: NetworkdConfig[currentChainId].rpc, // rpc节点地址,
+        rpc: currentNetworkdConfig[currentChainId].rpc, // rpc节点地址,
       });
 
       // 第二步 创建合约调用参数
       const EventManagerContract = new ethers.Contract(
-        NetworkdConfig[currentChainId].contracts.EventManager,
+        currentNetworkdConfig[currentChainId].contracts.EventManager,
         EventManagerABI,
-        new ethers.providers.JsonRpcProvider(NetworkdConfig[currentChainId].rpc)
+        new ethers.providers.JsonRpcProvider(currentNetworkdConfig[currentChainId].rpc)
       );
       // Encode the calls
-      const callTo = [NetworkdConfig[currentChainId].contracts.EventManager];
+      const callTo = [currentNetworkdConfig[currentChainId].contracts.EventManager];
       const callData = [
         EventManagerContract.interface.encodeFunctionData("createEvent", [
           event,
@@ -647,25 +649,25 @@ function App() {
       //     const wallet = getWallet();
 
       // 第一步 创建 AAStarClient
-      const bundlerConfig = NetworkdConfig[currentChainId].bundler[0];
+      const bundlerConfig = currentNetworkdConfig[currentChainId].bundler[0];
 
-      const payMasterConfig = NetworkdConfig[currentChainId].paymaster[0];
+      const payMasterConfig = currentNetworkdConfig[currentChainId].paymaster[0];
 
       const smartAccount = new AAStarClient({
         bundler: bundlerConfig as any, // bunder 配置
         paymaster: payMasterConfig as any, // payMaserter 配置
 
-        rpc: NetworkdConfig[currentChainId].rpc, // rpc节点地址,
+        rpc: currentNetworkdConfig[currentChainId].rpc, // rpc节点地址,
       });
 
       // 第二步 创建合约调用参数
       const EventManagerContract = new ethers.Contract(
-        NetworkdConfig[currentChainId].contracts.EventManager,
+        currentNetworkdConfig[currentChainId].contracts.EventManager,
         EventManagerABI,
-        new ethers.providers.JsonRpcProvider(NetworkdConfig[currentChainId].rpc)
+        new ethers.providers.JsonRpcProvider(currentNetworkdConfig[currentChainId].rpc)
       );
       // Encode the calls
-      const callTo = [NetworkdConfig[currentChainId].contracts.EventManager];
+      const callTo = [currentNetworkdConfig[currentChainId].contracts.EventManager];
       const callData = [
         EventManagerContract.interface.encodeFunctionData("joinEvent", [
           event.id,
@@ -712,32 +714,32 @@ function App() {
       // const wallet = getWallet();
 
       // 第一步 创建 AAStarClient
-      const bundlerConfig = NetworkdConfig[currentChainId].bundler[0];
+      const bundlerConfig = currentNetworkdConfig[currentChainId].bundler[0];
 
-      const payMasterConfig = NetworkdConfig[currentChainId].paymaster[0];
+      const payMasterConfig = currentNetworkdConfig[currentChainId].paymaster[0];
 
       const smartAccount = new AAStarClient({
         bundler: bundlerConfig as any, // bunder 配置
         paymaster: payMasterConfig as any, // payMaserter 配置
 
-        rpc: NetworkdConfig[currentChainId].rpc, // rpc节点地址,
+        rpc: currentNetworkdConfig[currentChainId].rpc, // rpc节点地址,
       });
 
       // const smartAccount = new AAStarClient({
       //   bundler: bundlerConfig as any, // bunder 配置
       //   paymaster: payMasterConfig as any, // payMaserter 配置
       //   signer: wallet, // EOA 钱包,
-      //   rpc: NetworkdConfig[currentChainId as NetworkId].rpc, // rpc节点地址,
+      //   rpc: currentNetworkdConfig[currentChainId as NetworkId].rpc, // rpc节点地址,
       // });
 
       // 第二步 创建合约调用参数
       const NFTContract = new ethers.Contract(
-        NetworkdConfig[currentChainId].contracts.NFT,
+        currentNetworkdConfig[currentChainId].contracts.NFT,
         AAStarDemoNFTABI,
-        new ethers.providers.JsonRpcProvider(NetworkdConfig[currentChainId].rpc)
+        new ethers.providers.JsonRpcProvider(currentNetworkdConfig[currentChainId].rpc)
       );
       // Encode the calls
-      const callTo = [NetworkdConfig[currentChainId].contracts.NFT];
+      const callTo = [currentNetworkdConfig[currentChainId].contracts.NFT];
       const callData = [
         NFTContract.interface.encodeFunctionData("mint", [
           userInfo.aa,
@@ -785,32 +787,32 @@ function App() {
       // const wallet = getWallet();
 
       // 第一步 创建 AAStarClient
-      const bundlerConfig = NetworkdConfig[currentChainId].bundler[0];
+      const bundlerConfig = currentNetworkdConfig[currentChainId].bundler[0];
 
-      const payMasterConfig = NetworkdConfig[currentChainId].paymaster[0];
+      const payMasterConfig = currentNetworkdConfig[currentChainId].paymaster[0];
 
       const smartAccount = new AAStarClient({
         bundler: bundlerConfig as any, // bunder 配置
         paymaster: payMasterConfig as any, // payMaserter 配置
 
-        rpc: NetworkdConfig[currentChainId].rpc, // rpc节点地址,
+        rpc: currentNetworkdConfig[currentChainId].rpc, // rpc节点地址,
       });
 
       // const smartAccount = new AAStarClient({
       //   bundler: bundlerConfig as any, // bunder 配置
       //   paymaster: payMasterConfig as any, // payMaserter 配置
       //   signer: wallet, // EOA 钱包,
-      //   rpc: NetworkdConfig[currentChainId as NetworkId].rpc, // rpc节点地址,
+      //   rpc: currentNetworkdConfig[currentChainId as NetworkId].rpc, // rpc节点地址,
       // });
 
       // 第二步 创建合约调用参数
       const NFTContract = new ethers.Contract(
-        NetworkdConfig[currentChainId].contracts.NFT,
+        currentNetworkdConfig[currentChainId].contracts.NFT,
         AAStarDemoNFTABI,
-        new ethers.providers.JsonRpcProvider(NetworkdConfig[currentChainId].rpc)
+        new ethers.providers.JsonRpcProvider(currentNetworkdConfig[currentChainId].rpc)
       );
       // Encode the calls
-      const callTo = [NetworkdConfig[currentChainId].contracts.NFT];
+      const callTo = [currentNetworkdConfig[currentChainId].contracts.NFT];
       const callData = [
         NFTContract.interface.encodeFunctionData("transferFrom", [
           userInfo.aa,
@@ -859,33 +861,33 @@ function App() {
       // const wallet = getWallet();
 
       // 第一步 创建 AAStarClient
-      const bundlerConfig = NetworkdConfig[currentChainId].bundler[0];
+      const bundlerConfig = currentNetworkdConfig[currentChainId].bundler[0];
 
-      const payMasterConfig = NetworkdConfig[currentChainId].paymaster[0];
+      const payMasterConfig = currentNetworkdConfig[currentChainId].paymaster[0];
 
       const smartAccount = new AAStarClient({
         bundler: bundlerConfig as any, // bunder 配置
         paymaster: payMasterConfig as any, // payMaserter 配置
 
-        rpc: NetworkdConfig[currentChainId].rpc, // rpc节点地址,
+        rpc: currentNetworkdConfig[currentChainId].rpc, // rpc节点地址,
       });
 
       // const smartAccount = new AAStarClient({
       //   bundler: bundlerConfig as any, // bunder 配置
       //   paymaster: payMasterConfig as any, // payMaserter 配置
       //   signer: wallet, // EOA 钱包,
-      //   rpc: NetworkdConfig[currentChainId as NetworkId].rpc, // rpc节点地址,
+      //   rpc: currentNetworkdConfig[currentChainId as NetworkId].rpc, // rpc节点地址,
       // });
 
       // 第二步 创建合约调用参数
       const NFTContract = new ethers.Contract(
-        NetworkdConfig[currentChainId].contracts.NFT,
+        currentNetworkdConfig[currentChainId].contracts.NFT,
         AAStarDemoNFTABI,
-        new ethers.providers.JsonRpcProvider(NetworkdConfig[currentChainId].rpc)
+        new ethers.providers.JsonRpcProvider(currentNetworkdConfig[currentChainId].rpc)
       );
       // Encode the calls
       const callTo = accountList.map((_item: string) => {
-        return NetworkdConfig[currentChainId].contracts.NFT
+        return currentNetworkdConfig[currentChainId].contracts.NFT
       }) ;
       const callData = 
         accountList.map((_item: string) => {
@@ -936,33 +938,33 @@ function App() {
       //     const wallet = getWallet();
 
       // 第一步 创建 AAStarClient
-      const bundlerConfig = NetworkdConfig[currentChainId].bundler[0];
+      const bundlerConfig = currentNetworkdConfig[currentChainId].bundler[0];
 
-      const payMasterConfig = NetworkdConfig[currentChainId].paymaster[0];
+      const payMasterConfig = currentNetworkdConfig[currentChainId].paymaster[0];
 
       const smartAccount = new AAStarClient({
         bundler: bundlerConfig as any, // bunder 配置
         paymaster: payMasterConfig as any, // payMaserter 配置
 
-        rpc: NetworkdConfig[currentChainId].rpc, // rpc节点地址,
+        rpc: currentNetworkdConfig[currentChainId].rpc, // rpc节点地址,
       });
 
       // 第二步 创建合约调用参数
       const TestnetERC20 = new ethers.Contract(
-        NetworkdConfig[currentChainId].contracts.USDT,
+        currentNetworkdConfig[currentChainId].contracts.USDT,
         TetherTokenABI,
-        new ethers.providers.JsonRpcProvider(NetworkdConfig[currentChainId].rpc)
+        new ethers.providers.JsonRpcProvider(currentNetworkdConfig[currentChainId].rpc)
       );
       const NFTContract = new ethers.Contract(
-        NetworkdConfig[currentChainId].contracts.NFT,
+        currentNetworkdConfig[currentChainId].contracts.NFT,
         AAStarDemoNFTABI,
-        new ethers.providers.JsonRpcProvider(NetworkdConfig[currentChainId].rpc)
+        new ethers.providers.JsonRpcProvider(currentNetworkdConfig[currentChainId].rpc)
       );
 
       // Encode the calls
       const callTo = [
-        NetworkdConfig[currentChainId].contracts.USDT,
-        NetworkdConfig[currentChainId].contracts.NFT,
+        currentNetworkdConfig[currentChainId].contracts.USDT,
+        currentNetworkdConfig[currentChainId].contracts.NFT,
       ];
       const callData = [
         TestnetERC20.interface.encodeFunctionData("_mint", [
@@ -1011,9 +1013,9 @@ function App() {
   const updateUSDTBalance = async () => {
     if (userInfo) {
       const TestnetERC20 = new ethers.Contract(
-        NetworkdConfig[currentChainId].contracts.USDT,
+        currentNetworkdConfig[currentChainId].contracts.USDT,
         TetherTokenABI,
-        new ethers.providers.JsonRpcProvider(NetworkdConfig[currentChainId].rpc)
+        new ethers.providers.JsonRpcProvider(currentNetworkdConfig[currentChainId].rpc)
       );
       TestnetERC20.balanceOf(userInfo.aa).then((value: ethers.BigNumber) => {
         setUsdtAmount(ethers.utils.formatUnits(value, 6));
@@ -1023,9 +1025,9 @@ function App() {
   const updateNFTBalance = async () => {
     if (userInfo) {
       const NFTContract = new ethers.Contract(
-        NetworkdConfig[currentChainId].contracts.NFT,
+        currentNetworkdConfig[currentChainId].contracts.NFT,
         AAStarDemoNFTABI,
-        new ethers.providers.JsonRpcProvider(NetworkdConfig[currentChainId].rpc)
+        new ethers.providers.JsonRpcProvider(currentNetworkdConfig[currentChainId].rpc)
       );
       const allTokenIds = await NFTContract.getAccountTokenIds(userInfo.aa);
       const tokenIds: any = [];
@@ -1073,7 +1075,7 @@ function App() {
   const loadUserInfo = async () => {
     const airAccount = new AirAccountAPI({
       provider: new ethers.providers.JsonRpcProvider(
-        NetworkdConfig[currentChainId].rpc
+        currentNetworkdConfig[currentChainId].rpc
       ),
       entryPointAddress: entryPointAddress,
     });
@@ -1091,9 +1093,9 @@ function App() {
   };
   const loadCommunityManagerList = async () => {
     const communityManager = new ethers.Contract(
-      NetworkdConfig[currentChainId].contracts.CommunityManager,
+      currentNetworkdConfig[currentChainId].contracts.CommunityManager,
       CommunityManagerABI,
-      new ethers.providers.JsonRpcProvider(NetworkdConfig[currentChainId].rpc)
+      new ethers.providers.JsonRpcProvider(currentNetworkdConfig[currentChainId].rpc)
     );
     const result = await communityManager.getCommunityList();
     const list: Community [] = []
@@ -1101,7 +1103,7 @@ function App() {
       const community = new ethers.Contract(
         result[i],
         CommunityABI,
-        new ethers.providers.JsonRpcProvider(NetworkdConfig[currentChainId].rpc)
+        new ethers.providers.JsonRpcProvider(currentNetworkdConfig[currentChainId].rpc)
       );
       const name = await community.name();
       const desc = await community.description();
@@ -1111,7 +1113,7 @@ function App() {
       const pointTokenContract = new ethers.Contract(
         pointToken,
         TetherTokenABI,
-        new ethers.providers.JsonRpcProvider(NetworkdConfig[currentChainId].rpc)
+        new ethers.providers.JsonRpcProvider(currentNetworkdConfig[currentChainId].rpc)
       );
       const pointTokenBalance = await(
         pointToken === ethers.constants.AddressZero
@@ -1123,7 +1125,7 @@ function App() {
         const communityNFT = new ethers.Contract(
           nftAddressList[m],
           CommunityNFTABI,
-          new ethers.providers.JsonRpcProvider(NetworkdConfig[currentChainId].rpc)
+          new ethers.providers.JsonRpcProvider(currentNetworkdConfig[currentChainId].rpc)
         );
         const name = await communityNFT.name();
         const symbol = await communityNFT.symbol();
@@ -1300,9 +1302,9 @@ function App() {
 
   const loadEventManagerList = async () => {
     const eventManager = new ethers.Contract(
-      NetworkdConfig[currentChainId].contracts.EventManager,
+      currentNetworkdConfig[currentChainId].contracts.EventManager,
       EventManagerABI,
-      new ethers.providers.JsonRpcProvider(NetworkdConfig[currentChainId].rpc)
+      new ethers.providers.JsonRpcProvider(currentNetworkdConfig[currentChainId].rpc)
     );
     const result = await eventManager.getEventList();
     const newList: Event[] = [];
@@ -1375,7 +1377,14 @@ function App() {
         setCurrentPath("transaction");
       },
     },
-
+    {
+      label: "Setting",
+      icon: "pi pi-bars",
+      className: currentPath == "setting" ? styles.menuActive : "",
+      command: () => {
+        setCurrentPath("setting");
+      },
+    },
     {
       label: "Notification",
       icon: "pi pi-bell",
@@ -1417,11 +1426,11 @@ function App() {
           <Chip
             onClick={() => {
               window.open(
-                `${NetworkdConfig[currentChainId].blockExplorerURL}/address/${userInfo.aa}`,
+                `${currentNetworkdConfig[currentChainId].blockExplorerURL}/address/${userInfo.aa}`,
                 "_blank"
               );
             }}
-            label={`AAccount ${userInfo.aa}`}
+            label={`AAccount ${userInfo.aa.substring(0, 6)}....${userInfo.aa.substring(userInfo.aa.length - 4)}`}
           ></Chip>
         )}
       </div>
@@ -1437,7 +1446,7 @@ function App() {
           command: () => {
             const airAccount = new AirAccountAPI({
               provider: new ethers.providers.JsonRpcProvider(
-                NetworkdConfig[currentChainId].rpc
+                currentNetworkdConfig[currentChainId].rpc
               ),
               entryPointAddress: entryPointAddress,
             });
@@ -1568,7 +1577,7 @@ function App() {
   const TransactionLog = (log: TransactionLog) => {
     return (
       <a
-        href={`${NetworkdConfig[currentChainId].blockExplorerURL}/tx/${log.transactionHash}`}
+        href={`${currentNetworkdConfig[currentChainId].blockExplorerURL}/tx/${log.transactionHash}`}
         target="_blank"
       >
         {log.transactionHash}
@@ -1588,11 +1597,11 @@ function App() {
                 className={styles.ContractAddress}
                 onClick={() => {
                   window.open(
-                    `${NetworkdConfig[currentChainId].blockExplorerURL}/address/${NetworkdConfig[currentChainId].contracts.USDT}`,
+                    `${currentNetworkdConfig[currentChainId].blockExplorerURL}/address/${currentNetworkdConfig[currentChainId].contracts.USDT}`,
                     "_blank"
                   );
                 }}
-                label={`Contract ${NetworkdConfig[currentChainId].contracts.USDT}`}
+                label={`Contract ${currentNetworkdConfig[currentChainId].contracts.USDT}`}
               ></Chip>
               <div className={styles.USDTContentWrapper}>
                 <div className={styles.USDTAmount}>${usdtAmount}</div>
@@ -1642,11 +1651,11 @@ function App() {
                 className={styles.ContractAddress}
                 onClick={() => {
                   window.open(
-                    `${NetworkdConfig[currentChainId].blockExplorerURL}/address/${NetworkdConfig[currentChainId].contracts.NFT}`,
+                    `${currentNetworkdConfig[currentChainId].blockExplorerURL}/address/${currentNetworkdConfig[currentChainId].contracts.NFT}`,
                     "_blank"
                   );
                 }}
-                label={`Contract ${NetworkdConfig[currentChainId].contracts.NFT}`}
+                label={`Contract ${currentNetworkdConfig[currentChainId].contracts.NFT}`}
               ></Chip>
               <DataView
                 value={tokenList}
@@ -1776,6 +1785,19 @@ function App() {
             ></DataView>
           </div>
         )}
+        {
+          currentPath === "setting" && (<div>
+            <JsonEditor
+                minWidth={"1000px"}
+                setData={setCurrentNetworkdConfig  as any}
+                rootName="Config"
+                theme={"githubDark"}
+                data={ currentNetworkdConfig }
+                className={styles.configEditor}
+              />
+            
+          </div>)
+        }
         {currentPath === "notification" && (
           <div className={styles.Notification}>
             <div className="card xl:flex xl:justify-content-center">

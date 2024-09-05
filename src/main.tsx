@@ -4,6 +4,7 @@ import ReactDOM from "react-dom/client";
 import Demo from "./Demo.tsx";
 import Wallet from "./Wallet.tsx";
 import Register from "./Register.tsx";
+import Tutorial from "./Tutorial.tsx";
 import "./index.css";
 import '@rainbow-me/rainbowkit/styles.css';
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
@@ -27,6 +28,10 @@ const router = createBrowserRouter([
   {
     path: "/register",
     element: <Register></Register>,
+  },
+  {
+    path: "/tutorial",
+    element: <Tutorial></Tutorial>
   }
 ]);
 const config = getDefaultConfig({
