@@ -8,7 +8,7 @@ import { Menubar } from "primereact/menubar";
 import AAStarLogo from "./assets/logo-aastar.png";
 import { Card } from "primereact/card";
 import { ethers } from "ethers";
-import { INetwork, currentNetworkdConfig, NetworkId, networkIds, NetworkdConfig } from "./config";
+import { INetwork, NetworkId, networkIds, NetworkdConfig } from "./config";
 import { AAStarClient, entryPointAddress } from "./sdk/AAStarClient";
 import { AirAccountAPI } from "./sdk/account/AirAccountAPI";
 import { Menu } from "primereact/menu";
