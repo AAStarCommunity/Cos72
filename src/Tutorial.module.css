@@ -9,16 +9,20 @@
 }
 
 .SourcePanel {
-    flex: 1;
+    flex: 2;
 }
 
-.Input {
-    margin-bottom: 10px;
 
+
+
+.input {
+    width: 100%;
 }
 
-.Input label {
-    display: inline-block;
-    width: 80px;
+.inputRow {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 20px;
 }
 
