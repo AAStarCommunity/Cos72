@@ -103,7 +103,7 @@ export const NetworkdConfig: { [K in NetworkId]: INetwork } = {
     ],
   },
   [networkIds.OP_MAINNET]: {
-    name: "Sepolia",
+    name: "OP MAINNET",
     rpc: "https://mainnet.optimism.io",
     chainId: networkIds.OP_MAINNET,
     blockExplorerURL: "https://explorer.optimism.io",
