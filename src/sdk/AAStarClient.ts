@@ -32,9 +32,9 @@ export interface PaymasterConfig {
 }
 
 export interface AAWalletConfig {
-  entryPointAddress: string;
-  factoryAddress: string;
-  provider: AAProvider
+  entryPointAddress?: string;
+  factoryAddress?: string;
+  provider?: AAProvider
 }
 
 export interface SmartAccountParams {
@@ -47,7 +47,17 @@ export interface SmartAccountParams {
 }
 export const entryPointAddress = "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789";
 export const factoryAddress = "0x9406Cc6185a346906296840746125a0E44976454";
-
+const getWallet = () => {
+  const signingKey = localStorage.getItem("__aastar_signingKey");
+  let signer: ethers.Wallet | null = null;
+  if (signingKey) {
+    signer = new ethers.Wallet(signingKey);
+  } else {
+    signer = ethers.Wallet.createRandom();
+    localStorage.setItem("__aastar_signingKey", signer.privateKey);
+  }
+  return signer;
+};
 export class AAStarClient {
   bundler: BundlerConfig;
   paymaster: PaymasterConfig;
@@ -64,7 +74,12 @@ export class AAStarClient {
     this.aaWallet = null;
     this.bundlerClient = null;
     this.rpc = params.rpc;
-    this.signer = params.signer;
+    if (params.signer) {
+      this.signer = params.signer
+    }
+    else {
+      this.signer = getWallet();
+    }
     this.provider = new ethers.providers.JsonRpcProvider(this.rpc);
     this.aaConfig = {
       entryPointAddress: params.aaConfig?.entryPointAddress
@@ -147,7 +162,7 @@ export class AAStarClient {
     const chainId = await this.provider.getNetwork().then((net) => net.chainId);
     const client = new BundlerClient(
       this.bundler.config.url,
-      this.aaConfig.entryPointAddress,
+      this.aaConfig.entryPointAddress as any,
       chainId
     );
     return client;
