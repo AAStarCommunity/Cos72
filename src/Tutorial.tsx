@@ -4,7 +4,7 @@ import { Panel } from "primereact/panel";
 import styles from "./Tutorial.module.css";
 import { Button } from "primereact/button";
 import { InputText } from "primereact/inputtext";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { CopyBlock, nord } from "react-code-blocks";
 import { toast, ToastContainer } from "react-toastify";
 import { AAStarClient } from "./sdk";
@@ -15,6 +15,14 @@ import { StepperPanel } from 'primereact/stepperpanel';
 import TetherToken from "./contracts/TetherToken.json";
 import { Fieldset } from "primereact/fieldset";
 import { InputTextarea } from "primereact/inputtextarea";
+import { isAddress } from "ethers/lib/utils";
+import { DataTable } from "primereact/datatable";
+import { Column } from "primereact/column";
+interface TransactionLog {
+  aaAccount: string;
+  userOpHash: string;
+  transactionHash: string;
+}
 const TetherTokenABI = TetherToken.abi;
 function App() {
   const stepperRef = useRef(null);
@@ -24,6 +32,23 @@ function App() {
   const [account, setAccount] = useState(null);
   const [amount, setAmount] = useState(null);
   const [mintLoading, setMintLoading] = useState(false);
+  const [tokenBalance, setTokenBalance] = useState(0);
+  const [transactionLogs, setTransactionLogs] = useState<TransactionLog[]>([]);
+  const updateUSDTBalance = async () => {
+    if (account && isAddress(account)) {
+      const TestnetERC20 = new ethers.Contract(
+        NetworkdConfig[networkIds.OP_SEPOLIA].contracts.USDT,
+        TetherTokenABI,
+        new ethers.providers.JsonRpcProvider(NetworkdConfig[networkIds.OP_SEPOLIA].rpc)
+      );
+      TestnetERC20.balanceOf(account).then((value: ethers.BigNumber) => {
+        setTokenBalance(ethers.utils.formatUnits(value, 6) as any);
+      });
+    }
+    else {
+      setTokenBalance(0)
+    }
+  };
   const mintUSDT = async () => {
     const id = toast.loading("Please wait...");
     setMintLoading(true);
@@ -70,6 +95,7 @@ function App() {
       // 第三步 发送 UserOperation
       const response = await smartAccount.sendUserOperation(callTo, callData);
       console.log(`Transaction hash: ${response.transactionHash}`);
+      await updateUSDTBalance();
       toast.update(id, {
         render: "Success",
         type: "success",
@@ -77,17 +103,17 @@ function App() {
         autoClose: 5000,
       });
      
-
-      // setTransactionLogs((items) => {
-      //   const newItems = [...items];
-      //   newItems.unshift({
-      //     aaAccount: response.aaAccountAddress,
-      //     userOpHash: response.userOpHash,
-      //     transactionHash: `${response.transactionHash}`,
-      //   });
-      //   localStorage.setItem("TransactionLogs", JSON.stringify(newItems));
-      //   return newItems;
-      // });
+      
+      setTransactionLogs((items) => {
+        const newItems = [...items];
+        newItems.unshift({
+          aaAccount: response.aaAccountAddress,
+          userOpHash: response.userOpHash,
+          transactionHash: `${response.transactionHash}`,
+        });
+        localStorage.setItem("TutorialTransactionLogs", JSON.stringify(newItems));
+        return newItems;
+      });
 
 
     } catch (error) {
@@ -101,11 +127,35 @@ function App() {
     }
     setMintLoading(false);
   };
+
+  const TransactionLog = (log: TransactionLog) => {
+    return (
+      <a
+        href={`${NetworkdConfig[networkIds.OP_SEPOLIA].blockExplorerURL}/tx/${log.transactionHash}`}
+        target="_blank"
+      >
+        {log.transactionHash}
+      </a>
+    );
+  };
+
+  useEffect(() => {
+    updateUSDTBalance()
+  }, [account])
+
+  useEffect(() => {
+    const TransactionLogs = localStorage.getItem("TutorialTransactionLogs");
+    if (TransactionLogs) {
+      setTransactionLogs(JSON.parse(TransactionLogs));
+    }
+  }, []);
+
+
   return (
     <div className={styles.Root}>
       <div className={styles.DemoPanel}>
         <Panel header="Mint Test Token Demo">
-          <Fieldset legend="Config" className={styles.Config}>
+          <Fieldset legend="Config" className={styles.Config} toggleable>
           <div className={styles.inputRow}>
             <div>Bundler Url</div>
             <InputTextarea
@@ -139,7 +189,7 @@ function App() {
           </Fieldset>
     
           <div className={styles.inputRow}>
-            <div>Account</div>
+            <div className={styles.tokenInfo}><div>Account</div> <div>Balance: {tokenBalance}</div></div>
             <InputText
               value={account}
               className={styles.input}
@@ -162,19 +212,33 @@ function App() {
           <Button label="Mint" loading={mintLoading} onClick={() => {
             mintUSDT();
           }}></Button>
+          <div className={styles.DataTable}>
+          <DataTable
+              value={transactionLogs}
+              
+              showGridlines
+            >
+              {/* <Column field="userOpHash" header="User Op Hash"></Column> */}
+              <Column
+                field="transactionHash"
+                header="Transaction Hash"
+                body={TransactionLog}
+              ></Column>
+            </DataTable>
+          </div>
         </Panel>
       </div>
       <div className={styles.SourcePanel}>
         <Panel header="Tutorial">
         <Stepper ref={stepperRef}  orientation="vertical">
                 <StepperPanel header="Apply Bundler">
-                    <div>Apply for API Key at <a href="https://dashboard.pimlico.io/apikeys">https://dashboard.pimlico.io/apikeys</a>. Please select OP Sepolia for the network and fill in the applied RPC URL into the Bundler Url input box on the left.</div>
+                    <div>Apply for API Key at <a href="https://dashboard.pimlico.io/apikeys" target="_blank">https://dashboard.pimlico.io/apikeys</a>. Please select OP Sepolia for the network and fill in the applied RPC URL into the Bundler Url input box on the left.</div>
                 </StepperPanel>
                 <StepperPanel header="Apply Paymaster">
                   <ol>
-                    <li> <div>Apply for API Key at <a href="https://dashboard.aastar.io/api-keys">https://dashboard.aastar.io/api-keys</a>. Please select OP Sepolia for the network and fill in the applied RPC URL into the Paymaster Url input box on the left.</div></li>
+                    <li> <div>Apply for API Key at <a href="https://dashboard.aastar.io/api-keys" target="_blank">https://dashboard.aastar.io/api-keys</a>. Please select OP Sepolia for the network and fill in the applied RPC URL into the Paymaster Url input box on the left.</div></li>
                     <li>      
-                    <div>Create Strategy at <a href="https://dashboard.aastar.io/strategy/create">https://dashboard.aastar.io/strategy/create</a>. Copy the strategy code into the left Strategy code input box.</div></li>
+                    <div>Create Strategy at <a href="https://dashboard.aastar.io/strategy/create" target="_blank">https://dashboard.aastar.io/strategy/create</a>. Copy the strategy code into the left Strategy code input box.</div></li>
                   </ol>
          
                 </StepperPanel>

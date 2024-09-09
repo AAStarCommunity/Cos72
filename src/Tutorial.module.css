@@ -28,3 +28,12 @@
 .Config {
     margin-bottom: 20px;
 }
+
+.tokenInfo {
+    display: flex;
+    justify-content: space-between;
+}
+
+.DataTable {
+    margin-top: 20px;
+}
