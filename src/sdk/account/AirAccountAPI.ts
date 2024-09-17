@@ -163,26 +163,35 @@ export class AirAccountAPI extends BaseAccountAPI {
   }
 
   async getAccountInfo() {
-    const airaccountToken = localStorage.getItem("airaccount_token");
-
-    const myHeaders = new Headers();
-    myHeaders.append("Authorization", `Bearer ${airaccountToken}`);
-
-    const requestOptions = {
-      method: "GET",
-      headers: myHeaders,
-    };
-
-    const response = await fetch(
-      `${this.apiBaseUrl}/api/passkey/v1/account/info?network=${this.network}`,
-      requestOptions
-    );
-    if (response.ok) {
-      const body = await response.json();
-      if (body.code === 200) {
-        return body.data;
+    try {
+      const airaccountToken = localStorage.getItem("airaccount_token");
+      if (!airaccountToken) {
+        return null;
+      }
+  
+      const myHeaders = new Headers();
+      myHeaders.append("Authorization", `Bearer ${airaccountToken}`);
+  
+      const requestOptions = {
+        method: "GET",
+        headers: myHeaders,
+      };
+     
+      const response = await fetch(
+        `${this.apiBaseUrl}/api/passkey/v1/account/info?network=${this.network}`,
+        requestOptions
+      );
+      if (response.ok) {
+        const body = await response.json();
+        if (body.code === 200) {
+          return body.data;
+        }
       }
     }
+    catch(error) {
+
+    }
+
     return null;
   }
 
