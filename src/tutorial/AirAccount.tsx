@@ -19,6 +19,8 @@ import { isAddress } from "ethers/lib/utils";
 import { DataTable } from "primereact/datatable";
 import { Column } from "primereact/column";
 import { Chip } from "primereact/chip";
+import { AirAccountAPI } from "../sdk/account/AirAccountAPI";
+import AccountSignDialog from "../components/AccountSignDialog";
 
 interface TransactionLog {
   aaAccount: string;
@@ -36,7 +38,7 @@ function AirAccountTutorial() {
   const [mintLoading, setMintLoading] = useState(false);
   const [tokenBalance, setTokenBalance] = useState(0);
   const [transactionLogs, setTransactionLogs] = useState<TransactionLog[]>([]);
-
+  const [isShowAccountSignDialog, setIsShowAccountSignDialog] = useState(false);
 
   const updateUSDTBalance = async () => {
     if (account && isAddress(account)) {
@@ -54,13 +56,9 @@ function AirAccountTutorial() {
     }
   };
   const mintUSDT = async () => {
-    const id = toast.loading("Please wait...");
-    setMintLoading(true);
+    let id = null;
     try {
       const smartAccount = new AAStarClient({
-        aaConfig: {
-          provider: "SimpleAccount"
-        },
         bundler: {
           provider: "pimlico",
           config: {
@@ -80,6 +78,14 @@ function AirAccountTutorial() {
 
         rpc: NetworkdConfig[networkIds.OP_SEPOLIA].rpc,
       });
+      const aaWallet = smartAccount.getAAWallet() as AirAccountAPI
+      const accountInfo = await aaWallet.getAccountInfo();
+      if (!accountInfo) {
+        setIsShowAccountSignDialog(true);
+        return;
+      }
+      id = toast.loading("Please wait...");
+      setMintLoading(true);
 
       // 第二步 创建合约调用参数
       const TestnetERC20 = new ethers.Contract(
@@ -100,12 +106,15 @@ function AirAccountTutorial() {
       const response = await smartAccount.sendUserOperation(callTo, callData);
       console.log(`Transaction hash: ${response.transactionHash}`);
       await updateUSDTBalance();
-      toast.update(id, {
-        render: "Success",
-        type: "success",
-        isLoading: false,
-        autoClose: 5000,
-      });
+      if (id) {
+        toast.update(id, {
+          render: "Success",
+          type: "success",
+          isLoading: false,
+          autoClose: 5000,
+        });
+      }
+
      
       
       setTransactionLogs((items) => {
@@ -122,12 +131,14 @@ function AirAccountTutorial() {
 
     } catch (error) {
       console.log(error);
-      toast.update(id, {
-        render: "Transaction Fail",
-        type: "error",
-        isLoading: false,
-        autoClose: 5000,
-      });
+      if (id) {
+        toast.update(id, {
+          render: "Transaction Fail",
+          type: "error",
+          isLoading: false,
+          autoClose: 5000,
+        });
+      }
     }
     setMintLoading(false);
   };
@@ -260,14 +271,10 @@ function AirAccountTutorial() {
                 <CopyBlock
             showLineNumbers={true}
             theme={nord}
-            text={` const mintUSDT = async () => {
-    const id = toast.loading("Please wait...");
-    setMintLoading(true);
+            text={`  const mintUSDT = async () => {
+    let id = null;
     try {
       const smartAccount = new AAStarClient({
-        aaConfig: {
-          provider: "SimpleAccount"
-        },
         bundler: {
           provider: "pimlico",
           config: {
@@ -287,6 +294,14 @@ function AirAccountTutorial() {
 
         rpc: NetworkdConfig[networkIds.OP_SEPOLIA].rpc,
       });
+      const aaWallet = smartAccount.getAAWallet() as AirAccountAPI
+      const accountInfo = await aaWallet.getAccountInfo();
+      if (!accountInfo) {
+        setIsShowAccountSignDialog(true);
+        return;
+      }
+      id = toast.loading("Please wait...");
+      setMintLoading(true);
 
       // 第二步 创建合约调用参数
       const TestnetERC20 = new ethers.Contract(
@@ -305,25 +320,29 @@ function AirAccountTutorial() {
       console.log("Waiting for transaction...");
       // 第三步 发送 UserOperation
       const response = await smartAccount.sendUserOperation(callTo, callData);
-     
-      toast.update(id, {
-        render: "Success",
-        type: "success",
-        isLoading: false,
-        autoClose: 5000,
-      });
-
+    
+      await updateUSDTBalance();
+      if (id) {
+        toast.update(id, {
+          render: "Success",
+          type: "success",
+          isLoading: false,
+          autoClose: 5000,
+        });
+      }
     } catch (error) {
       console.log(error);
-      toast.update(id, {
-        render: "Transaction Fail",
-        type: "error",
-        isLoading: false,
-        autoClose: 5000,
-      });
+      if (id) {
+        toast.update(id, {
+          render: "Transaction Fail",
+          type: "error",
+          isLoading: false,
+          autoClose: 5000,
+        });
+      }
     }
     setMintLoading(false);
-  };`}
+  }; `}
             language="typescript"
           />
                 
@@ -335,6 +354,13 @@ function AirAccountTutorial() {
       </div>
     
       <ToastContainer />
+      <AccountSignDialog
+        visible={isShowAccountSignDialog}
+        onHide={() => {
+          setIsShowAccountSignDialog(false);
+          
+        }}
+      ></AccountSignDialog>
       </>
    
   );

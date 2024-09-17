@@ -90,7 +90,26 @@ export class AAStarClient {
         : factoryAddress,
       provider: params.aaConfig?.provider ? params.aaConfig?.provider  : "AirAccount"
     };
-    
+    if (!this.aaWallet) {
+      if (this.aaConfig.provider === "SimpleAccount") {
+        this.aaWallet = new SimpleAccountAPI({
+          provider: new ethers.providers.JsonRpcProvider(this.rpc),
+          entryPointAddress,
+          owner: this.signer,
+          factoryAddress,
+          paymasterAPI: this.buildPayMaster(),
+        });
+      }
+      else {
+        this.aaWallet = new AirAccountAPI({
+          provider: new ethers.providers.JsonRpcProvider(this.rpc),
+          entryPointAddress,
+          factoryAddress,
+          paymasterAPI: this.buildPayMaster(),
+        
+        });
+      }
+    }
   }
 
   async sendUserOperation(callTo: string[], callData: string[]) {
@@ -113,13 +132,13 @@ export class AAStarClient {
         
         });
       }
- 
     }
     if (!this.bundlerClient) {
       this.bundlerClient = await this.buildBundlerClient();
     }
+
     const address = await this.aaWallet.getCounterFactualAddress();
-  
+
     const op = await this.aaWallet.createSignedUserOp({
       target: address,
       data: [callTo, callData],
@@ -131,6 +150,8 @@ export class AAStarClient {
       userOpHash,
       transactionHash,
     };
+    
+
   }
 
   private buildPayMaster() {
