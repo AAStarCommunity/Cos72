@@ -1,10 +1,37 @@
 import { Avatar } from "primereact/avatar";
 import styles from "./Embed.module.css";
 import { Dialog } from "primereact/dialog";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import AccountSign from "./components/embed/AccountSign";
+import { AAStarClient } from "./sdk";
+import { NetworkdConfig, networkIds } from "./config";
+import { AirAccountAPI } from "./sdk/account/AirAccountAPI";
+import Loading from "./components/embed/Loading";
+import { Chip } from "primereact/chip";
+
 function App() {
   const [embedDialogVisible, setEmbedDialogVisible] = useState(false);
+  const [userInfo, setUserInfo] = useState<any>(null);
+  const [infoLoading, setInfoLoading] = useState(true);
+  const loadUserInfo = async () => {
+    setInfoLoading(true)
+    const smartAccount = new AAStarClient({
+      bundler: NetworkdConfig[networkIds.OP_SEPOLIA].bundler[0],
+      paymaster:   NetworkdConfig[networkIds.OP_SEPOLIA].paymaster[0],
+      rpc: NetworkdConfig[networkIds.OP_SEPOLIA].rpc,
+    });
+    const aaWallet = smartAccount.getAAWallet() as AirAccountAPI
+    const accountInfo = await aaWallet.getAccountInfo();
+    if (accountInfo) {
+      console.log(accountInfo)
+      setUserInfo(accountInfo)
+    }
+    setInfoLoading(false)
+  }
+
+  useEffect(() => {
+    loadUserInfo()
+  }, [])
   return (
     <div className={styles.root}>
       <Avatar
@@ -33,10 +60,17 @@ function App() {
         draggable={false}
         resizable={false}
       
-      >
-        <AccountSign onComplete={() => {
-            
-        }}></AccountSign>
+      > 
+    {infoLoading && <Loading></Loading>}
+    {(!infoLoading && !userInfo) &&  <AccountSign onComplete={() => {
+            loadUserInfo();
+          }}></AccountSign>}
+        {(!infoLoading && userInfo) && <div className={styles.accountInfo}>
+           {<Avatar shape="circle" label={userInfo.email.substring(0, 1)}></Avatar>}
+           <Chip label={`${userInfo.aa.substring(0, 6)}......${userInfo.aa.substring(userInfo.aa.length - 6)}`}></Chip>
+
+          </div>}
+       
       </Dialog>
     </div>
   );
