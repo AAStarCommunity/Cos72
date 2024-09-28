@@ -57,7 +57,7 @@ export class AirAccountAPI extends BaseAccountAPI {
     super(params);
     this.apiBaseUrl = params.apiBaseUrl
       ? params.apiBaseUrl
-      : import.meta.env.VITE_VITE_AIR_ACCOUNT_HOST ?? "https://airaccount.onrender.com";
+      : import.meta.env.VITE_AIR_ACCOUNT_HOST ?? "https://airaccount-pr-32.onrender.com";
     this.index = BigNumber.from(params.index ?? 0);
     this.network = params.network ? params.network : "optimism-sepolia";
   }
@@ -140,7 +140,7 @@ export class AirAccountAPI extends BaseAccountAPI {
               };
 
               const response2 = await fetch(
-                `${this.apiBaseUrl}/api/passkey/v1/sign/verify?email=${email}&origin=${window.location.origin}&network=${this.network}`,
+                `${this.apiBaseUrl}/api/passkey/v1/sign/verify?&origin=${window.location.origin}&network=${this.network}`,
                 requestOptions as any
               );
               if (response2.ok) {
@@ -176,11 +176,30 @@ export class AirAccountAPI extends BaseAccountAPI {
         method: "GET",
         headers: myHeaders,
       };
-     
-      const response = await fetch(
+      let response = await fetch(
         `${this.apiBaseUrl}/api/passkey/v1/account/info?network=${this.network}`,
         requestOptions
       );
+      if (response.status === 404) {
+        const chainRequestOptions = {
+          method: "POST",
+          headers: myHeaders,
+          body: JSON.stringify({
+            "network": this.network
+          }),
+        }
+        const chainResponse = await fetch(
+          `${this.apiBaseUrl}/api/passkey/v1/account/chain`,
+          chainRequestOptions
+        );
+        if (chainResponse.ok) {
+          response = await fetch(
+            `${this.apiBaseUrl}/api/passkey/v1/account/info?network=${this.network}`,
+            requestOptions
+          );
+        }
+       
+      }
       if (response.ok) {
         const body = await response.json();
         if (body.code === 200) {
@@ -285,9 +304,9 @@ export class AirAccountAPI extends BaseAccountAPI {
     const accountInfo = await this.getAccountInfo();
 
     if (accountInfo) {
-      const nonce = generateRandomString();
+      const ticket = generateRandomString();
       const raw = JSON.stringify({
-        nonce,
+        ticket,
         origin: window.location.origin,
         txdata: userOpHash,
       });
@@ -317,7 +336,7 @@ export class AirAccountAPI extends BaseAccountAPI {
           };
 
           const response2 = await fetch(
-            `${this.apiBaseUrl}/api/passkey/v1/tx/sign/verify?origin=${window.location.origin}&nonce=${nonce}`,
+            `${this.apiBaseUrl}/api/passkey/v1/tx/sign/verify?origin=${window.location.origin}&ticket=${ticket}&network=${this.network}`,
             requestOptions as any
           );
           if (response2.ok) {
