@@ -142,7 +142,7 @@ export const NetworkdConfig: { [K in NetworkId]: INetwork } = {
     contracts: {
       USDT: "0x1927E2D716D7259d06006bFaF3dBFA22A12d6945",
       NFT: "0x9194618d3695902a426bfacc9e2182d2cb6ad880",
-      CommunityManager: "0x83924f7a84257c808a5af8a2650fec77f96ec1f0",
+      CommunityManager: "0x2cd38973607aefd027caceb5d189d918ef5718c6",
       EventManager: "0xd395e7293d2afeeeeae705d075b952c12315e510",   
     },
     bundler: [

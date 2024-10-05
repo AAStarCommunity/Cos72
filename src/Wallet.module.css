@@ -117,21 +117,28 @@
     margin-top: 10px;
     display: flex;
     gap: 30px;
-    justify-content: space-between;
+    
 }
 .CommunityCard {
     border-radius: 10px;
-    background-color: #424b57;
+    background-color: #2D82B7; 
     width: 25%;
     padding: 10px;
+    cursor: pointer;
+}
+
+.CommunityCardInfo {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
 }
 
 .CommunityDetailCard {
     display: flex;
     align-items: center;
-    
     gap: 10px;
 }
+
 .joinerList {
     display: flex;
     flex-direction: column;
