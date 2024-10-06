@@ -1974,7 +1974,7 @@ function App() {
                 <Button
                   label="Create Goods"
                   onClick={() => {
-                    setIsShowCreateCommunityNFTDialog(true);
+                    setIsShowCreateCommunityGoodsDialog(true);
                   }}
                 ></Button>
                 <div>

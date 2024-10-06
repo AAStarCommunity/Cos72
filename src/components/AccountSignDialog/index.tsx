@@ -33,11 +33,18 @@ function AccountSignDialog({ onHide, visible }: AccountSignDialogParams) {
     if (email && !captcha) {
       setLoading(true);
 
-      const result = await airAccount.sendCaptcha(email);
-      if (result) {
-        sendCaptchaSuccess(true);
+      const result = await airAccount.login(email);
+      if (result === false) {
+        const sendCaptchaResult = await airAccount.sendCaptcha(email);
+        if (sendCaptchaResult) {
+          sendCaptchaSuccess(true);
+        }
       }
-      console.log(result);
+      else {
+        onHide();
+      }
+      
+      // console.log(result);
       setLoading(false);
     } else if (email && captcha) {
       setLoading(true);

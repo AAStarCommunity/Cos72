@@ -83,6 +83,50 @@ export class AirAccountAPI extends BaseAccountAPI {
     }
   }
 
+  async login(email: string) {
+    try {
+      const raw = JSON.stringify({
+        email,
+        origin: window.location.origin,
+      });
+      const requestOptions = {
+        method: "POST",
+        body: raw,
+      };
+      const signResponse = await fetch(
+        `${this.apiBaseUrl}/api/passkey/v1/sign`,
+        requestOptions
+      );
+      
+      if (signResponse.ok) {
+        const body = await signResponse.json();
+        const json = body.data as PublicKeyCredentialRequestOptionsJSON;
+        const attest = await startAuthentication(json);
+        // console.log(attest)
+        const requestOptions = {
+          method: "POST",
+          body: JSON.stringify(attest),
+        };
+
+        const response2 = await fetch(
+          `${this.apiBaseUrl}/api/passkey/v1/sign/verify?&origin=${window.location.origin}&network=${this.network}`,
+          requestOptions as any
+        );
+        if (response2.ok) {
+          const body2 = await response2.json();
+          if (body2.code === 200) {
+            localStorage.setItem("airaccount_token", body2.token);
+            return true;
+          }
+        }
+      }
+    }
+    catch(error) {
+      
+    }
+    return false;
+  }
+
   async register(email: string, captcha: string) {
     const raw = JSON.stringify({
       captcha,
