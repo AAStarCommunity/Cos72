@@ -10,10 +10,11 @@
     display: flex;
     flex-direction: column;
     gap: 10px;
+    flex: 1;
 }
 
 .SignInDialog {
-    width: 500px;
+    width: 800px;
 }
 
 .Register {
@@ -34,4 +35,9 @@
 }
 .WelcomeBack img {
     width: 140px;
+}
+
+.inputRowWrapper {
+    display: flex;
+    gap: 20px;
 }

@@ -23,7 +23,7 @@ function CreateCommunityGoodsDialog({
   const toast = useRef<Toast>(null);
 
   const [name, setName] = useState<string | null>(null);
- 
+
   const [logo, setLogo] = useState<string | null>(null);
   const [description, setDescription] = useState<string | null>(null);
   const [payToken, setPayToken] = useState<string | null>(null);
@@ -41,47 +41,52 @@ function CreateCommunityGoodsDialog({
     >
       <Toast ref={toast} />
       <div className={styles.Register}>
-        <div className={styles.inputRow}>
-          <div>Name</div>
-          <InputText
-            value={name}
-            className={styles.input}
-            onChange={(event) => {
-              setName(event.target.value);
-            }}
-          ></InputText>
+        <div className={styles.inputRowWrapper}>
+          <div className={styles.inputRow}>
+            <div>Name</div>
+            <InputText
+              value={name}
+              className={styles.input}
+              onChange={(event) => {
+                setName(event.target.value);
+              }}
+            ></InputText>
+          </div>
+
+          <div className={styles.inputRow}>
+            <div>Description</div>
+            <InputText
+              value={description}
+              className={styles.input}
+              onChange={(event) => {
+                setDescription(event.target.value);
+              }}
+            ></InputText>
+          </div>
         </div>
-      
-        <div className={styles.inputRow}>
-          <div>Description</div>
-          <InputText
-            value={description}
-            className={styles.input}
-            onChange={(event) => {
-              setDescription(event.target.value);
-            }}
-          ></InputText>
+        <div className={styles.inputRowWrapper}>
+          <div className={styles.inputRow}>
+            <div>Logo</div>
+            <InputText
+              value={logo}
+              className={styles.input}
+              onChange={(event) => {
+                setLogo(event.target.value);
+              }}
+            ></InputText>
+          </div>
+          <div className={styles.inputRow}>
+            <div>Pay Token</div>
+            <InputText
+              value={payToken}
+              className={styles.input}
+              onChange={(event) => {
+                setPayToken(event.target.value);
+              }}
+            ></InputText>
+          </div>
         </div>
-        <div className={styles.inputRow}>
-          <div>Logo</div>
-          <InputText
-            value={logo}
-            className={styles.input}
-            onChange={(event) => {
-              setLogo(event.target.value);
-            }}
-          ></InputText>
-        </div>
-        <div className={styles.inputRow}>
-          <div>Pay Token</div>
-          <InputText
-            value={payToken}
-            className={styles.input}
-            onChange={(event) => {
-              setPayToken(event.target.value);
-            }}
-          ></InputText>
-        </div>
+        <div className={styles.inputRowWrapper}>
         <div className={styles.inputRow}>
           <div>Price</div>
           <InputText
@@ -93,7 +98,20 @@ function CreateCommunityGoodsDialog({
           ></InputText>
         </div>
         <div className={styles.inputRow}>
-          <div>Receiver</div>
+        <div>Amount</div>
+            <InputText
+              value={amount}
+              className={styles.input}
+              onChange={(event) => {
+                setAmount(event.target.value);
+              }}
+            ></InputText>
+        </div>
+       </div>
+          <div className={styles.inputRow}>
+          
+
+<div>Receiver</div>
           <InputText
             value={receiver}
             className={styles.input}
@@ -101,24 +119,22 @@ function CreateCommunityGoodsDialog({
               setReceiver(event.target.value);
             }}
           ></InputText>
-        </div>
-        <div>
-        <div className={styles.inputRow}>
-          <div>Amount</div>
-          <InputText
-            value={amount}
-            className={styles.input}
-            onChange={(event) => {
-              setAmount(event.target.value);
-            }}
-          ></InputText>
-        </div>
+          </div>
+          <div className={styles.inputRow}>
           <Button
             loading={loading}
             label="Create"
             className={styles.SignInBtn}
             onClick={() => {
-              if (name  && description && logo && payToken && receiver && amount && price) {
+              if (
+                name &&
+                description &&
+                logo &&
+                payToken &&
+                receiver &&
+                amount &&
+                price
+              ) {
                 setLoading(true);
                 onCreate(
                   {
@@ -129,7 +145,6 @@ function CreateCommunityGoodsDialog({
                     price,
                     receiver,
                     amount,
-                    
                   },
                   () => {
                     setLoading(false);
@@ -138,8 +153,9 @@ function CreateCommunityGoodsDialog({
               }
             }}
           />
+          </div>
         </div>
-      </div>
+    
     </Dialog>
   );
 }
