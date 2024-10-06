@@ -74,7 +74,7 @@ interface Community {
     receiver: string;
     price: string;
     amount: string;
-
+    payTokenSymbol: string;
   } [];
 }
 
@@ -483,6 +483,14 @@ function App() {
           currentNetworkdConfig[currentChainId].rpc
         )
       );
+      const tokenContract = new ethers.Contract(
+        communityGoods.payToken,
+        TetherTokenABI,
+        new ethers.providers.JsonRpcProvider(
+          currentNetworkdConfig[currentChainId].rpc
+        )
+      );
+      const tokenDecimals = await tokenContract.decimals()
       // Encode the calls
       const callTo = [currentCommunity.address];
       //   function createNFT(string memory _name, string memory _symbol, string memory _baseTokenURI, uint256 _price) external onlyOwner {
@@ -497,8 +505,8 @@ function App() {
             logo: communityGoods.logo,
             payToken: communityGoods.payToken,
             receiver: communityGoods.receiver,
-            amount: communityGoods.amount,
-            price: communityGoods.price,
+            amount: ethers.BigNumber.from(communityGoods.amount),
+            price:  ethers.utils.parseUnits(communityGoods.price, tokenDecimals),
           }
         ]),
       ];
@@ -1300,7 +1308,14 @@ function App() {
           CommunityGoodsABI,
           provider
         );
-        const setting = await communityGoods.setting()
+        const setting = await communityGoods.setting();
+        const payTokenContract = new ethers.Contract(
+          setting.payToken,
+          TetherTokenABI,
+          provider
+        );
+        const [decimals, symbol] = await Promise.all([payTokenContract.decimals(),payTokenContract.symbol()]);
+
 
         goodsList.push({
           address: goodsAddressList[m],
@@ -1309,7 +1324,8 @@ function App() {
           logo: setting.logo,
           payToken: setting.payToken,
           receiver: setting.receiver,
-          price: setting.price,
+          price: ethers.utils.formatUnits(setting.price, decimals),
+          payTokenSymbol: symbol,
           amount: setting.amount
         });
       }
@@ -1952,41 +1968,55 @@ function App() {
                         <div>Name : {item.name}</div>
                         <div>Symbol : {item.symbol}</div>
                         <div>Price: {ethers.utils.formatEther(item.price)}</div>
-                        <div>  <Button
-                          label="Approve"
-                          onClick={() => {
-                            setIsShowCreateCommunityNFTDialog(true);
-                          }}
-                        ></Button>
-                        <Button
-                          label="Buy"
-                          onClick={() => {
-                            setIsShowCreateCommunityNFTDialog(true);
-                          }}
-                        ></Button></div>
-                      
+                        <div>
+                          {" "}
+                          <Button
+                            label="Approve"
+                            onClick={() => {
+                              setIsShowCreateCommunityNFTDialog(true);
+                            }}
+                          ></Button>
+                          <Button
+                            label="Buy"
+                            onClick={() => {
+                              setIsShowCreateCommunityNFTDialog(true);
+                            }}
+                          ></Button>
+                        </div>
                       </div>
                     );
                   })}
                 </div>
               </TabPanel>
               <TabPanel header="Goods">
+              <div className={styles.btnRow}>
                 <Button
                   label="Create Goods"
                   onClick={() => {
                     setIsShowCreateCommunityGoodsDialog(true);
                   }}
                 ></Button>
+                </div>
                 <div>
                   {currentCommunity?.goodsList.map((item) => {
                     return (
-                      <div key={item.address} className={styles.CommunityNFT}>
+                      <div key={item.address} className={styles.CommunityGoods}>
+                        <div className={styles.CommunityGoodsLogo} ><img src={item.logo} /></div>
                         <div>Name : {item.name}</div>
                         <div>Description : {item.description}</div>
-                        <div>Price: {ethers.utils.formatEther(item.price)}</div>
-                        <div>  </div>
-                      
+                        <div>Price: {item.price} {item.payTokenSymbol}</div>
+                        <div> <Chip
+                className={styles.CommunityCardContractAddress}
+                onClick={() => {
+                  window.open(
+                    `${currentNetworkdConfig[currentChainId].blockExplorerURL}/address/${item.address}`,
+                    "_blank"
+                  );
+                }}
+                label={`Contract ${item.address}`}
+              ></Chip> </div>
                       </div>
+                    
                     );
                   })}
                 </div>
@@ -2130,7 +2160,7 @@ function App() {
         }}
       ></CreateCommunityNFTDialog>
 
-<CreateCommunityGoodsDialog
+      <CreateCommunityGoodsDialog
         visible={isShowCreateCommunityGoodsDialog}
         onHide={() => {
           setIsShowCreateCommunityGoodsDialog(false);
