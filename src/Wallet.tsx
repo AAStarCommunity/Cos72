@@ -1997,7 +1997,7 @@ function App() {
                   }}
                 ></Button>
                 </div>
-                <div>
+                <div className={styles.CommunityGoodsList}>
                   {currentCommunity?.goodsList.map((item) => {
                     return (
                       <div key={item.address} className={styles.CommunityGoods}>
