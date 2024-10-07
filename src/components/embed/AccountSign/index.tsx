@@ -22,6 +22,37 @@ function AccountSign({ onComplete }: AccountSignDialogParams) {
   const [loading, setLoading] = useState(false);
   const [captchaSuccess, sendCaptchaSuccess] = useState(false);
   const [captcha, setCaptcha] = useState<string | null>(null);
+  // const register = async () => {
+  //   const airAccount = new AirAccountAPI({
+  //     provider: new ethers.providers.JsonRpcProvider(
+  //       NetworkdConfig[networkIds.OP_SEPOLIA].rpc
+  //     ),
+  //     entryPointAddress: entryPointAddress,
+  //   });
+  //   if (email && !captcha) {
+  //     setLoading(true);
+
+  //     const result = await airAccount.sendCaptcha(email);
+  //     if (result) {
+  //       sendCaptchaSuccess(true);
+  //     }
+  //     console.log(result);
+  //     setLoading(false);
+  //   } else if (email && captcha) {
+  //     setLoading(true);
+  //     const result = await airAccount.register(email, captcha);
+  //     if (result === true) {
+  //       onComplete();
+  //     }
+  //     if (result === "invalid captcha") {
+  //       if (toast.current) {
+  //           toast.current?.show({severity:'error', summary: 'Error', detail:'Invalid captcha', life: 3000});
+  //       }
+  //     }
+  //     setLoading(false);
+  //   }
+  // };
+
   const register = async () => {
     const airAccount = new AirAccountAPI({
       provider: new ethers.providers.JsonRpcProvider(
@@ -32,11 +63,18 @@ function AccountSign({ onComplete }: AccountSignDialogParams) {
     if (email && !captcha) {
       setLoading(true);
 
-      const result = await airAccount.sendCaptcha(email);
-      if (result) {
-        sendCaptchaSuccess(true);
+      const result = await airAccount.login(email);
+      if (result === false) {
+        const sendCaptchaResult = await airAccount.sendCaptcha(email);
+        if (sendCaptchaResult) {
+          sendCaptchaSuccess(true);
+        }
       }
-      console.log(result);
+      else {
+        onComplete();
+      }
+      
+      // console.log(result);
       setLoading(false);
     } else if (email && captcha) {
       setLoading(true);
