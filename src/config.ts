@@ -1,6 +1,8 @@
 import { ethers } from "ethers";
 import { BundlerConfig, PaymasterConfig } from "./sdk/AAStarClient";
 
+import { PinataSDK } from "pinata"
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export const networkIds = {
   ETH_SEPOLIA: 11155111,
@@ -19,6 +21,8 @@ export interface INetwork {
     USDT: string;
     NFT: string;
     CommunityManager: string;
+    CommunityV1: string;
+    CommunityStoreV1: string;
     EventManager: string;
   };
   bundler: BundlerConfig[];
@@ -33,6 +37,8 @@ export const NetworkdConfig: { [K in NetworkId]: INetwork } = {
     contracts: {
       USDT: "0x7169D38820dfd117C3FA1f22a697dBA58d90BA06",
       NFT: "0xCEf599508abd274bab8F0D9D9149d9ceeD9a2A07",
+      CommunityV1: ethers.constants.AddressZero,
+      CommunityStoreV1: ethers.constants.AddressZero,
       CommunityManager: ethers.constants.AddressZero,
       EventManager: ethers.constants.AddressZero
     },
@@ -109,6 +115,8 @@ export const NetworkdConfig: { [K in NetworkId]: INetwork } = {
     blockExplorerURL: "https://explorer.optimism.io",
     contracts: {
       USDT: "0x1927e2d716d7259d06006bfaf3dbfa22a12d6945",
+      CommunityV1: ethers.constants.AddressZero,
+      CommunityStoreV1: ethers.constants.AddressZero,
       NFT: ethers.constants.AddressZero,
       CommunityManager: ethers.constants.AddressZero,
       EventManager: ethers.constants.AddressZero
@@ -142,25 +150,25 @@ export const NetworkdConfig: { [K in NetworkId]: INetwork } = {
     contracts: {
       USDT: "0x1927E2D716D7259d06006bFaF3dBFA22A12d6945",
       NFT: "0x9194618d3695902a426bfacc9e2182d2cb6ad880",
-      CommunityManager: "0x2cd38973607aefd027caceb5d189d918ef5718c6",
-      EventManager: "0xd395e7293d2afeeeeae705d075b952c12315e510",   
+      CommunityV1: "0x1d34bbf294172d49a8d4aa02fc772cc9f3297f9a",
+      CommunityStoreV1: "0x2fa277d572f1f204e0ca580594e402b9e353c5f3",
+      CommunityManager:  "0x010dc3cc5842b1ffe3b154f150e30e6c84c91892",
+      EventManager: ethers.constants.AddressZero,
     },
     bundler: [
       {
-        provider: "stackup",
+        provider: "pimlico",
         config: {
-          url: "https://api.stackup.sh/v1/node/7d139a21553146569a5bfb71478befa462bda69335e469cf25463ea6bc8b2366",
+          url: "https://api.pimlico.io/v2/11155420/rpc?apikey=pim_PNTJ54EjpSADqaP5GdE3gv",
         },
       },
     ],
     paymaster: [
       {
-        provider: "stackup",
+        provider: "pimlico",
         config: {
-          url: "https://api.stackup.sh/v1/paymaster/7d139a21553146569a5bfb71478befa462bda69335e469cf25463ea6bc8b2366",
-          option: {
-            type: "payg",
-          },
+          url: "https://api.pimlico.io/v2/11155420/rpc?apikey=pim_PNTJ54EjpSADqaP5GdE3gv",
+     
         },
       },
     ],
@@ -173,8 +181,10 @@ export const NetworkdConfig: { [K in NetworkId]: INetwork } = {
     contracts: {
       USDT: "0x1927E2D716D7259d06006bFaF3dBFA22A12d6945",
       NFT: ethers.constants.AddressZero,
-      CommunityManager: ethers.constants.AddressZero,
-      EventManager: ethers.constants.AddressZero
+      CommunityV1: ethers.constants.AddressZero,
+      CommunityStoreV1: ethers.constants.AddressZero,
+      CommunityManager:  ethers.constants.AddressZero,
+      EventManager: ethers.constants.AddressZero,
     },
     bundler: [
       {
@@ -204,8 +214,10 @@ export const NetworkdConfig: { [K in NetworkId]: INetwork } = {
     contracts: {
       USDT: "0x1927E2D716D7259d06006bFaF3dBFA22A12d6945",
       NFT: "0xCEf599508abd274bab8F0D9D9149d9ceeD9a2A07",
-      CommunityManager: "0x9194618D3695902A426BfAcC9e2182D2cB6Ad880",
-      EventManager: "0x0B661e23F1E22D55719f0b425Ac99e1DB40b07d9"
+      CommunityV1: ethers.constants.AddressZero,
+      CommunityStoreV1: ethers.constants.AddressZero,
+      CommunityManager:  ethers.constants.AddressZero,
+      EventManager: ethers.constants.AddressZero,
     },
     bundler: [
       {
@@ -228,3 +240,9 @@ export const NetworkdConfig: { [K in NetworkId]: INetwork } = {
     ],
   },
 };
+
+
+export const pinata = new PinataSDK({
+  pinataJwt: `${import.meta.env.VITE_PINATA_JWT}`,
+  pinataGateway: `${import.meta.env.VITE_GATEWAY_URL}`
+})

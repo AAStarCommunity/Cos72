@@ -16,6 +16,7 @@ import { PrimeReactProvider } from 'primereact/api';
 
 import "primereact/resources/themes/lara-dark-teal/theme.css";
 import 'primeicons/primeicons.css';
+import CommunityAdmin from "./CommunityAdmin.tsx";
 const router = createBrowserRouter([
   {
     path: "/demo",
@@ -23,12 +24,12 @@ const router = createBrowserRouter([
   },
   {
     path: "/",
-    element: <Wallet></Wallet>,
+    element: <CommunityAdmin></CommunityAdmin>,
   },
-  {
-    path: "/register",
-    element: <Register></Register>,
-  },
+  // {
+  //   path: "/register",
+  //   element: <Register></Register>,
+  // },
   {
     path: "/tutorial",
     element: <Tutorial></Tutorial>

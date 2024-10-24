@@ -8,6 +8,8 @@ import { useRef, useState } from "react";
 import { Dialog } from "primereact/dialog";
 
 import { Toast } from "primereact/toast";
+import { FileUpload, FileUploadHandlerEvent } from "primereact/fileupload";
+import { pinata } from "../../config";
 
 interface SendTokenDialogParams {
   onHide: () => void;
@@ -21,13 +23,25 @@ function CreateCommunityDialog({
   onCreate,
 }: SendTokenDialogParams) {
   const toast = useRef<Toast>(null);
-
   const [name, setName] = useState<string | null>(null);
- 
   const [desc, setDesc] = useState<string | null>(null);
   const [logo, setLogo] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-
+  const fileUploadRef = useRef<any>(null);
+  const uploadImage = async (event: FileUploadHandlerEvent) => {
+    try {
+      const upload = await pinata.upload.file(event.files[0]);
+      setLogo(upload.cid);
+      if (fileUploadRef) {
+        fileUploadRef.current.clear();
+        fileUploadRef.current.setUploadedFiles(event.files);
+      }
+      return true;
+      
+    } catch (error) {
+      return false;
+    }
+  }
   return (
     <Dialog
       className={styles.SignInDialog}
@@ -63,10 +77,12 @@ function CreateCommunityDialog({
           <InputText
             value={logo}
             className={styles.input}
+            readOnly
             onChange={(event) => {
               setLogo(event.target.value);
             }}
           ></InputText>
+           <FileUpload ref={fileUploadRef} name="logo[]" customUpload uploadHandler={uploadImage} accept="image/*" maxFileSize={1000000} emptyTemplate={<p className="m-0">Drag and drop files to here to upload.</p>} />
         </div>
 
         <div>
@@ -80,7 +96,7 @@ function CreateCommunityDialog({
                 onCreate(
                   {
                     name,
-                    desc,
+                    description: desc,
                     logo
                   },
                   () => {
