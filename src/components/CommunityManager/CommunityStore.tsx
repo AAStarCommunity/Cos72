@@ -1,64 +1,66 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { Chip } from "primereact/chip";
-import { Community, communityListAtom, currentCommunityAtom } from "../../atoms/Community";
+import { communityListAtom, currentCommunityAtom, currentCommunityStoreAtom, Store } from "../../atoms/Community";
 import styles from "./index.module.css";
 import { Button } from "primereact/button";
 import { DataView } from "primereact/dataview";
-import { useAtom, useAtomValue, useSetAtom } from "jotai";
+import {useAtomValue, useSetAtom } from "jotai";
 import { currentChainAtom } from "../../atoms/CurrentChain";
 import { userInfoAtom } from "../../atoms/UserInfo";
-import CreateCommunityDialog from "../CreateCommunityDialog";
+
 import { toast } from "react-toastify";
 import { useState } from "react";
 import { AAStarClient } from "../../sdk";
 import { ethers } from "ethers";
-import CommunityManagerJSON from "../../contracts/CommunityManager.json";
 import CommunityJSON from "../../contracts/Community.json";
+import CommunityStoreJSON from "../../contracts/CommunityStore.json";
 import { currentPathAtom } from "../../atoms/CurrentPath";
-const CommunityManagerABI = CommunityManagerJSON.abi;
+import CreateCommunityStoreDialog from "../CreateCommunityStoreDialog";
+
 const CommunityABI = CommunityJSON.abi;
-function CommunityManager() {
+const CommunityStoreABI = CommunityStoreJSON.abi;
+function CommunityStoreManager() {
   const currentChain = useAtomValue(currentChainAtom);
   const userInfo = useAtomValue(userInfoAtom);
-  const [communityList, loadCommunityList] = useAtom(communityListAtom);
+  const loadCommunityList = useSetAtom(communityListAtom);
 
   const setCurrentPath = useSetAtom(currentPathAtom);
-  const setCurrentCommunity = useSetAtom(currentCommunityAtom);
-
-  const [isShowCreateCommunityDialog, setIsShowCreateCommunityDialog] =
+  const currentCommunity = useAtomValue(currentCommunityAtom);
+  const setCurrentCommunityStore = useSetAtom(currentCommunityStoreAtom);
+  const [isShowCreateCommunityStoreDialog, setIsShowCreateCommunityStoreDialog] =
     useState(false);
-  const communityTemplate = (communityList: Community[]) => {
+  const communityStoreTemplate = (storeList: Store[]) => {
     //console.log(tokenList, tokenIds);
     return (
       <div className={styles.CommunityCardList}>
-        {communityList.map((community: any) => {
+        {storeList.map((store: Store) => {
           return (
             <div
               className={styles.CommunityCard}
-              key={community.address}
+              key={store.address}
               onClick={() => {
-                 setCurrentCommunity(community);
-                 setCurrentPath("community-detail");
+                setCurrentCommunityStore(store);
+                 setCurrentPath("community-store-detail");
               }}
             >
               {/* <div>{token.loading === true && <Skeleton height="100px"></Skeleton>}</div> */}
               <div className={styles.CommunityImg}>
-                <img src={community.logo}></img>
+                <img src={store.logo}></img>
               </div>
               <div className={styles.CommunityCardInfo}>
-                <div className={styles.CommunityText}>{community.name}</div>
-                <div className={styles.CommunityText}>{community.description}</div>
+                <div className={styles.CommunityText}>{store.name}</div>
+                <div className={styles.CommunityText}>{store.description}</div>
                 <div className={styles.CommunityText}>
                   <Chip
                     className={styles.CommunityCardContractAddress}
                     onClick={() => {
                       window.open(
-                        `${currentChain.blockExplorerURL}/address/${community.address}`,
+                        `${currentChain.blockExplorerURL}/address/${store.address}`,
                         "_blank"
                       );
                     }}
-                    label={`Contract ${community.address}`}
+                    label={`Contract ${store.address}`}
                   ></Chip>
                 </div>
               </div>
@@ -69,7 +71,10 @@ function CommunityManager() {
       </div>
     );
   };
-  const createCommunity = async (community: any) => {
+  const createCommunityStore = async (store: any) => {
+    if (!currentCommunity) {
+        return;
+    }
     const id = toast.loading("Please wait...");
 
     //do something else
@@ -89,14 +94,7 @@ function CommunityManager() {
         rpc: currentChain.rpc, // rpc节点地址,
       });
 
-      // 第二步 创建合约调用参数
-      const CommunityManagerContract = new ethers.Contract(
-        currentChain.contracts.CommunityManager,
-        CommunityManagerABI,
-        new ethers.providers.JsonRpcProvider(
-          currentChain.rpc
-        )
-      );
+
       const CommunityContract = new ethers.Contract(
         currentChain.contracts.CommunityV1,
         CommunityABI,
@@ -104,17 +102,24 @@ function CommunityManager() {
           currentChain.rpc
         )
       );
+
+
+      const CommunityStoreContract = new ethers.Contract(
+        currentChain.contracts.CommunityStoreV1,
+        CommunityStoreABI,
+        new ethers.providers.JsonRpcProvider(
+          currentChain.rpc
+        )
+      );
       // Encode the calls
       const callTo = [
-        currentChain.contracts.CommunityManager,
+        currentCommunity.address,
       ];
-
-
-      const data = CommunityContract.interface.encodeFunctionData("initialize", [(userInfo as any).aa, community])
+      const data = CommunityStoreContract.interface.encodeFunctionData("initialize", [(userInfo as any).aa, store])
       const callData = [
-        CommunityManagerContract.interface.encodeFunctionData(
-          "createCommunity",
-          [currentChain.contracts.CommunityV1, data]
+        CommunityContract.interface.encodeFunctionData(
+          "createStore",
+          [currentChain.contracts.CommunityStoreV1, data]
         ),
       ];
       console.log("Waiting for transaction...");
@@ -154,33 +159,36 @@ function CommunityManager() {
       <div className={styles.Community}>
         <div className={styles.btnRow}>
           <Button
-            disabled={!userInfo && currentChain.contracts.CommunityManager !== ethers.constants.AddressZero}
-            label="Create Community"
+            disabled={!userInfo || currentCommunity?.isAdmin}
+            label="Create Store"
             className={styles.mintUSDTBtn}
             onClick={() => {
-              setIsShowCreateCommunityDialog(true);
+                setIsShowCreateCommunityStoreDialog(true);
             }}
           />
         </div>
-        <DataView
-          className={styles.CommunityDataView}
-          value={communityList}
-          listTemplate={communityTemplate as any}
-        ></DataView>
+        {
+            currentCommunity &&   <DataView
+            className={styles.CommunityDataView}
+            value={currentCommunity.storeList}
+            listTemplate={communityStoreTemplate as any}
+          ></DataView>
+        }
+      
       </div>
-      <CreateCommunityDialog
-        visible={isShowCreateCommunityDialog}
+      <CreateCommunityStoreDialog
+        visible={isShowCreateCommunityStoreDialog}
         onHide={() => {
-          setIsShowCreateCommunityDialog(false);
+          setIsShowCreateCommunityStoreDialog(false);
         }}
         onCreate={async (data, callback: any) => {
-          await createCommunity(data);
+          await createCommunityStore(data);
           callback();
-          setIsShowCreateCommunityDialog(false);
+          setIsShowCreateCommunityStoreDialog(false);
         }}
-      ></CreateCommunityDialog>
+      ></CreateCommunityStoreDialog>
     </>
   );
 }
 
-export default CommunityManager;
+export default CommunityStoreManager;

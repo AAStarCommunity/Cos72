@@ -45,8 +45,11 @@ import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { userInfoAtom } from "./atoms/UserInfo";
 import { currentChainAtom } from "./atoms/CurrentChain";
 import CommunityManager from "./components/CommunityManager";
-import { communityListAtom } from "./atoms/Community";
+import { communityListAtom, loadCommunityListLoadingAtom } from "./atoms/Community";
 import CommunityDetail from "./components/CommunityManager/CommunityDetail";
+import { currentPathAtom } from "./atoms/CurrentPath";
+import DataLoading from "./components/DataLoading";
+import CommunityStoreDetail from "./components/CommunityManager/CommunityStoreDetail";
 
 interface TransactionLog {
   aaAccount: string;
@@ -74,9 +77,11 @@ function CommunityAdmin() {
 
   const loadUserInfo = useSetAtom(userInfoAtom);
   const loadCommunityList = useSetAtom(communityListAtom);
+  const loadCommunityListLoading = useAtomValue(loadCommunityListLoadingAtom)
   const [currentNetworkdConfig, setCurrentNetworkdConfig] =
     useState(NetworkdConfig);
-  const [currentPath, setCurrentPath] = useState("community");
+
+  const [currentPath, setCurrentPath] = useAtom(currentPathAtom);
   const items: MenuItem[] = [
     {
       label: "Community",
@@ -150,6 +155,9 @@ function CommunityAdmin() {
 
         {currentPath === "community-detail" && (
           <CommunityDetail></CommunityDetail>
+        )}
+         {currentPath === "community-store-detail" && (
+          <CommunityStoreDetail></CommunityStoreDetail>
         )}
         {/* {currentPath === "community-detail" && (
           <div className={styles.Community}>
@@ -265,7 +273,7 @@ function CommunityAdmin() {
       </div>
  
 
-
+      <DataLoading loading={loadCommunityListLoading}></DataLoading>
       <ToastContainer />
     </div>
   );
