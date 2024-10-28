@@ -18,6 +18,7 @@ import CommunityStoreJSON from "../../contracts/CommunityStore.json";
 import { currentPathAtom } from "../../atoms/CurrentPath";
 import CreateCommunityStoreDialog from "../CreateCommunityStoreDialog";
 import { TabPanel, TabView } from "primereact/tabview";
+import CommunityStoreGoodsManager from "./CommunityStoreGoods";
 
 const CommunityABI = CommunityJSON.abi;
 const CommunityStoreABI = CommunityStoreJSON.abi;
@@ -136,7 +137,7 @@ function CommunityStoreDetail() {
             <TabView >
 
               <TabPanel header="Goods">
-          
+                    <CommunityStoreGoodsManager></CommunityStoreGoodsManager>
               </TabPanel>
             </TabView>
           </div>

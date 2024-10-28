@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { Chip } from "primereact/chip";
-import { communityListAtom, currentCommunityAtom, currentCommunityStoreAtom, Store } from "../../atoms/Community";
+import { communityListAtom, currentCommunityAtom, currentCommunityStoreAtom, Goods, Store } from "../../atoms/Community";
 import styles from "./index.module.css";
 import { Button } from "primereact/button";
 import { DataView } from "primereact/dataview";
@@ -13,56 +13,57 @@ import { toast } from "react-toastify";
 import { useState } from "react";
 import { AAStarClient } from "../../sdk";
 import { ethers } from "ethers";
-import CommunityJSON from "../../contracts/Community.json";
 import CommunityStoreJSON from "../../contracts/CommunityStore.json";
+import TetherTokenJSON from "../../contracts/TetherToken.json";
 import { currentPathAtom } from "../../atoms/CurrentPath";
-import CreateCommunityStoreDialog from "../CreateCommunityStoreDialog";
 
-const CommunityABI = CommunityJSON.abi;
+import CreateCommunityGoodsDialog from "../CreateCommunityGoodsDialog";
+import { Swiper, SwiperSlide } from 'swiper/react';
+import { Navigation } from 'swiper/modules';
+// Import Swiper styles
+import 'swiper/css';
+import 'swiper/css/navigation';
+
 const CommunityStoreABI = CommunityStoreJSON.abi;
-function CommunityStoreManager() {
+const TetherTokenABI = TetherTokenJSON.abi;
+function CommunityStoreGoodsManager() {
   const currentChain = useAtomValue(currentChainAtom);
   const userInfo = useAtomValue(userInfoAtom);
   const loadCommunityList = useSetAtom(communityListAtom);
 
   const setCurrentPath = useSetAtom(currentPathAtom);
   const currentCommunity = useAtomValue(currentCommunityAtom);
-  const setCurrentCommunityStore = useSetAtom(currentCommunityStoreAtom);
-  const [isShowCreateCommunityStoreDialog, setIsShowCreateCommunityStoreDialog] =
+  const currentCommunityStore = useAtomValue(currentCommunityStoreAtom);
+  const [isShowCreateCommunityGoodsDialog, setIsShowCreateCommunityGoodsDialog] =
     useState(false);
-  const communityStoreTemplate = (storeList: Store[]) => {
+  const communityGoodsTemplate = (goodsList: Goods[]) => {
     //console.log(tokenList, tokenIds);
     return (
       <div className={styles.CommunityCardList}>
-        {storeList.map((store: Store) => {
+        {goodsList.map((goods: Goods) => {
           return (
             <div
               className={styles.CommunityCard}
-              key={store.address}
+              key={goods.id}
               onClick={() => {
-                setCurrentCommunityStore(store);
-                 setCurrentPath("community-store-detail");
+               
               }}
             >
               {/* <div>{token.loading === true && <Skeleton height="100px"></Skeleton>}</div> */}
-              <div className={styles.CommunityImg}>
-                <img src={store.logo}></img>
+              <div className={styles.CommunityGoodsImg}>
+                
+                     <Swiper navigation={true} modules={[Navigation]} className="mySwiper">
+                    {goods.images.map((item:string) => {
+                        return  <SwiperSlide key={item}><img src={item}></img></SwiperSlide>
+                    })}
+                    </Swiper>
+                
+                {/* <img src={store.logo}></img> */}
               </div>
               <div className={styles.CommunityCardInfo}>
-                <div className={styles.CommunityText}>{store.name}</div>
-                <div className={styles.CommunityText}>{store.description}</div>
-                <div className={styles.CommunityText}>
-                  <Chip
-                    className={styles.CommunityCardContractAddress}
-                    onClick={() => {
-                      window.open(
-                        `${currentChain.blockExplorerURL}/address/${store.address}`,
-                        "_blank"
-                      );
-                    }}
-                    label={`Contract ${store.address}`}
-                  ></Chip>
-                </div>
+                <div className={styles.CommunityText}>{goods.name}</div>
+                <div className={styles.CommunityText}>{goods.description}</div>
+               
               </div>
               <div></div>
             </div>
@@ -71,10 +72,11 @@ function CommunityStoreManager() {
       </div>
     );
   };
-  const createCommunityStore = async (store: any) => {
-    if (!currentCommunity) {
+  const createCommunityStoreGoods = async (communityGoods: any) => {
+    if (!currentCommunityStore) {
         return;
     }
+  
     const id = toast.loading("Please wait...");
 
     //do something else
@@ -95,31 +97,51 @@ function CommunityStoreManager() {
       });
 
 
-      const CommunityContract = new ethers.Contract(
-        currentChain.contracts.CommunityV1,
-        CommunityABI,
-        new ethers.providers.JsonRpcProvider(
-          currentChain.rpc
-        )
-      );
+
 
 
       const CommunityStoreContract = new ethers.Contract(
-        currentChain.contracts.CommunityStoreV1,
+        currentCommunityStore?.address,
         CommunityStoreABI,
         new ethers.providers.JsonRpcProvider(
           currentChain.rpc
         )
       );
+
+      const tokenContract = new ethers.Contract(
+        communityGoods.payToken,
+        TetherTokenABI,
+        new ethers.providers.JsonRpcProvider(
+            currentChain.rpc
+          )
+      );
+      const tokenDecimals = await tokenContract.decimals()
       // Encode the calls
       const callTo = [
-        currentCommunity.address,
+        currentCommunityStore.address,
       ];
-      const data = CommunityStoreContract.interface.encodeFunctionData("initialize", [(userInfo as any).aa, store])
+      const goodsData =   {
+        id: 0,
+
+        name: communityGoods.name,
+        description: communityGoods.description,
+        images: communityGoods.images.split(","),
+        descImages: communityGoods.descImages.split(","),
+        payToken: communityGoods.payToken,
+        payTokenSymbol: "",
+        payTokenDecimals: 0,
+        amount: ethers.BigNumber.from(communityGoods.amount),
+        price:  ethers.utils.parseUnits(communityGoods.price, tokenDecimals),
+      }
+      console.log(goodsData)
       const callData = [
-        CommunityContract.interface.encodeFunctionData(
-          "createStore",
-          [currentChain.contracts.CommunityStoreV1, data]
+        CommunityStoreContract.interface.encodeFunctionData(
+          "addGoods",
+          [
+            goodsData
+          
+            
+          ]
         ),
       ];
       console.log("Waiting for transaction...");
@@ -160,35 +182,35 @@ function CommunityStoreManager() {
         <div className={styles.btnRow}>
           <Button
             disabled={!userInfo || !currentCommunity?.isAdmin}
-            label="Create Store"
+            label="Add Goods"
             className={styles.mintUSDTBtn}
             onClick={() => {
-                setIsShowCreateCommunityStoreDialog(true);
+                setIsShowCreateCommunityGoodsDialog(true);
             }}
           />
         </div>
         {
-            currentCommunity &&   <DataView
+            currentCommunityStore &&   <DataView
             className={styles.CommunityDataView}
-            value={currentCommunity.storeList}
-            listTemplate={communityStoreTemplate as any}
+            value={currentCommunityStore.goodsList}
+            listTemplate={communityGoodsTemplate as any}
           ></DataView>
         }
       
       </div>
-      <CreateCommunityStoreDialog
-        visible={isShowCreateCommunityStoreDialog}
+      <CreateCommunityGoodsDialog
+        visible={isShowCreateCommunityGoodsDialog}
         onHide={() => {
-          setIsShowCreateCommunityStoreDialog(false);
+          setIsShowCreateCommunityGoodsDialog(false);
         }}
         onCreate={async (data, callback: any) => {
-          await createCommunityStore(data);
+          await createCommunityStoreGoods(data);
           callback();
-          setIsShowCreateCommunityStoreDialog(false);
+          setIsShowCreateCommunityGoodsDialog(false);
         }}
-      ></CreateCommunityStoreDialog>
+      ></CreateCommunityGoodsDialog>
     </>
   );
 }
 
-export default CommunityStoreManager;
+export default CommunityStoreGoodsManager;
