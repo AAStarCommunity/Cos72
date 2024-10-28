@@ -1,7 +1,6 @@
 import { ethers } from "ethers";
 import { atom } from "jotai";
 import { INetwork, pinata } from "../config";
-import { MulticallWrapper } from "ethers-multicall-provider";
 import CommunityManagerJSON from "../contracts/CommunityManager.json";
 import CommunityStoreJSON from "../contracts/CommunityStore.json";
 import CommunityJSON from "../contracts/Community.json";

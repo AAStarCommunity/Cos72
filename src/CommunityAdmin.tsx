@@ -2,48 +2,22 @@
 
 
 import styles from "./CommunityAdmin.module.css";
-import AccountSignDialog from "./components/AccountSignDialog";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Menubar } from "primereact/menubar";
 import AAStarLogo from "./assets/logo-aastar.png";
 
-import { ethers } from "ethers";
-import { INetwork, NetworkId, networkIds, NetworkdConfig } from "./config";
-import { AAStarClient, entryPointAddress } from "./sdk/AAStarClient";
-import { AirAccountAPI } from "./sdk/account/AirAccountAPI";
-import { Menu } from "primereact/menu";
+import { NetworkdConfig } from "./config";
 import { MenuItem } from "primereact/menuitem";
-import { Button } from "primereact/button";
-import TetherToken from "./contracts/TetherToken.json";
-import AAStarDemoNFT from "./contracts/AAStarDemoNFT.json";
 
-import Community from "./contracts/Community.json";
-import CommunityNFT from "./contracts/CommunityNFT.json";
-import CommunityGoods from "./contracts/CommunityGoods.json";
-import EventManager from "./contracts/EventManager.json";
-import { toast, ToastContainer } from "react-toastify";
-import { Chip } from "primereact/chip";
-import { DataView } from "primereact/dataview";
+import { ToastContainer } from "react-toastify";
 
-import { DataTable } from "primereact/datatable";
-import { Column } from "primereact/column";
 
-import CreateCommunityDialog from "./components/CreateCommunityDialog";
-import { Dropdown } from "primereact/dropdown";
 
-import { find } from "lodash";
-import CreateCommunityNFTDialog from "./components/CreateCommunityNFTDialog";
-import CreateCommunityPointTokenDialog from "./components/CreateCommunityPointTokenDialog";
-import SentCommunityPointTokenDialog from "./components/SentCommunityPointTokenDialog";
 import { JsonEditor } from "json-edit-react";
-import { MulticallWrapper } from "ethers-multicall-provider";
-import { TabPanel, TabView } from "primereact/tabview";
-import CreateCommunityGoodsDialog from "./components/CreateCommunityGoodsDialog";
 import NetworkSelector from "./components/NetworkSelector";
 import UserInfo from "./components/UserInfo";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { userInfoAtom } from "./atoms/UserInfo";
-import { currentChainAtom } from "./atoms/CurrentChain";
 import CommunityManager from "./components/CommunityManager";
 import { communityListAtom, loadCommunityListLoadingAtom } from "./atoms/Community";
 import CommunityDetail from "./components/CommunityManager/CommunityDetail";
@@ -51,22 +25,6 @@ import { currentPathAtom } from "./atoms/CurrentPath";
 import DataLoading from "./components/DataLoading";
 import CommunityStoreDetail from "./components/CommunityManager/CommunityStoreDetail";
 
-interface TransactionLog {
-  aaAccount: string;
-  userOpHash: string;
-  transactionHash: string;
-}
-
-
-interface Event {
-  id: number;
-  name: string;
-  link: string;
-  desc: string;
-  logo: string;
-  creator: string;
-  joinerList: string[];
-}
 
 
 

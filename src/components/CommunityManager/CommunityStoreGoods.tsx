@@ -1,11 +1,15 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { Chip } from "primereact/chip";
-import { communityListAtom, currentCommunityAtom, currentCommunityStoreAtom, Goods, Store } from "../../atoms/Community";
+import {
+  communityListAtom,
+  currentCommunityAtom,
+  currentCommunityStoreAtom,
+  Goods,
+} from "../../atoms/Community";
 import styles from "./index.module.css";
 import { Button } from "primereact/button";
 import { DataView } from "primereact/dataview";
-import {useAtomValue, useSetAtom } from "jotai";
+import { useAtomValue, useSetAtom } from "jotai";
 import { currentChainAtom } from "../../atoms/CurrentChain";
 import { userInfoAtom } from "../../atoms/UserInfo";
 
@@ -15,14 +19,13 @@ import { AAStarClient } from "../../sdk";
 import { ethers } from "ethers";
 import CommunityStoreJSON from "../../contracts/CommunityStore.json";
 import TetherTokenJSON from "../../contracts/TetherToken.json";
-import { currentPathAtom } from "../../atoms/CurrentPath";
 
 import CreateCommunityGoodsDialog from "../CreateCommunityGoodsDialog";
-import { Swiper, SwiperSlide } from 'swiper/react';
-import { Navigation } from 'swiper/modules';
+import { Swiper, SwiperSlide } from "swiper/react";
+import { Navigation } from "swiper/modules";
 // Import Swiper styles
-import 'swiper/css';
-import 'swiper/css/navigation';
+import "swiper/css";
+import "swiper/css/navigation";
 
 const CommunityStoreABI = CommunityStoreJSON.abi;
 const TetherTokenABI = TetherTokenJSON.abi;
@@ -31,11 +34,12 @@ function CommunityStoreGoodsManager() {
   const userInfo = useAtomValue(userInfoAtom);
   const loadCommunityList = useSetAtom(communityListAtom);
 
-  const setCurrentPath = useSetAtom(currentPathAtom);
   const currentCommunity = useAtomValue(currentCommunityAtom);
   const currentCommunityStore = useAtomValue(currentCommunityStoreAtom);
-  const [isShowCreateCommunityGoodsDialog, setIsShowCreateCommunityGoodsDialog] =
-    useState(false);
+  const [
+    isShowCreateCommunityGoodsDialog,
+    setIsShowCreateCommunityGoodsDialog,
+  ] = useState(false);
   const communityGoodsTemplate = (goodsList: Goods[]) => {
     //console.log(tokenList, tokenIds);
     return (
@@ -45,25 +49,29 @@ function CommunityStoreGoodsManager() {
             <div
               className={styles.CommunityCard}
               key={goods.id}
-              onClick={() => {
-               
-              }}
+              onClick={() => {}}
             >
               {/* <div>{token.loading === true && <Skeleton height="100px"></Skeleton>}</div> */}
               <div className={styles.CommunityGoodsImg}>
-                
-                     <Swiper navigation={true} modules={[Navigation]} className="mySwiper">
-                    {goods.images.map((item:string) => {
-                        return  <SwiperSlide key={item}><img src={item}></img></SwiperSlide>
-                    })}
-                    </Swiper>
-                
+                <Swiper
+                  navigation={true}
+                  modules={[Navigation]}
+                  className="mySwiper"
+                >
+                  {goods.images.map((item: string) => {
+                    return (
+                      <SwiperSlide key={item}>
+                        <img src={item}></img>
+                      </SwiperSlide>
+                    );
+                  })}
+                </Swiper>
+
                 {/* <img src={store.logo}></img> */}
               </div>
               <div className={styles.CommunityCardInfo}>
                 <div className={styles.CommunityText}>{goods.name}</div>
                 <div className={styles.CommunityText}>{goods.description}</div>
-               
               </div>
               <div></div>
             </div>
@@ -74,9 +82,9 @@ function CommunityStoreGoodsManager() {
   };
   const createCommunityStoreGoods = async (communityGoods: any) => {
     if (!currentCommunityStore) {
-        return;
+      return;
     }
-  
+
     const id = toast.loading("Please wait...");
 
     //do something else
@@ -86,8 +94,7 @@ function CommunityStoreGoodsManager() {
       // 第一步 创建 AAStarClient
       const bundlerConfig = currentChain.bundler[0];
 
-      const payMasterConfig =
-      currentChain.paymaster[0];
+      const payMasterConfig = currentChain.paymaster[0];
 
       const smartAccount = new AAStarClient({
         bundler: bundlerConfig as any, // bunder 配置
@@ -96,31 +103,21 @@ function CommunityStoreGoodsManager() {
         rpc: currentChain.rpc, // rpc节点地址,
       });
 
-
-
-
-
       const CommunityStoreContract = new ethers.Contract(
         currentCommunityStore?.address,
         CommunityStoreABI,
-        new ethers.providers.JsonRpcProvider(
-          currentChain.rpc
-        )
+        new ethers.providers.JsonRpcProvider(currentChain.rpc)
       );
 
       const tokenContract = new ethers.Contract(
         communityGoods.payToken,
         TetherTokenABI,
-        new ethers.providers.JsonRpcProvider(
-            currentChain.rpc
-          )
+        new ethers.providers.JsonRpcProvider(currentChain.rpc)
       );
-      const tokenDecimals = await tokenContract.decimals()
+      const tokenDecimals = await tokenContract.decimals();
       // Encode the calls
-      const callTo = [
-        currentCommunityStore.address,
-      ];
-      const goodsData =   {
+      const callTo = [currentCommunityStore.address];
+      const goodsData = {
         id: 0,
 
         name: communityGoods.name,
@@ -131,18 +128,13 @@ function CommunityStoreGoodsManager() {
         payTokenSymbol: "",
         payTokenDecimals: 0,
         amount: ethers.BigNumber.from(communityGoods.amount),
-        price:  ethers.utils.parseUnits(communityGoods.price, tokenDecimals),
-      }
-      console.log(goodsData)
+        price: ethers.utils.parseUnits(communityGoods.price, tokenDecimals),
+      };
+      console.log(goodsData);
       const callData = [
-        CommunityStoreContract.interface.encodeFunctionData(
-          "addGoods",
-          [
-            goodsData
-          
-            
-          ]
-        ),
+        CommunityStoreContract.interface.encodeFunctionData("addGoods", [
+          goodsData,
+        ]),
       ];
       console.log("Waiting for transaction...");
       // 第三步 发送 UserOperation
@@ -185,18 +177,17 @@ function CommunityStoreGoodsManager() {
             label="Add Goods"
             className={styles.mintUSDTBtn}
             onClick={() => {
-                setIsShowCreateCommunityGoodsDialog(true);
+              setIsShowCreateCommunityGoodsDialog(true);
             }}
           />
         </div>
-        {
-            currentCommunityStore &&   <DataView
+        {currentCommunityStore && (
+          <DataView
             className={styles.CommunityDataView}
             value={currentCommunityStore.goodsList}
             listTemplate={communityGoodsTemplate as any}
           ></DataView>
-        }
-      
+        )}
       </div>
       <CreateCommunityGoodsDialog
         visible={isShowCreateCommunityGoodsDialog}
