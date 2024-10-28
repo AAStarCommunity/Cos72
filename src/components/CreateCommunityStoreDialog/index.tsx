@@ -7,7 +7,6 @@ import styles from "./index.module.css";
 import { useRef, useState } from "react";
 import { Dialog } from "primereact/dialog";
 
-import { Toast } from "primereact/toast";
 import { FileUpload, FileUploadHandlerEvent } from "primereact/fileupload";
 import { pinata } from "../../config";
 
@@ -17,13 +16,14 @@ interface SendTokenDialogParams {
   visible: boolean;
 }
 
-function CreateCommunityDialog({
+function CreateCommunityStoreDialog({
   onHide,
   visible,
   onCreate,
 }: SendTokenDialogParams) {
-  const toast = useRef<Toast>(null);
+ 
   const [name, setName] = useState<string | null>(null);
+  const [receiver, setReceiver] = useState<string | null>(null);
   const [desc, setDesc] = useState<string | null>(null);
   const [logo, setLogo] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -47,9 +47,9 @@ function CreateCommunityDialog({
       className={styles.SignInDialog}
       onHide={onHide}
       visible={visible}
-      header={"Create Community"}
+      header={"Create Store"}
     >
-      <Toast ref={toast} />
+      
       <div className={styles.Register}>
         <div className={styles.inputRow}>
           <div>Name</div>
@@ -73,6 +73,16 @@ function CreateCommunityDialog({
           ></InputText>
         </div>
         <div className={styles.inputRow}>
+          <div>Receiver</div>
+          <InputText
+            value={receiver}
+            className={styles.input}
+            onChange={(event) => {
+              setReceiver(event.target.value);
+            }}
+          ></InputText>
+        </div>
+        <div className={styles.inputRow}>
           <div>Logo</div>
           <InputText
             value={logo}
@@ -91,13 +101,14 @@ function CreateCommunityDialog({
             label="Create"
             className={styles.SignInBtn}
             onClick={() => {
-              if (name  && desc && logo) {
+              if (name  && desc && logo && receiver) {
                 setLoading(true);
                 onCreate(
                   {
                     name,
                     description: desc,
-                    logo
+                    image: logo,
+                    receiver
                   },
                   () => {
                     setLoading(false);
@@ -112,4 +123,4 @@ function CreateCommunityDialog({
   );
 }
 
-export default CreateCommunityDialog;
+export default CreateCommunityStoreDialog;

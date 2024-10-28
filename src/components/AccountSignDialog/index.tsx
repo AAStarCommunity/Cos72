@@ -12,17 +12,22 @@ import { NetworkdConfig, networkIds } from "../../config";
 import { entryPointAddress } from "../../sdk/AAStarClient";
 import { Toast } from "primereact/toast";
 import AAStarLogo from "../../assets/logo-aastar.png";
+import { useSetAtom } from "jotai";
+
+import { userInfoAtom } from "../../atoms/UserInfo";
 interface AccountSignDialogParams {
   onHide: () => void;
   visible: boolean;
 }
 
 function AccountSignDialog({ onHide, visible }: AccountSignDialogParams) {
-    const toast = useRef<Toast>(null);
+  const toast = useRef<Toast>(null);
   const [email, setEmail] = useState<string | null>(localStorage.getItem("email"));
   const [loading, setLoading] = useState(false);
   const [captchaSuccess, sendCaptchaSuccess] = useState(false);
   const [captcha, setCaptcha] = useState<string | null>(null);
+
+  const loadUserInfo = useSetAtom<any>(userInfoAtom);
   const register = async () => {
     const airAccount = new AirAccountAPI({
       provider: new ethers.providers.JsonRpcProvider(
@@ -41,6 +46,7 @@ function AccountSignDialog({ onHide, visible }: AccountSignDialogParams) {
         }
       }
       else {
+        loadUserInfo();
         onHide();
       }
       
@@ -50,6 +56,7 @@ function AccountSignDialog({ onHide, visible }: AccountSignDialogParams) {
       setLoading(true);
       const result = await airAccount.register(email, captcha);
       if (result === true) {
+        loadUserInfo();
         onHide();
       }
       if (result === "invalid captcha") {
@@ -111,7 +118,7 @@ function AccountSignDialog({ onHide, visible }: AccountSignDialogParams) {
               label="Continue"
               icon="pi pi-user"
               className={styles.SignInBtn}
-              onClick={() => {
+              onClick={  () => {
                 register();
               }}
             />

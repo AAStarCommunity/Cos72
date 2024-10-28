@@ -20,6 +20,7 @@ const TetherTokenABI = TetherToken.abi;
 
 interface AccountSignDialogParams {
   communityAddress: string;
+  account: string;
 }
 interface Community {
   name: string;
@@ -37,9 +38,10 @@ interface Community {
     price: string;
     amount: string;
     payTokenSymbol: string;
+    isCanBuy: boolean;
   }[];
 }
-function GoodsList({ communityAddress }: AccountSignDialogParams) {
+function GoodsList({ communityAddress, account}: AccountSignDialogParams) {
 
   const [community, setCommunity] = useState<Community | null>(null);
   const [loading, setLoading] = useState(false);
@@ -76,9 +78,10 @@ function GoodsList({ communityAddress }: AccountSignDialogParams) {
         TetherTokenABI,
         provider
       );
-      const [decimals, symbol] = await Promise.all([
+      const [decimals, symbol, buyAllowance] = await Promise.all([
         payTokenContract.decimals(),
         payTokenContract.symbol(),
+        payTokenContract.allowance(account, setting.payToken)
       ]);
 
       goodsList.push({
@@ -91,6 +94,7 @@ function GoodsList({ communityAddress }: AccountSignDialogParams) {
         price: ethers.utils.formatUnits(setting.price, decimals),
         payTokenSymbol: symbol,
         amount: setting.amount,
+        isCanBuy: buyAllowance.gt(setting.price)
       });
     }
     setCommunity({
@@ -189,7 +193,9 @@ function GoodsList({ communityAddress }: AccountSignDialogParams) {
                 <div className={styles.CommunityGoodsPrice}>
                  {item.price} {item.payTokenSymbol}
                 </div>
-                <div> <Button icon="pi pi-shopping-cart"  rounded  size="small" onClick={() => {
+                <div> <Button disabled={!item.isCanBuy} icon="pi pi-shopping-cart"  rounded  size="small" onClick={() => {
+                    buy(item.address);
+                }}/> <Button disabled={!item.isCanBuy} icon="pi pi-shopping-cart"  rounded  size="small" onClick={() => {
                     buy(item.address);
                 }}/></div>
                 </div>

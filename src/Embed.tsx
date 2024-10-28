@@ -10,6 +10,7 @@ import Loading from "./components/embed/Loading";
 import { Chip } from "primereact/chip";
 import GoodsList from "./components/embed/GoodsList";
 import { ToastContainer } from "react-toastify";
+import { ethers } from "ethers";
 
 function App() {
   const [embedDialogVisible, setEmbedDialogVisible] = useState(false);
@@ -86,7 +87,7 @@ function App() {
               )}......${userInfo.aa.substring(userInfo.aa.length - 6)}`}
             ></Chip>
           </div>
-          <GoodsList communityAddress="0x98519A3a264a04a35496b0A8cAe3d4Ee35123Dd3"/>
+          <GoodsList communityAddress="0x98519A3a264a04a35496b0A8cAe3d4Ee35123Dd3" account={userInfo? userInfo.aa : ethers.constants.AddressZero}/>
           </>
         )}
       </Dialog>
