@@ -575,7 +575,7 @@ function Demo() {
           CommunityV1.bytecode,
           provider.getSigner()
         );
-        const address = await provider.getSigner().getAddress()
+   //     const address = await provider.getSigner().getAddress()
 
 
         const contract = await factory.deploy();
@@ -602,7 +602,7 @@ function Demo() {
           CommunityStoreV1.bytecode,
           provider.getSigner()
         );
-        const address = await provider.getSigner().getAddress()
+    //    const address = await provider.getSigner().getAddress()
 
 
         const contract = await factory.deploy();

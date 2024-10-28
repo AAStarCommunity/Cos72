@@ -2,8 +2,6 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 
 import Demo from "./Demo.tsx";
-import Wallet from "./Wallet.tsx";
-import Register from "./Register.tsx";
 import Tutorial from "./Tutorial.tsx";
 import "./index.css";
 import '@rainbow-me/rainbowkit/styles.css';
