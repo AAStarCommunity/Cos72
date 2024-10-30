@@ -3,38 +3,29 @@ import styles from "./Embed.module.css";
 import { Dialog } from "primereact/dialog";
 import { useEffect, useState } from "react";
 import AccountSign from "./components/embed/AccountSign";
-import { AAStarClient } from "./sdk";
-import { NetworkdConfig, networkIds } from "./config";
-import { AirAccountAPI } from "./sdk/account/AirAccountAPI";
+
 import Loading from "./components/embed/Loading";
 import { Chip } from "primereact/chip";
 import GoodsList from "./components/embed/GoodsList";
 import { ToastContainer } from "react-toastify";
-import { ethers } from "ethers";
+
+import { useAtom, useAtomValue, useSetAtom } from "jotai";
+import { communityListAtom } from "./atoms/Community";
+import { loadUserInfoLoadingAtom, userInfoAtom } from "./atoms/UserInfo";
 
 function App() {
   const [embedDialogVisible, setEmbedDialogVisible] = useState(false);
-  const [userInfo, setUserInfo] = useState<any>(null);
-  const [infoLoading, setInfoLoading] = useState(true);
-  const loadUserInfo = async () => {
-    setInfoLoading(true);
-    const smartAccount = new AAStarClient({
-      bundler: NetworkdConfig[networkIds.OP_SEPOLIA].bundler[0],
-      paymaster: NetworkdConfig[networkIds.OP_SEPOLIA].paymaster[0],
-      rpc: NetworkdConfig[networkIds.OP_SEPOLIA].rpc,
-    });
-    const aaWallet = smartAccount.getAAWallet() as AirAccountAPI;
-    const accountInfo = await aaWallet.getAccountInfo();
-    if (accountInfo) {
-      console.log(accountInfo);
-      setUserInfo(accountInfo);
-    }
-    setInfoLoading(false);
-  };
-
+  const [userInfo, loadUserInfo] : [any, any] = useAtom(userInfoAtom);
+  const infoLoading = useAtomValue(loadUserInfoLoadingAtom);
+  const loadCommunityList = useSetAtom(communityListAtom);
+  console.log({
+    infoLoading
+  })
   useEffect(() => {
-    loadUserInfo();
-  }, []);
+    loadUserInfo().then(() => {
+      loadCommunityList();
+    })
+  }, [])
   return (
     <>
       <div className={styles.root}>
@@ -87,7 +78,7 @@ function App() {
               )}......${userInfo.aa.substring(userInfo.aa.length - 6)}`}
             ></Chip>
           </div>
-          <GoodsList communityAddress="0x98519A3a264a04a35496b0A8cAe3d4Ee35123Dd3" account={userInfo? userInfo.aa : ethers.constants.AddressZero}/>
+          <GoodsList/>
           </>
         )}
       </Dialog>

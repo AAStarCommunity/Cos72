@@ -21,9 +21,10 @@ import { userInfoAtom } from "./atoms/UserInfo";
 import CommunityManager from "./components/CommunityManager";
 import { communityListAtom, loadCommunityListLoadingAtom } from "./atoms/Community";
 import CommunityDetail from "./components/CommunityManager/CommunityDetail";
-import { currentPathAtom } from "./atoms/CurrentPath";
+import { breadCrumbListAtom, currentPathAtom } from "./atoms/CurrentPath";
 import DataLoading from "./components/DataLoading";
 import CommunityStoreDetail from "./components/CommunityManager/CommunityStoreDetail";
+import { BreadCrumb } from "primereact/breadcrumb";
 
 
 
@@ -35,6 +36,7 @@ function CommunityAdmin() {
 
   const loadUserInfo = useSetAtom(userInfoAtom);
   const loadCommunityList = useSetAtom(communityListAtom);
+  const breadCrumbList = useAtomValue(breadCrumbListAtom);
   const loadCommunityListLoading = useAtomValue(loadCommunityListLoadingAtom)
   const [currentNetworkdConfig, setCurrentNetworkdConfig] =
     useState(NetworkdConfig);
@@ -105,7 +107,7 @@ function CommunityAdmin() {
       <Menubar model={items} start={start} end={end} />
      
       <div className={styles.Content}>
-
+        <BreadCrumb model={breadCrumbList}></BreadCrumb>
 
         {currentPath === "community" && (
           <CommunityManager></CommunityManager>

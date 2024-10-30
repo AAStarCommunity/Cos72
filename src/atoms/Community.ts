@@ -7,6 +7,7 @@ import CommunityJSON from "../contracts/Community.json";
 import { currentChainAtom } from "./CurrentChain";
 import { userInfoAtom } from "./UserInfo";
 import { find } from "lodash";
+import { breadCrumbListAtom } from "./CurrentPath";
 const CommunityManagerABI = CommunityManagerJSON.abi;
 const CommunityABI = CommunityJSON.abi;
 const CommunityStoreABI = CommunityStoreJSON.abi;
@@ -185,6 +186,12 @@ export const currentCommunityAtom = atom(
   },
   async (_get, set, community: Community) => {
     set(currentCommunity, community);
+   // const breadCrumbList = get(breadCrumbListAtom);
+    set(breadCrumbListAtom, [{
+      label: "Community List",
+    }, {
+      label: community.name
+    }])
     // set(currentChainIdAtom, chainId);
   }
 );
@@ -195,6 +202,17 @@ export const currentCommunityStoreAtom = atom(
   },
   async (_get, set, store: Store) => {
     set(currentCommunityStore, store);
+    const currentCommunity = _get(currentCommunityAtom)
+    if (currentCommunity && store) {
+      set(breadCrumbListAtom, [{
+        label: "Community List",
+      }, {
+        label: currentCommunity.name
+      }, {
+        label: store.name
+      }])
+    }
+  
     // set(currentChainIdAtom, chainId);
   }
 );
