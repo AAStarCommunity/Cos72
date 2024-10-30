@@ -7,6 +7,7 @@ import { entryPointAddress } from "../sdk/AAStarClient";
 import { currentChainAtom } from "./CurrentChain";
 
 const userInfo = atom(null);
+export const loadUserInfoLoadingAtom = atom(false);
 const loadUserInfo = async (currentChain: INetwork) => {
     const airAccount = new AirAccountAPI({
       provider: new ethers.providers.JsonRpcProvider(
@@ -46,8 +47,10 @@ export const userInfoAtom = atom(
   async (get, set, action = "load") => {
     const currentChain = get(currentChainAtom);
     if (action == "load") {
+        set(loadUserInfoLoadingAtom, true);
         const data = await loadUserInfo(currentChain)
         set(userInfo, data);
+        set(loadUserInfoLoadingAtom, false);
     }
     else if (action === "signOut") {
         await signOut(currentChain);

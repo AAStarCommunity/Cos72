@@ -14,101 +14,34 @@ import TetherToken from "../../../contracts/TetherToken.json";
 import Loading from "../Loading";
 import { Button } from "primereact/button";
 import { AAStarClient } from "../../../sdk";
+import { useAtomValue } from "jotai";
+import { communityListAtom, Goods, loadCommunityListLoadingAtom } from "../../../atoms/Community";
 const CommunityABI = Community.abi;
 const CommunityGoodsABI = CommunityGoods.abi;
 const TetherTokenABI = TetherToken.abi;
-
+import { Swiper, SwiperSlide } from "swiper/react";
+import { Navigation } from "swiper/modules";
+// Import Swiper styles
+import "swiper/css";
+import "swiper/css/navigation";
 interface AccountSignDialogParams {
-  communityAddress: string;
-  account: string;
+  
 }
-interface Community {
-  name: string;
-  address: string;
-  desc: string;
-  logo: string;
 
-  goodsList: {
-    name: string;
-    description: string;
-    logo: string;
-    payToken: string;
-    address: string;
-    receiver: string;
-    price: string;
-    amount: string;
-    payTokenSymbol: string;
-    isCanBuy: boolean;
-  }[];
-}
-function GoodsList({ communityAddress, account}: AccountSignDialogParams) {
+function GoodsList({  }: AccountSignDialogParams) {
+  const communityList = useAtomValue(communityListAtom)
+ 
+  const loadCommunityListLoading = useAtomValue(loadCommunityListLoadingAtom)
 
-  const [community, setCommunity] = useState<Community | null>(null);
-  const [loading, setLoading] = useState(false);
-  const loadGoodsList = async (communityAddress: string) => {
-    setLoading(true);
-    const provider = MulticallWrapper.wrap(
-      new ethers.providers.JsonRpcProvider(
-        NetworkdConfig[networkIds.OP_SEPOLIA].rpc
-      )
-    );
-    const community = new ethers.Contract(
-      communityAddress,
-      CommunityABI,
-      provider
-    );
-    const [name, desc, logo, goodsAddressList] = await Promise.all([
-      community.name(),
-      community.description(),
-      community.logo(),
-
-      community.getGoodsList(),
-    ]);
-
-    const goodsList = [];
-    for (let m = 0, n = goodsAddressList.length; m < n; m++) {
-      const communityGoods = new ethers.Contract(
-        goodsAddressList[m],
-        CommunityGoodsABI,
-        provider
-      );
-      const setting = await communityGoods.setting();
-      const payTokenContract = new ethers.Contract(
-        setting.payToken,
-        TetherTokenABI,
-        provider
-      );
-      const [decimals, symbol, buyAllowance] = await Promise.all([
-        payTokenContract.decimals(),
-        payTokenContract.symbol(),
-        payTokenContract.allowance(account, setting.payToken)
-      ]);
-
-      goodsList.push({
-        address: goodsAddressList[m],
-        name: setting.name,
-        description: setting.description,
-        logo: setting.logo,
-        payToken: setting.payToken,
-        receiver: setting.receiver,
-        price: ethers.utils.formatUnits(setting.price, decimals),
-        payTokenSymbol: symbol,
-        amount: setting.amount,
-        isCanBuy: buyAllowance.gt(setting.price)
-      });
-    }
-    setCommunity({
-      address: communityAddress,
-      name,
-      logo,
-      desc,
-      goodsList,
-    });
-    setLoading(false);
-  };
-  useEffect(() => {
-    loadGoodsList(communityAddress);
-  }, []);
+  const goodsList: Goods [] = [];
+  communityList.forEach((community) => {
+    community.storeList.forEach((store) => {
+      store.goodsList.forEach((goods) => {
+        goodsList.push(goods)
+      })
+    })
+  })
+  console.log(goodsList)
 
   const buy = async (goodsAddress: string) => {
     const id = toast.loading("Please wait...");
@@ -178,26 +111,34 @@ function GoodsList({ communityAddress, account}: AccountSignDialogParams) {
   return (
     <div >
      
-      {loading && <Loading></Loading>}
-      {(community && !loading) && (
+      { loadCommunityListLoading && <Loading></Loading>}
+      {!loadCommunityListLoading && (
         <div className={styles.CommunityGoodsList}>
-          {community.goodsList.map((item) => {
+          {goodsList.map((item) => {
             return (
-              <div key={item.address} className={styles.CommunityGoods}>
+              <div key={item.id} className={styles.CommunityGoods}>
                
                 <div className={styles.CommunityGoodsName}>{item.name}</div>
                 <div className={styles.CommunityGoodsLogo}>
-                  <img src={item.logo} />
+                <Swiper
+                  navigation={true}
+                  modules={[Navigation]}
+                  className="mySwiper"
+                >
+                  {item.images.map((item: string) => {
+                    return (
+                      <SwiperSlide key={item}>
+                        <img src={item}></img>
+                      </SwiperSlide>
+                    );
+                  })}
+                </Swiper>
                 </div>
                 <div className={styles.CommunityGoodsFooter}>
                 <div className={styles.CommunityGoodsPrice}>
-                 {item.price} {item.payTokenSymbol}
+                 {item.price} 
                 </div>
-                <div> <Button disabled={!item.isCanBuy} icon="pi pi-shopping-cart"  rounded  size="small" onClick={() => {
-                    buy(item.address);
-                }}/> <Button disabled={!item.isCanBuy} icon="pi pi-shopping-cart"  rounded  size="small" onClick={() => {
-                    buy(item.address);
-                }}/></div>
+                <div> </div>
                 </div>
               </div>
             );
