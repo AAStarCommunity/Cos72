@@ -2,12 +2,13 @@ import { ethers } from "ethers";
 import { atom } from "jotai";
 import { INetwork, pinata } from "../config";
 import CommunityManagerJSON from "../contracts/CommunityManager.json";
-import CommunityStoreJSON from "../contracts/CommunityStore.json";
+import CommunityStoreJSON from "../contracts/CommunityStoreV2.json";
 import CommunityJSON from "../contracts/Community.json";
 import { currentChainAtom } from "./CurrentChain";
 import { userInfoAtom } from "./UserInfo";
 import { find } from "lodash";
 import { breadCrumbListAtom } from "./CurrentPath";
+import { toSignificant } from "../util";
 const CommunityManagerABI = CommunityManagerJSON.abi;
 const CommunityABI = CommunityJSON.abi;
 const CommunityStoreABI = CommunityStoreJSON.abi;
@@ -28,6 +29,17 @@ export interface Goods {
   images: string[];
   descImages: string[];
   price: number;
+  payToken: string;
+  payTokenSymbol: string;
+  payTokenDecimals: number;
+  storeAddress: string;
+  storeName: string;
+  communityAddress: string;
+  communityName: string;
+  buyAllowance: ethers.BigNumber;
+  payTokenBalance: ethers.BigNumber;
+  formatPayTokenBalance: string;
+  fixedFormatPayTokenBalance: string;
 }
 
 export interface Community {
@@ -37,6 +49,9 @@ export interface Community {
   logo: string;
   isAdmin: boolean;
   storeList: Store[];
+  pointToken: string;
+  pointTokenSymbol: string;
+  pointTokenDecimals: number;
 }
 
 //MulticallWrapper
@@ -88,6 +103,7 @@ const loadCommunityList = async (currentNetwork: INetwork, account: string) => {
       const goodsList: Goods[] = [];
       for (let x = 0, y = storeInfo.goodsList.length; x < y; x++) {
         const goodsData = storeInfo.goodsList[x];
+        const goodsAccountData = storeInfo.goodsAccountInfos[x];
         const images = await Promise.all(
           goodsData.images.map(async (item: string) => {
             const newUrls = await pinata.gateways.createSignedURL({
@@ -97,27 +113,38 @@ const loadCommunityList = async (currentNetwork: INetwork, account: string) => {
             return newUrls;
           })
         );
-        const descImages = await Promise.all(
-          goodsData.descImages.map(async (item: string) => {
-            const newUrls = await pinata.gateways.createSignedURL({
-              cid: item,
-              expires: 365 * 24 * 60 * 60,
-            });
-            return newUrls;
-          })
-        );
+        // const descImages = await Promise.all(
+        //   goodsData.descImages.map(async (item: string) => {
+        //     const newUrls = await pinata.gateways.createSignedURL({
+        //       cid: item,
+        //       expires: 365 * 24 * 60 * 60,
+        //     });
+        //     return newUrls;
+        //   })
+        // );
         goodsList.push({
           id: goodsData.id.toNumber(),
           name: goodsData.name,
           description: goodsData.description,
           images,
-          descImages,
+          descImages: [],
+          storeAddress: storeAddressList[m],
+          storeName: storeInfo.setting.name,
+          communityAddress: result[i],
+          communityName: communityInfo.setting.name,
           price: Number(
             ethers.utils.formatUnits(
               goodsData.price,
               goodsData.payTokenDecimals
             )
           ),
+          payTokenSymbol: goodsData.payTokenSymbol,
+          payTokenDecimals: goodsData.payTokenDecimals,
+          payToken: goodsData.payToken,
+          buyAllowance: goodsAccountData.buyAllowance,
+          payTokenBalance: goodsAccountData.payTokenBalance,
+          formatPayTokenBalance: ethers.utils.formatUnits(goodsAccountData.payTokenBalance, goodsData.payTokenDecimals),
+          fixedFormatPayTokenBalance: toSignificant(ethers.utils.formatUnits(goodsAccountData.payTokenBalance, goodsData.payTokenDecimals))
         });
       }
 
@@ -138,6 +165,9 @@ const loadCommunityList = async (currentNetwork: INetwork, account: string) => {
       description: communityInfo.setting.description,
       isAdmin: communityInfo.isAdmin,
       storeList,
+      pointToken: communityInfo.pointToken,
+      pointTokenSymbol: communityInfo.pointTokenSymbol,
+      pointTokenDecimals:  communityInfo.pointTokenDecimals
     });
   }
 
@@ -155,6 +185,7 @@ export const communityListAtom = atom(
       currentNetwork,
       userInfo ? (userInfo as any).aa : ethers.constants.AddressZero
     );
+    console.log(list);
     set(communityList, list);
     const _currentCommunity = get(currentCommunity);
     if (_currentCommunity) {

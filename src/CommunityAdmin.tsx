@@ -107,7 +107,9 @@ function CommunityAdmin() {
       <Menubar model={items} start={start} end={end} />
      
       <div className={styles.Content}>
-        <BreadCrumb model={breadCrumbList}></BreadCrumb>
+        <BreadCrumb model={breadCrumbList} onClick={(event) => {
+          console.log(event.target)
+        }}></BreadCrumb>
 
         {currentPath === "community" && (
           <CommunityManager></CommunityManager>

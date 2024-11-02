@@ -23,6 +23,7 @@ export interface INetwork {
     CommunityManager: string;
     CommunityV1: string;
     CommunityStoreV1: string;
+    CommunityStoreV2: string;
     EventManager: string;
   };
   bundler: BundlerConfig[];
@@ -39,6 +40,7 @@ export const NetworkdConfig: { [K in NetworkId]: INetwork } = {
       NFT: "0xCEf599508abd274bab8F0D9D9149d9ceeD9a2A07",
       CommunityV1: ethers.constants.AddressZero,
       CommunityStoreV1: ethers.constants.AddressZero,
+      CommunityStoreV2: ethers.constants.AddressZero,
       CommunityManager: ethers.constants.AddressZero,
       EventManager: ethers.constants.AddressZero
     },
@@ -117,6 +119,7 @@ export const NetworkdConfig: { [K in NetworkId]: INetwork } = {
       USDT: "0x1927e2d716d7259d06006bfaf3dbfa22a12d6945",
       CommunityV1: ethers.constants.AddressZero,
       CommunityStoreV1: ethers.constants.AddressZero,
+      CommunityStoreV2: ethers.constants.AddressZero,
       NFT: ethers.constants.AddressZero,
       CommunityManager: ethers.constants.AddressZero,
       EventManager: ethers.constants.AddressZero
@@ -144,7 +147,7 @@ export const NetworkdConfig: { [K in NetworkId]: INetwork } = {
   },
   [networkIds.OP_SEPOLIA]: {
     name: "OP Sepolia",
-    rpc: "https://endpoints.omniatech.io/v1/op/sepolia/public",
+    rpc: "https://optimism-sepolia.blockpi.network/v1/rpc/public",
     chainId: networkIds.OP_SEPOLIA,
     blockExplorerURL: "https://sepolia-optimism.etherscan.io",
     contracts: {
@@ -152,6 +155,7 @@ export const NetworkdConfig: { [K in NetworkId]: INetwork } = {
       NFT: "0x9194618d3695902a426bfacc9e2182d2cb6ad880",
       CommunityV1: "0x1d34bbf294172d49a8d4aa02fc772cc9f3297f9a",
       CommunityStoreV1: "0x2fa277d572f1f204e0ca580594e402b9e353c5f3",
+      CommunityStoreV2: "0x6E5C88b713c977aDa9ffa2fC4C0382788A6b9714",
       CommunityManager:  "0x010dc3cc5842b1ffe3b154f150e30e6c84c91892",
       EventManager: ethers.constants.AddressZero,
     },
@@ -183,6 +187,7 @@ export const NetworkdConfig: { [K in NetworkId]: INetwork } = {
       NFT: ethers.constants.AddressZero,
       CommunityV1: ethers.constants.AddressZero,
       CommunityStoreV1: ethers.constants.AddressZero,
+      CommunityStoreV2: ethers.constants.AddressZero,
       CommunityManager:  ethers.constants.AddressZero,
       EventManager: ethers.constants.AddressZero,
     },
@@ -216,6 +221,7 @@ export const NetworkdConfig: { [K in NetworkId]: INetwork } = {
       NFT: "0xCEf599508abd274bab8F0D9D9149d9ceeD9a2A07",
       CommunityV1: ethers.constants.AddressZero,
       CommunityStoreV1: ethers.constants.AddressZero,
+      CommunityStoreV2: ethers.constants.AddressZero,
       CommunityManager:  ethers.constants.AddressZero,
       EventManager: ethers.constants.AddressZero,
     },

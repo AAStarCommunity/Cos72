@@ -17,7 +17,7 @@ import { toast } from "react-toastify";
 import { useState } from "react";
 import { AAStarClient } from "../../sdk";
 import { ethers } from "ethers";
-import CommunityStoreJSON from "../../contracts/CommunityStore.json";
+import CommunityStoreV2JSON from "../../contracts/CommunityStoreV2.json";
 import TetherTokenJSON from "../../contracts/TetherToken.json";
 
 import CreateCommunityGoodsDialog from "../CreateCommunityGoodsDialog";
@@ -27,19 +27,179 @@ import { Navigation } from "swiper/modules";
 import "swiper/css";
 import "swiper/css/navigation";
 
-const CommunityStoreABI = CommunityStoreJSON.abi;
+import { InputNumber } from "primereact/inputnumber";
+import { InputTextarea } from "primereact/inputtextarea";
+
+const CommunityStoreV2ABI = CommunityStoreV2JSON.abi;
 const TetherTokenABI = TetherTokenJSON.abi;
 function CommunityStoreGoodsManager() {
   const currentChain = useAtomValue(currentChainAtom);
   const userInfo = useAtomValue(userInfoAtom);
   const loadCommunityList = useSetAtom(communityListAtom);
-
+  const [goodsValueMap, setGoodsValueMap] = useState<any>({});
   const currentCommunity = useAtomValue(currentCommunityAtom);
   const currentCommunityStore = useAtomValue(currentCommunityStoreAtom);
   const [
     isShowCreateCommunityGoodsDialog,
     setIsShowCreateCommunityGoodsDialog,
   ] = useState(false);
+  const updateGoodsPayToken = async (goods: Goods, payToken: string) => {
+    if (!currentCommunityStore) {
+        return;
+    }
+    const id = toast.loading("Please wait...");
+
+    //do something else
+    try {
+      //     const wallet = getWallet();
+
+      // 第一步 创建 AAStarClient
+      const bundlerConfig = currentChain.bundler[0];
+
+      const payMasterConfig =
+      currentChain.paymaster[0];
+
+      const smartAccount = new AAStarClient({
+        bundler: bundlerConfig as any, // bunder 配置
+        paymaster: payMasterConfig as any, // payMaserter 配置
+
+        rpc: currentChain.rpc, // rpc节点地址,
+      });
+
+
+      const CommunityStoreV2Contract = new ethers.Contract(
+        goods.storeAddress,
+        CommunityStoreV2ABI,
+        new ethers.providers.JsonRpcProvider(
+          currentChain.rpc
+        )
+      );
+
+
+  
+      // Encode the calls
+      const callTo = [
+        goods.storeAddress,
+      ];
+      const callData = [
+        CommunityStoreV2Contract.interface.encodeFunctionData("updateGoodsPayToken", [ethers.BigNumber.from(goods.id), payToken])
+      ];
+      console.log("Waiting for transaction...",callTo, callData, payToken );
+      // 第三步 发送 UserOperation
+      const response = await smartAccount.sendUserOperation(callTo, callData);
+      console.log(`Transaction hash: ${response.transactionHash}`);
+      toast.update(id, {
+        render: "Success",
+        type: "success",
+        isLoading: false,
+        autoClose: 5000,
+      });
+    //  await loadCommunityList();
+
+      // setTransactionLogs((items) => {
+      //   const newItems = [...items];
+      //   newItems.unshift({
+      //     aaAccount: response.aaAccountAddress,
+      //     userOpHash: response.userOpHash,
+      //     transactionHash: `${response.transactionHash}`,
+      //   });
+      //   localStorage.setItem("TransactionLogs", JSON.stringify(newItems));
+      //   return newItems;
+      // });
+    } catch (error) {
+      console.log(error);
+      toast.update(id, {
+        render: "Transaction Fail",
+        type: "error",
+        isLoading: false,
+        autoClose: 5000,
+      });
+    }
+  };
+
+  const updateGoodsPrice = async (goods: Goods, price: string) => {
+    if (!currentCommunityStore) {
+        return;
+    }
+    const id = toast.loading("Please wait...");
+
+    //do something else
+    try {
+      //     const wallet = getWallet();
+
+      // 第一步 创建 AAStarClient
+      const bundlerConfig = currentChain.bundler[0];
+
+      const payMasterConfig =
+      currentChain.paymaster[0];
+
+      const smartAccount = new AAStarClient({
+        bundler: bundlerConfig as any, // bunder 配置
+        paymaster: payMasterConfig as any, // payMaserter 配置
+
+        rpc: currentChain.rpc, // rpc节点地址,
+      });
+
+
+      const CommunityStoreV2Contract = new ethers.Contract(
+        goods.storeAddress,
+        CommunityStoreV2ABI,
+        new ethers.providers.JsonRpcProvider(
+          currentChain.rpc
+        )
+      );
+      let tokenDecimals  = 18;
+      if (goods.payToken != ethers.constants.AddressZero) {
+        const tokenContract = new ethers.Contract(
+          goods.payToken,
+          TetherTokenABI,
+          new ethers.providers.JsonRpcProvider(currentChain.rpc)
+        );
+        tokenDecimals = await tokenContract.decimals();
+      }
+
+  
+      
+  
+      // Encode the calls
+      const callTo = [
+        goods.storeAddress,
+      ];
+      const callData = [
+        CommunityStoreV2Contract.interface.encodeFunctionData("updateGoodsPrice", [ethers.BigNumber.from(goods.id), ethers.utils.parseUnits(`${price}`, tokenDecimals)])
+      ];
+    //  console.log("Waiting for transaction...",callTo, callData, payToken );
+      // 第三步 发送 UserOperation
+      const response = await smartAccount.sendUserOperation(callTo, callData);
+      console.log(`Transaction hash: ${response.transactionHash}`);
+      toast.update(id, {
+        render: "Success",
+        type: "success",
+        isLoading: false,
+        autoClose: 5000,
+      });
+    //  await loadCommunityList();
+
+      // setTransactionLogs((items) => {
+      //   const newItems = [...items];
+      //   newItems.unshift({
+      //     aaAccount: response.aaAccountAddress,
+      //     userOpHash: response.userOpHash,
+      //     transactionHash: `${response.transactionHash}`,
+      //   });
+      //   localStorage.setItem("TransactionLogs", JSON.stringify(newItems));
+      //   return newItems;
+      // });
+    } catch (error) {
+      console.log(error);
+      toast.update(id, {
+        render: "Transaction Fail",
+        type: "error",
+        isLoading: false,
+        autoClose: 5000,
+      });
+    }
+  };
   const communityGoodsTemplate = (goodsList: Goods[]) => {
     //console.log(tokenList, tokenIds);
     return (
@@ -70,8 +230,79 @@ function CommunityStoreGoodsManager() {
                 {/* <img src={store.logo}></img> */}
               </div>
               <div className={styles.CommunityCardInfo}>
-                <div className={styles.CommunityText}>{goods.name}</div>
-                <div className={styles.CommunityText}>{goods.description}</div>
+                <div className={styles.CommunityGoodsField}>
+                  <label>Name: </label>{" "}
+                  <InputTextarea cols={40} value={goods.name}></InputTextarea>{" "}
+                  <Button>Update</Button>
+                </div>
+                <div className={styles.CommunityGoodsField}>
+                  <label>Description: </label>{" "}
+                  <InputTextarea
+                    cols={40}
+                    value={( goodsValueMap[goods.id] && goodsValueMap[goods.id].description) ? goodsValueMap[goods.id].description : goods.description}
+                    onChange={(event) => {
+                      setGoodsValueMap((valueMap: any) => {
+                        const newData: any = {...valueMap};
+                        if (newData[goods.id]) {
+                          newData[goods.id].description = event.target.value;
+                        }
+                        else {
+                          newData[goods.id] = {
+                            description:  event.target.value
+                          }
+                        }
+                        return newData;
+                      })
+                    }}
+                  ></InputTextarea>{" "}
+                  <Button onClick={() => {
+
+                  }}>Update</Button>
+                </div>
+                <div className={styles.CommunityGoodsField}>
+                  <label>Pay Token: </label>{" "}
+                  <InputTextarea
+                    cols={40}
+                    value={( goodsValueMap[goods.id] && goodsValueMap[goods.id].payToken) ? goodsValueMap[goods.id].payToken : goods.payToken} 
+                    onChange={(event) => {
+                      setGoodsValueMap((valueMap: any) => {
+                        const newData: any = {...valueMap};
+                        if (newData[goods.id]) {
+                          newData[goods.id].payToken = event.target.value;
+                        }
+                        else {
+                          newData[goods.id] = {
+                            payToken:  event.target.value
+                          }
+                        }
+                        return newData;
+                      })
+                    }}  
+                  ></InputTextarea>{" "}
+                  <Button  onClick={() => {
+                    updateGoodsPayToken(goods, ( goodsValueMap[goods.id] && goodsValueMap[goods.id].payToken) ? goodsValueMap[goods.id].payToken : goods.payToken )
+                  }}>Update</Button>
+                </div>
+                <div className={styles.CommunityGoodsField}>
+                  <label>Price: </label>{" "}
+                  <InputNumber value={( goodsValueMap[goods.id] && goodsValueMap[goods.id].price) ? goodsValueMap[goods.id].price : goods.price}   onChange={(event) => {
+                      setGoodsValueMap((valueMap: any) => {
+                        const newData: any = {...valueMap};
+                        if (newData[goods.id]) {
+                          newData[goods.id].price = event.value;
+                        }
+                        else {
+                          newData[goods.id] = {
+                            price:  event.value
+                          }
+                        }
+                        return newData;
+                      })
+                    }}  ></InputNumber>{" "}
+                  <Button onClick={() => {
+                      updateGoodsPrice(goods, ( goodsValueMap[goods.id] && goodsValueMap[goods.id].price) ? goodsValueMap[goods.id].price : goods.price )
+                  }}>Update</Button>
+                </div>
               </div>
               <div></div>
             </div>
@@ -105,7 +336,7 @@ function CommunityStoreGoodsManager() {
 
       const CommunityStoreContract = new ethers.Contract(
         currentCommunityStore?.address,
-        CommunityStoreABI,
+        CommunityStoreV2ABI,
         new ethers.providers.JsonRpcProvider(currentChain.rpc)
       );
 

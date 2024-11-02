@@ -63,7 +63,7 @@ function SentCommunityPointTokenDialog({
         <div>
           <Button
             loading={loading}
-            label="Create"
+            label="Send"
             className={styles.SignInBtn}
             onClick={() => {
               if (account  && amount ) {

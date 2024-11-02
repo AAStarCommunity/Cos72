@@ -112,17 +112,19 @@
     display: flex;
     flex-direction: column;
     gap: 20px;
+   
 }
 .CommunityCardList {
     margin-top: 10px;
     display: flex;
     gap: 10px;
-    
+    flex-wrap: wrap;
 }
+
 .CommunityCard {
     border-radius: 10px;
     background-color: #2D82B7; 
-    width: 33%;
+    width: 32%;
     padding: 10px;
     cursor: pointer;
 }
@@ -204,4 +206,18 @@
     display: flex;
     gap: 20px;
     margin-top: 20px;
+}
+
+.PointTokenAction {
+    margin-top: 20px;
+}
+
+.CommunityGoodsField {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    label {
+        display: inline-block;
+        width: 100px;
+    }
 }

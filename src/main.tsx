@@ -2,6 +2,7 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 
 import Demo from "./Demo.tsx";
+import Wallet from "./Wallet.tsx";
 import Tutorial from "./Tutorial.tsx";
 import "./index.css";
 import '@rainbow-me/rainbowkit/styles.css';
@@ -24,10 +25,10 @@ const router = createBrowserRouter([
     path: "/",
     element: <CommunityAdmin></CommunityAdmin>,
   },
-  // {
-  //   path: "/register",
-  //   element: <Register></Register>,
-  // },
+  {
+    path: "/wallet",
+    element: <Wallet></Wallet>,
+  },
   {
     path: "/tutorial",
     element: <Tutorial></Tutorial>

@@ -30,6 +30,7 @@
     "jotai": "^2.10.1",
     "json-edit-react": "^1.15.11",
     "lodash": "^4.17.21",
+    "numbro": "^2.5.0",
     "permissionless": "^0.1.19",
     "pinata": "^1.5.0",
     "primeicons": "^7.0.0",
