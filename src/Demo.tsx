@@ -6,6 +6,7 @@ import AAStarDemoNFT from "./contracts/AAStarDemoNFT.json";
 import CommunityManager from "./contracts/CommunityManager.json";
 import CommunityV1 from "./contracts/Community.json";
 import CommunityStoreV1 from "./contracts/CommunityStore.json";
+import CommunityStoreV2 from "./contracts/CommunityStoreV2.json";
 import EventManager from "./contracts/EventManager.json";
 import styles from "./Demo.module.css";
 import "react-toastify/dist/ReactToastify.css";
@@ -619,6 +620,34 @@ function Demo() {
   }
 
 
+  const deployCommunityStoreV2 = async () => {
+    try {
+      if (connector) {
+        const _provider: any = await connector.getProvider();
+        const provider = new ethers.providers.Web3Provider(_provider);
+        console.log(_provider, provider);
+        const factory = new ethers.ContractFactory(
+          CommunityStoreV2.abi,
+          CommunityStoreV2.bytecode,
+          provider.getSigner()
+        );
+    //    const address = await provider.getSigner().getAddress()
+
+
+        const contract = await factory.deploy();
+        console.log(contract);
+
+        await contract.deployTransaction.wait();
+        console.log(contract.address);
+      }
+
+      //  message.success("url update success");
+    } catch (error: any) {
+      console.log(error);
+    }
+  }
+
+
   const deployEventManager = async () => {
     try {
       if (connector) {
@@ -1023,6 +1052,38 @@ function Demo() {
                 }}
               >
                 Deploy CommunityStoreV1 Contract
+              </Button>
+            </div>
+           
+          </CardContent>
+        </Card>
+      </div>
+      <div className={styles.nftCard}>
+        {" "}
+        <Card>
+          <CardHeader title="GET CommunityStoreV2"></CardHeader>
+          <CardContent>
+          <div className={styles.contractRow}>
+              {" "}
+              <a
+                className={styles.contractLink}
+                href={`${
+                  NetworkdConfig[currentChainId as NetworkId].blockExplorerURL
+                }/address/${
+                  NetworkdConfig[currentChainId as NetworkId].contracts.CommunityStoreV2
+                }`}
+                target="_blank"
+              >
+                Contract :{" "}
+                {NetworkdConfig[currentChainId as NetworkId].contracts.CommunityStoreV2}
+              </a>
+              <Button
+                onClick={() => {
+             //     deployNFT();
+                  deployCommunityStoreV2()
+                }}
+              >
+                Deploy CommunityStoreV2 Contract
               </Button>
             </div>
            

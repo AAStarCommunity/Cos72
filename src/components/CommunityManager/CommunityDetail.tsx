@@ -10,6 +10,7 @@ import { currentChainAtom } from "../../atoms/CurrentChain";
 
 import { TabPanel, TabView } from "primereact/tabview";
 import CommunityStoreManager from "./CommunityStore";
+import CommunityPointManager from "./CommunityPoint";
 
 function CommunityDetail() {
   const currentChain = useAtomValue(currentChainAtom);
@@ -68,6 +69,9 @@ function CommunityDetail() {
                     );
                   })}
                 </div> */}
+              </TabPanel>
+              <TabPanel header="Point">
+                <CommunityPointManager></CommunityPointManager>
               </TabPanel>
             </TabView>
           </div>
