@@ -5,7 +5,7 @@ import CommunityManagerJSON from "../contracts/CommunityManager.json";
 import CommunityStoreJSON from "../contracts/CommunityStoreV2.json";
 import CommunityJSON from "../contracts/Community.json";
 import { currentChainAtom } from "./CurrentChain";
-import { userInfoAtom } from "./UserInfo";
+
 import { find } from "lodash";
 import { breadCrumbListAtom } from "./CurrentPath";
 import { toSignificant } from "../util";
@@ -149,7 +149,7 @@ const loadCommunityList = async (currentNetwork: INetwork, account: string) => {
       }
 
       storeList.push({
-        address: storeAddressList[i],
+        address: storeAddressList[m],
         logo: storeLogo,
         name: storeInfo.setting.name,
         description: storeInfo.setting.description,
@@ -177,13 +177,13 @@ export const communityListAtom = atom(
   (get) => {
     return get(communityList);
   },
-  async (get, set) => {
+  async (get, set, account: string) => {
     const currentNetwork = get(currentChainAtom);
-    const userInfo = get(userInfoAtom);
+    //const userInfo = get(userInfoAtom);
     set(loadCommunityListLoadingAtom, true);
     const list = await loadCommunityList(
       currentNetwork,
-      userInfo ? (userInfo as any).aa : ethers.constants.AddressZero
+      account ? account : ethers.constants.AddressZero
     );
     console.log(list);
     set(communityList, list);

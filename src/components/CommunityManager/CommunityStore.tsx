@@ -17,6 +17,7 @@ import CommunityJSON from "../../contracts/Community.json";
 import CommunityStoreJSON from "../../contracts/CommunityStore.json";
 import { currentPathAtom } from "../../atoms/CurrentPath";
 import CreateCommunityStoreDialog from "../CreateCommunityStoreDialog";
+import { useAccount } from "wagmi";
 
 const CommunityABI = CommunityJSON.abi;
 const CommunityStoreABI = CommunityStoreJSON.abi;
@@ -24,7 +25,7 @@ function CommunityStoreManager() {
   const currentChain = useAtomValue(currentChainAtom);
   const userInfo = useAtomValue(userInfoAtom);
   const loadCommunityList = useSetAtom(communityListAtom);
-
+  const account = useAccount();
   const setCurrentPath = useSetAtom(currentPathAtom);
   const currentCommunity = useAtomValue(currentCommunityAtom);
   const setCurrentCommunityStore = useSetAtom(currentCommunityStoreAtom);
@@ -119,7 +120,7 @@ function CommunityStoreManager() {
       const callData = [
         CommunityContract.interface.encodeFunctionData(
           "createStore",
-          [currentChain.contracts.CommunityStoreV1, data]
+          [currentChain.contracts.CommunityStoreV2, data]
         ),
       ];
       console.log("Waiting for transaction...");
@@ -132,7 +133,86 @@ function CommunityStoreManager() {
         isLoading: false,
         autoClose: 5000,
       });
-      await loadCommunityList();
+      await loadCommunityList((userInfo as any).aa);
+
+      // setTransactionLogs((items) => {
+      //   const newItems = [...items];
+      //   newItems.unshift({
+      //     aaAccount: response.aaAccountAddress,
+      //     userOpHash: response.userOpHash,
+      //     transactionHash: `${response.transactionHash}`,
+      //   });
+      //   localStorage.setItem("TransactionLogs", JSON.stringify(newItems));
+      //   return newItems;
+      // });
+    } catch (error) {
+      console.log(error);
+      toast.update(id, {
+        render: "Transaction Fail",
+        type: "error",
+        isLoading: false,
+        autoClose: 5000,
+      });
+    }
+  };
+
+  const createCommunityStoreByEOA = async (store: any) => {
+    if (!currentCommunity) {
+        return;
+    }
+    if (!account.address || !account.connector) {
+      return;
+    }
+    const id = toast.loading("Please wait...");
+
+    //do something else
+    try {
+      //     const wallet = getWallet();
+
+      // 第一步 创建 AAStarClient
+ 
+      const _provider: any = await account.connector.getProvider();
+      const provider = new ethers.providers.Web3Provider(_provider);
+
+      const CommunityContract = new ethers.Contract(
+        currentCommunity.address,
+        CommunityABI,
+        provider.getSigner()
+      );
+
+
+      const CommunityStoreContract = new ethers.Contract(
+        currentChain.contracts.CommunityStoreV1,
+        CommunityStoreABI,
+        provider.getSigner()
+      );
+      // Encode the calls
+   
+      const data = CommunityStoreContract.interface.encodeFunctionData("initialize", [account.address, store])
+      // const callData = [
+      //   CommunityContract.interface.encodeFunctionData(
+      //     "createStore",
+      //     [currentChain.contracts.CommunityStoreV1, data]
+      //   ),
+      // ];
+      console.log("Waiting for transaction...");
+
+      const transactionObject = await CommunityContract.createStore(currentChain.contracts.CommunityStoreV2, data);
+   //   return transactionObject.hash;
+      // 第三步 发送 UserOperation
+      await provider.waitForTransaction(transactionObject.hash)
+    
+      console.log(`Transaction hash: ${transactionObject.hash}`);
+
+
+      //console.log(`Transaction hash: ${response.transactionHash}`);
+      toast.update(id, {
+        render: "Success",
+        type: "success",
+        isLoading: false,
+        autoClose: 5000,
+      });
+      await loadCommunityList(account.address);
 
       // setTransactionLogs((items) => {
       //   const newItems = [...items];
@@ -159,7 +239,7 @@ function CommunityStoreManager() {
       <div className={styles.Community}>
         <div className={styles.btnRow}>
           <Button
-            disabled={!userInfo || !currentCommunity?.isAdmin}
+            disabled={(!userInfo && !account.address) || !currentCommunity?.isAdmin}
             label="Create Store"
             className={styles.mintUSDTBtn}
             onClick={() => {
@@ -182,7 +262,13 @@ function CommunityStoreManager() {
           setIsShowCreateCommunityStoreDialog(false);
         }}
         onCreate={async (data, callback: any) => {
-          await createCommunityStore(data);
+          if (account.address) {
+            await createCommunityStoreByEOA(data);
+          }
+          else if (userInfo) {
+            await createCommunityStore(data);
+          }
+          
           callback();
           setIsShowCreateCommunityStoreDialog(false);
         }}

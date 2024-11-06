@@ -84,7 +84,7 @@ function CommunityPointManager() {
         isLoading: false,
         autoClose: 5000,
       });
-      await loadCommunityList();
+      await loadCommunityList((userInfo as any).aa);
 
       // setTransactionLogs((items) => {
       //   const newItems = [...items];

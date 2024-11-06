@@ -30,11 +30,15 @@ import "swiper/css/navigation";
 import { InputNumber } from "primereact/inputnumber";
 import { BlockUI } from "primereact/blockui";
 import PacmanLoader from "react-spinners/PacmanLoader";
+import { useAccount } from "wagmi";
+import { userInfoAtom } from "../../../atoms/UserInfo";
 interface AccountSignDialogParams {}
 
 function GoodsList({}: AccountSignDialogParams) {
   const [communityList, loadCommunityList] = useAtom(communityListAtom);
   const [amountMap, setAmountMap] = useState<any>({});
+  const userInfo = useAtomValue(userInfoAtom);
+  const account = useAccount();
   const loadCommunityListLoading = useAtomValue(loadCommunityListLoadingAtom);
   const [actionLoading, setActionLoading] = useState(false);
   const goodsList: Goods[] = [];
@@ -92,6 +96,40 @@ function GoodsList({}: AccountSignDialogParams) {
     setActionLoading(false);
   };
 
+  const buyByEOA = async (amount: number, goods: Goods) => {
+    if (!account.address || !account.connector) {
+      return;
+    }
+    //do something else
+    try {
+      //     const wallet = getWallet();
+      const _provider: any = await account.connector.getProvider();
+      const provider = new ethers.providers.Web3Provider(_provider);
+      // 第一步 创建 AAStarClient
+      setActionLoading(true);
+ 
+
+      // 第二步 创建合约调用参数
+      const GoodsContract = new ethers.Contract(
+        goods.storeAddress,
+        CommunityStoreABI,
+        provider.getSigner()
+      );
+
+   
+      const transactionObject = await GoodsContract.buy(goods.id, amount);
+      //   return transactionObject.hash;
+         // 第三步 发送 UserOperation
+         await provider.waitForTransaction(transactionObject.hash)
+         await loadCommunityList(account.address);
+      
+    } catch (error) {
+      console.log(error);
+  
+    }
+    setActionLoading(false);
+  };
+
   const approve = async ( goods: Goods) => {
     //const id = toast.loading("Please wait...");
 
@@ -121,7 +159,7 @@ function GoodsList({}: AccountSignDialogParams) {
           NetworkdConfig[networkIds.OP_SEPOLIA].rpc
         )
       );
-      ethers.constants.AddressZero
+    
 
       // Encode the calls
       const callTo = [goods.payToken];
@@ -130,7 +168,7 @@ function GoodsList({}: AccountSignDialogParams) {
       // 第三步 发送 UserOperation
       const response = await smartAccount.sendUserOperation(callTo, callData);
       console.log(`Transaction hash: ${response.transactionHash}`);
-      await loadCommunityList();
+      await loadCommunityList((userInfo as any).aa);
       // console.log(`Transaction hash: ${response.transactionHash}`);
       // toast.update(id, {
       //   render: "Success",
@@ -149,6 +187,56 @@ function GoodsList({}: AccountSignDialogParams) {
     }
     setActionLoading(false);
   };
+
+  const approveByEOA = async ( goods: Goods) => {
+    //const id = toast.loading("Please wait...");
+    if (!account.address || !account.connector) {
+      return;
+    }
+    //do something else
+    try {
+      //     const wallet = getWallet();
+
+      // 第一步 创建 AAStarClient
+      setActionLoading(true);
+      const _provider: any = await account.connector.getProvider();
+      const provider = new ethers.providers.Web3Provider(_provider);
+
+
+      // 第二步 创建合约调用参数
+      const GoodsContract = new ethers.Contract(
+        goods.payToken,
+        TetherTokenABI,
+        provider.getSigner()
+      );
+     
+
+      // Encode the calls
+    
+      const transactionObject = await GoodsContract.approve(goods.storeAddress, ethers.constants.MaxUint256);
+   //   return transactionObject.hash;
+      // 第三步 发送 UserOperation
+      await provider.waitForTransaction(transactionObject.hash)
+      await loadCommunityList(account.address);
+      // console.log(`Transaction hash: ${response.transactionHash}`);
+      // toast.update(id, {
+      //   render: "Success",
+      //   type: "success",
+      //   isLoading: false,
+      //   autoClose: 5000,
+      // });
+    } catch (error) {
+      console.log(error);
+      // toast.update(id, {
+      //   render: "Transaction Fail",
+      //   type: "error",
+      //   isLoading: false,
+      //   autoClose: 5000,
+      // });
+    }
+    setActionLoading(false);
+  };
+
 
 
   return (
@@ -214,10 +302,19 @@ function GoodsList({}: AccountSignDialogParams) {
                     ) && (
                       <Button
                         onClick={() => {
-                          buy(
-                            amountMap[item.id] ? amountMap[item.id] : 1,
-                            item
-                          );
+                          if (account.connector) {
+                            buyByEOA(
+                              amountMap[item.id] ? amountMap[item.id] : 1,
+                              item
+                            );
+                          }
+                          else if (userInfo) {
+                            buy(
+                              amountMap[item.id] ? amountMap[item.id] : 1,
+                              item
+                            );
+                          }
+                        
                         }}
                       >
                         Buy
@@ -230,10 +327,16 @@ function GoodsList({}: AccountSignDialogParams) {
                     ) && (
                       <Button
                         onClick={() => {
-                          approve(
+                          if (account && account.connector) {
+                            approveByEOA(item);
+                          }
+                          else if (userInfo) {
+                            approve(
                            
-                            item
-                          );
+                              item
+                            );
+                          }
+                         
                         }}
                       >
                         Approve
