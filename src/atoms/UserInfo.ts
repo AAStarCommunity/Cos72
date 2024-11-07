@@ -51,6 +51,7 @@ export const userInfoAtom = atom(
         const data = await loadUserInfo(currentChain)
         set(userInfo, data);
         set(loadUserInfoLoadingAtom, false);
+        return data;
     }
     else if (action === "signOut") {
         await signOut(currentChain);

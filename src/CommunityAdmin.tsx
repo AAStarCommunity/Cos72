@@ -25,6 +25,7 @@ import { breadCrumbListAtom, currentPathAtom } from "./atoms/CurrentPath";
 import DataLoading from "./components/DataLoading";
 import CommunityStoreDetail from "./components/CommunityManager/CommunityStoreDetail";
 import { BreadCrumb } from "primereact/breadcrumb";
+import { useAccount } from "wagmi";
 
 
 
@@ -33,8 +34,9 @@ import { BreadCrumb } from "primereact/breadcrumb";
 
 
 function CommunityAdmin() {
-
-  const loadUserInfo = useSetAtom(userInfoAtom);
+  const { address } = useAccount();
+  const [initLoaded, setInitLoaded] = useState(false);
+  const [userInfo, loadUserInfo] = useAtom(userInfoAtom);
   const loadCommunityList = useSetAtom(communityListAtom);
   const breadCrumbList = useAtomValue(breadCrumbListAtom);
   const loadCommunityListLoading = useAtomValue(loadCommunityListLoadingAtom)
@@ -83,9 +85,24 @@ function CommunityAdmin() {
 
   useEffect(() => {
     loadUserInfo().then(() => {
-      loadCommunityList();
+      setInitLoaded(true)
+     // loadCommunityList();
     })
   }, [])
+
+  useEffect(() => {
+    if (initLoaded) {
+      if (!userInfo) {
+        if (address) {
+          loadCommunityList(address)
+        }
+      }
+      else {
+        loadCommunityList((userInfo as any).aa)
+      }
+    }
+    console.log(address);
+  }, [address, userInfo, initLoaded])
  
 
 

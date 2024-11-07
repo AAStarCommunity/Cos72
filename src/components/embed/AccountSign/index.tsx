@@ -11,6 +11,8 @@ import { NetworkdConfig, networkIds } from "../../../config";
 import { entryPointAddress } from "../../../sdk/AAStarClient";
 import { Toast } from "primereact/toast";
 import AAStarLogo from "../../../assets/logo-aastar.png";
+import { TabPanel, TabView } from "primereact/tabview";
+import { useConnectModal } from "@rainbow-me/rainbowkit";
 interface AccountSignDialogParams {
   onComplete: () => void;
   
@@ -22,6 +24,7 @@ function AccountSign({ onComplete }: AccountSignDialogParams) {
   const [loading, setLoading] = useState(false);
   const [captchaSuccess, sendCaptchaSuccess] = useState(false);
   const [captcha, setCaptcha] = useState<string | null>(null);
+  const { openConnectModal } = useConnectModal();
   // const register = async () => {
   //   const airAccount = new AirAccountAPI({
   //     provider: new ethers.providers.JsonRpcProvider(
@@ -91,10 +94,12 @@ function AccountSign({ onComplete }: AccountSignDialogParams) {
     }
   };
   return (
-    <div>
+    <div className={styles.root}>
     <Toast ref={toast} />
    
       <div className={styles.WelcomeBack}><img src={AAStarLogo}></img> <div>Welcome Back</div></div>
+      <TabView>
+      <TabPanel header="Email">
       <div className={styles.Register}>
         <div className={styles.inputRow}>
           <div>Email address</div>
@@ -142,6 +147,21 @@ function AccountSign({ onComplete }: AccountSignDialogParams) {
             />
           </div>
         </div>
+      </TabPanel>
+      <TabPanel header="Wallet">
+    <div>
+            <Button
+              loading={loading}
+              label="Connect Wallet"
+              icon="pi pi-user"
+              className={styles.SignInBtn}
+              onClick={openConnectModal}
+            />
+          </div>
+      </TabPanel>
+      </TabView>
+
+     
 
     </div>
   );

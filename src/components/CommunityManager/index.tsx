@@ -16,13 +16,14 @@ import { ethers } from "ethers";
 import CommunityManagerJSON from "../../contracts/CommunityManager.json";
 import CommunityJSON from "../../contracts/Community.json";
 import { currentPathAtom } from "../../atoms/CurrentPath";
+import { useAccount } from "wagmi";
 const CommunityManagerABI = CommunityManagerJSON.abi;
 const CommunityABI = CommunityJSON.abi;
 function CommunityManager() {
   const currentChain = useAtomValue(currentChainAtom);
   const userInfo = useAtomValue(userInfoAtom);
   const [communityList, loadCommunityList] = useAtom(communityListAtom);
-
+  const account = useAccount();
   const setCurrentPath = useSetAtom(currentPathAtom);
   const setCurrentCommunity = useSetAtom(currentCommunityAtom);
 
@@ -127,7 +128,75 @@ function CommunityManager() {
         isLoading: false,
         autoClose: 5000,
       });
-      await loadCommunityList();
+      await loadCommunityList((userInfo as any).aa);
+
+      // setTransactionLogs((items) => {
+      //   const newItems = [...items];
+      //   newItems.unshift({
+      //     aaAccount: response.aaAccountAddress,
+      //     userOpHash: response.userOpHash,
+      //     transactionHash: `${response.transactionHash}`,
+      //   });
+      //   localStorage.setItem("TransactionLogs", JSON.stringify(newItems));
+      //   return newItems;
+      // });
+    } catch (error) {
+      console.log(error);
+      toast.update(id, {
+        render: "Transaction Fail",
+        type: "error",
+        isLoading: false,
+        autoClose: 5000,
+      });
+    }
+  };
+
+  const createCommunitByEOA = async (community: any) => {
+    
+    if (!account.connector || !account.address) {
+      return;
+    }
+    const id = toast.loading("Please wait...");
+    //do something else
+    try {
+      const _provider: any = await account.connector.getProvider();
+      const provider = new ethers.providers.Web3Provider(_provider);
+      // 第二步 创建合约调用参数
+      const CommunityManagerContract = new ethers.Contract(
+        currentChain.contracts.CommunityManager,
+        CommunityManagerABI,
+        provider.getSigner()
+      );
+      const CommunityContract = new ethers.Contract(
+        currentChain.contracts.CommunityV1,
+        CommunityABI,
+        provider.getSigner()
+      );
+  
+
+      const data = CommunityContract.interface.encodeFunctionData("initialize", [account.address, community])
+
+      // const callData = [
+      //   CommunityManagerContract.interface.encodeFunctionData(
+      //     "createCommunity",
+      //     [currentChain.contracts.CommunityV1, data]
+      //   ),
+      // ];
+      console.log("Waiting for transaction...");
+
+      const transactionObject = await CommunityManagerContract.createCommunity(currentChain.contracts.CommunityV1, data);
+   //   return transactionObject.hash;
+      // 第三步 发送 UserOperation
+      await provider.waitForTransaction(transactionObject.hash)
+    
+      console.log(`Transaction hash: ${transactionObject.hash}`);
+      toast.update(id, {
+        render: "Success",
+        type: "success",
+        isLoading: false,
+        autoClose: 5000,
+      });
+      await loadCommunityList(account.address);
 
       // setTransactionLogs((items) => {
       //   const newItems = [...items];
@@ -154,7 +223,7 @@ function CommunityManager() {
       <div className={styles.Community}>
         <div className={styles.btnRow}>
           <Button
-            disabled={!userInfo && currentChain.contracts.CommunityManager !== ethers.constants.AddressZero}
+            disabled={(!userInfo && !account.address) && currentChain.contracts.CommunityManager !== ethers.constants.AddressZero}
             label="Create Community"
             className={styles.mintUSDTBtn}
             onClick={() => {
@@ -174,7 +243,13 @@ function CommunityManager() {
           setIsShowCreateCommunityDialog(false);
         }}
         onCreate={async (data, callback: any) => {
-          await createCommunity(data);
+          if (account && account.connector) {
+            await createCommunitByEOA(data);
+          }
+          else if (userInfo) {
+            await createCommunity(data);
+          }
+         
           callback();
           setIsShowCreateCommunityDialog(false);
         }}

@@ -1,7 +1,11 @@
 .root {
  
 }
-
+.enterRoot {
+    position: fixed;
+    right: 20px;
+    bottom: 20px;
+}
 .accountInfo {
     margin: 10px 0px;
     display: flex;

@@ -5,6 +5,7 @@ import {
   currentCommunityAtom,
   currentCommunityStoreAtom,
   Goods,
+  Store,
 } from "../../atoms/Community";
 import styles from "./index.module.css";
 import { Button } from "primereact/button";
@@ -29,12 +30,14 @@ import "swiper/css/navigation";
 
 import { InputNumber } from "primereact/inputnumber";
 import { InputTextarea } from "primereact/inputtextarea";
+import { useAccount } from "wagmi";
 
 const CommunityStoreV2ABI = CommunityStoreV2JSON.abi;
 const TetherTokenABI = TetherTokenJSON.abi;
 function CommunityStoreGoodsManager() {
   const currentChain = useAtomValue(currentChainAtom);
   const userInfo = useAtomValue(userInfoAtom);
+  const account = useAccount();
   const loadCommunityList = useSetAtom(communityListAtom);
   const [goodsValueMap, setGoodsValueMap] = useState<any>({});
   const currentCommunity = useAtomValue(currentCommunityAtom);
@@ -311,10 +314,8 @@ function CommunityStoreGoodsManager() {
       </div>
     );
   };
-  const createCommunityStoreGoods = async (communityGoods: any) => {
-    if (!currentCommunityStore) {
-      return;
-    }
+  const createCommunityStoreGoods = async (currentCommunityStore: Store, communityGoods: any) => {
+
 
     const id = toast.loading("Please wait...");
 
@@ -377,7 +378,96 @@ function CommunityStoreGoodsManager() {
         isLoading: false,
         autoClose: 5000,
       });
-      await loadCommunityList();
+      await loadCommunityList((userInfo as any).aa);
+
+      // setTransactionLogs((items) => {
+      //   const newItems = [...items];
+      //   newItems.unshift({
+      //     aaAccount: response.aaAccountAddress,
+      //     userOpHash: response.userOpHash,
+      //     transactionHash: `${response.transactionHash}`,
+      //   });
+      //   localStorage.setItem("TransactionLogs", JSON.stringify(newItems));
+      //   return newItems;
+      // });
+    } catch (error) {
+      console.log(error);
+      toast.update(id, {
+        render: "Transaction Fail",
+        type: "error",
+        isLoading: false,
+        autoClose: 5000,
+      });
+    }
+  };
+
+  const createCommunityStoreGoodsByEOA = async (currentCommunityStore: Store, communityGoods: any) => {
+
+    if (!account.address || !account.connector) {
+        return;
+    }
+    const id = toast.loading("Please wait...");
+
+    //do something else
+    try {
+      const _provider: any = await account.connector.getProvider();
+      const provider = new ethers.providers.Web3Provider(_provider);
+
+      const CommunityStoreContract = new ethers.Contract(
+        currentCommunityStore?.address,
+        CommunityStoreV2ABI,
+        provider.getSigner()
+      );
+
+      const tokenContract = new ethers.Contract(
+        communityGoods.payToken,
+        TetherTokenABI,
+        provider.getSigner()
+      );
+      const tokenDecimals = await tokenContract.decimals();
+      // Encode the calls
+      //const callTo = [currentCommunityStore.address];
+      const goodsData = {
+        id: 0,
+
+        name: communityGoods.name,
+        description: communityGoods.description,
+        images: communityGoods.images.split(","),
+        descImages: communityGoods.descImages.split(","),
+        payToken: communityGoods.payToken,
+        payTokenSymbol: "",
+        payTokenDecimals: 0,
+        amount: ethers.BigNumber.from(communityGoods.amount),
+        price: ethers.utils.parseUnits(communityGoods.price, tokenDecimals),
+      };
+      console.log(goodsData);
+      // const callData = [
+      //   CommunityStoreContract.interface.encodeFunctionData("addGoods", [
+      //     goodsData,
+      //   ]),
+      // ];
+      console.log("Waiting for transaction...");
+
+      console.log("Waiting for transaction...");
+
+      const transactionObject = await CommunityStoreContract.addGoods(goodsData);
+   //   return transactionObject.hash;
+      // 第三步 发送 UserOperation
+      await provider.waitForTransaction(transactionObject.hash)
+    
+      console.log(`Transaction hash: ${transactionObject.hash}`);
+      // // 第三步 发送 UserOperation
+      // const response = await smartAccount.sendUserOperation(callTo, callData);
+
+
+      // console.log(`Transaction hash: ${response.transactionHash}`);
+      toast.update(id, {
+        render: "Success",
+        type: "success",
+        isLoading: false,
+        autoClose: 5000,
+      });
+      await loadCommunityList(account.address);
 
       // setTransactionLogs((items) => {
       //   const newItems = [...items];
@@ -404,7 +494,7 @@ function CommunityStoreGoodsManager() {
       <div className={styles.Community}>
         <div className={styles.btnRow}>
           <Button
-            disabled={!userInfo || !currentCommunity?.isAdmin}
+            disabled={(!userInfo && !account.address) || !currentCommunity?.isAdmin}
             label="Add Goods"
             className={styles.mintUSDTBtn}
             onClick={() => {
@@ -426,9 +516,17 @@ function CommunityStoreGoodsManager() {
           setIsShowCreateCommunityGoodsDialog(false);
         }}
         onCreate={async (data, callback: any) => {
-          await createCommunityStoreGoods(data);
-          callback();
-          setIsShowCreateCommunityGoodsDialog(false);
+          if (currentCommunityStore) {
+            if (account.connector) {
+              await createCommunityStoreGoodsByEOA(currentCommunityStore, data);
+            }
+            else if (userInfo) {
+              await createCommunityStoreGoods(currentCommunityStore, data);
+            }
+           
+            callback();
+            setIsShowCreateCommunityGoodsDialog(false);
+          }
         }}
       ></CreateCommunityGoodsDialog>
     </>

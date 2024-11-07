@@ -15,6 +15,11 @@ import AAStarLogo from "../../assets/logo-aastar.png";
 import { useSetAtom } from "jotai";
 
 import { userInfoAtom } from "../../atoms/UserInfo";
+import { TabPanel, TabView } from "primereact/tabview";
+import {
+  useConnectModal,
+ 
+} from '@rainbow-me/rainbowkit';
 interface AccountSignDialogParams {
   onHide: () => void;
   visible: boolean;
@@ -26,7 +31,7 @@ function AccountSignDialog({ onHide, visible }: AccountSignDialogParams) {
   const [loading, setLoading] = useState(false);
   const [captchaSuccess, sendCaptchaSuccess] = useState(false);
   const [captcha, setCaptcha] = useState<string | null>(null);
-
+  const { openConnectModal } = useConnectModal();
   const loadUserInfo = useSetAtom<any>(userInfoAtom);
   const register = async () => {
     const airAccount = new AirAccountAPI({
@@ -77,7 +82,9 @@ function AccountSignDialog({ onHide, visible }: AccountSignDialogParams) {
     <Toast ref={toast} />
    
       <div className={styles.WelcomeBack}><img src={AAStarLogo}></img> <div>Welcome Back</div></div>
-      <div className={styles.Register}>
+      <TabView>
+    <TabPanel header="Email">
+    <div className={styles.Register}>
         <div className={styles.inputRow}>
           <div>Email address</div>
           <InputText
@@ -123,8 +130,22 @@ function AccountSignDialog({ onHide, visible }: AccountSignDialogParams) {
               }}
             />
           </div>
-        </div>
-
+      </div>
+    </TabPanel>
+    <TabPanel header="Wallet">
+    <div>
+            <Button
+              loading={loading}
+              label="Connect Wallet"
+              icon="pi pi-user"
+              className={styles.SignInBtn}
+              onClick={openConnectModal}
+            />
+          </div>
+      </TabPanel>
+    </TabView>
+     
+    
     </Dialog>
   );
 }
