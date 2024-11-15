@@ -11,18 +11,27 @@ import AccountSignDialog from "../AccountSignDialog";
 import { Menu } from "primereact/menu";
 import { MenuItem } from "primereact/menuitem";
 import { useAccount, useDisconnect } from "wagmi";
+import { useNavigate } from "react-router-dom";
 
 function UserInfo() {
   const menuLeft = useRef<Menu>(null);
   const account  = useAccount(); 
   const { disconnect } = useDisconnect()
-
+  
   const [userInfo, loadUserInfo] = useAtom<any>(userInfoAtom);
   const [isShowAccountSignDialog, setIsShowAccountSignDialog] = useState(false);
+  const navigate = useNavigate();
   const accountItems: MenuItem[] = [
     {
-      label: "Options",
+     
       items: [
+        {
+          label: "Admin",
+          icon: "pi pi-wallet",
+          command: () => {
+            navigate("/admin")
+          },
+        },
         {
           label: "Sign out",
           icon: "pi pi-refresh",

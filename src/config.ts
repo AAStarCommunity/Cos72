@@ -147,7 +147,7 @@ export const NetworkdConfig: { [K in NetworkId]: INetwork } = {
   },
   [networkIds.OP_SEPOLIA]: {
     name: "OP Sepolia",
-    rpc: "https://optimism-sepolia.blockpi.network/v1/rpc/public",
+    rpc: "https://endpoints.omniatech.io/v1/op/sepolia/public",
     chainId: networkIds.OP_SEPOLIA,
     blockExplorerURL: "https://sepolia-optimism.etherscan.io",
     contracts: {

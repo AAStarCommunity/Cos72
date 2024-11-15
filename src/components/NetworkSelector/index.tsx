@@ -18,7 +18,6 @@ function NetworkSelector() {
     options={ChainList}
     value={currentChain}
     onChange={(e) => {
-       
         setCurrentChainId(e.value.chainId);
     }}
   />

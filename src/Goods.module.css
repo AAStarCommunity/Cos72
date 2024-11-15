@@ -1,0 +1,57 @@
+.Root {
+    height: 300px;
+}
+.GoodsList {
+    display: flex;
+    gap: 20px;
+}
+.GoodsImage {
+    width: 240px;
+    height: 240px;
+    border-radius: 8px;
+}
+.Goods {
+    border: 1px solid transparent;
+    padding: 5px;
+    border-radius: 8px;
+    cursor: pointer;
+}
+.Goods:hover {
+    border: 1px solid #3b82f6;
+}
+.GoodsName {
+    color: #11192d;
+    font-size: 16px;
+}
+
+.GoodsPrice {
+    color: #ff6200;
+    font-size: 24px;
+    font-weight: 700;
+}
+.Store {
+    display: flex;
+    padding: 20px 0px;
+    border-bottom: 1px solid #e5e7eb;
+}
+.StoreInfo {
+    width: 300px;
+    display: flex;
+    gap: 20px;
+}
+.StoreGoodsList {
+    display: flex;
+    gap: 20px;
+}
+.StoreGoodsImage {
+    width: 140px;
+}
+
+.StoreGoodsPrice {
+    font-size: 12px;
+}
+
+.StoreImage {
+    width: 70px;
+    height: 70px;
+}
