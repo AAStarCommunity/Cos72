@@ -2,30 +2,27 @@
 
 
 import styles from "./CommunityAdmin.module.css";
-import { useEffect, useState } from "react";
-import { Menubar } from "primereact/menubar";
-import AAStarLogo from "./assets/logo-aastar.png";
+import { useState } from "react";
+
 
 import { NetworkdConfig } from "./config";
-import { MenuItem } from "primereact/menuitem";
 
 import { ToastContainer } from "react-toastify";
 
 
 
 import { JsonEditor } from "json-edit-react";
-import NetworkSelector from "./components/NetworkSelector";
-import UserInfo from "./components/UserInfo";
-import { useAtom, useAtomValue, useSetAtom } from "jotai";
-import { userInfoAtom } from "./atoms/UserInfo";
+
+import { useAtom, useAtomValue } from "jotai";
+
 import CommunityManager from "./components/CommunityManager";
-import { communityListAtom, loadCommunityListLoadingAtom } from "./atoms/Community";
+import {loadCommunityListLoadingAtom } from "./atoms/Community";
 import CommunityDetail from "./components/CommunityManager/CommunityDetail";
-import { breadCrumbListAtom, currentPathAtom } from "./atoms/CurrentPath";
+import {  currentPathAtom } from "./atoms/CurrentPath";
 import DataLoading from "./components/DataLoading";
 import CommunityStoreDetail from "./components/CommunityManager/CommunityStoreDetail";
-import { BreadCrumb } from "primereact/breadcrumb";
-import { useAccount } from "wagmi";
+
+
 
 
 
@@ -34,75 +31,15 @@ import { useAccount } from "wagmi";
 
 
 function CommunityAdmin() {
-  const { address } = useAccount();
-  const [initLoaded, setInitLoaded] = useState(false);
-  const [userInfo, loadUserInfo] = useAtom(userInfoAtom);
-  const loadCommunityList = useSetAtom(communityListAtom);
-  const breadCrumbList = useAtomValue(breadCrumbListAtom);
+
   const loadCommunityListLoading = useAtomValue(loadCommunityListLoadingAtom)
   const [currentNetworkdConfig, setCurrentNetworkdConfig] =
     useState(NetworkdConfig);
 
-  const [currentPath, setCurrentPath] = useAtom(currentPathAtom);
-  const items: MenuItem[] = [
-    {
-      label: "Community",
-      icon: "pi pi-comments",
-      className: currentPath == "community" ? styles.menuActive : "",
-      command: () => {
-        setCurrentPath("community");
-      },
-    },
-    {
-      label: "Transaction",
-      icon: "pi pi-bars",
-      className: currentPath == "transaction" ? styles.menuActive : "",
-      command: () => {
-        setCurrentPath("transaction");
-      },
-    },
-    {
-      label: "Setting",
-      icon: "pi pi-bars",
-      className: currentPath == "setting" ? styles.menuActive : "",
-      command: () => {
-        setCurrentPath("setting");
-      },
-    },
-  ];
+  const [currentPath] = useAtom(currentPathAtom);
 
-  const start = <img alt="logo" src={AAStarLogo} className={styles.Logo}></img>;
-  const end = (
-    <div className={styles.End}>
-      <div className={styles.NetworkDropdown}>
-        Network
-       <NetworkSelector></NetworkSelector>
-      </div>
-      <UserInfo></UserInfo>
-   
-    </div>
-  );
 
-  useEffect(() => {
-    loadUserInfo().then(() => {
-      setInitLoaded(true)
-     // loadCommunityList();
-    })
-  }, [])
 
-  useEffect(() => {
-    if (initLoaded) {
-      if (!userInfo) {
-        if (address) {
-          loadCommunityList(address)
-        }
-      }
-      else {
-        loadCommunityList((userInfo as any).aa)
-      }
-    }
-    console.log(address);
-  }, [address, userInfo, initLoaded])
  
 
 
@@ -121,12 +58,9 @@ function CommunityAdmin() {
 //   console.log(currentChainId);
   return (
     <div className={styles.Root}>
-      <Menubar model={items} start={start} end={end} />
-     
+
       <div className={styles.Content}>
-        <BreadCrumb model={breadCrumbList} onClick={(event) => {
-          console.log(event.target)
-        }}></BreadCrumb>
+     
 
         {currentPath === "community" && (
           <CommunityManager></CommunityManager>

@@ -1,0 +1,15 @@
+
+.End {
+    margin-right: 10px;
+    display: flex;
+    gap: 20px;
+}
+
+.NetworkDropdown {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+.Logo {
+    height: 50px;
+}
