@@ -28,7 +28,10 @@ function CommunityManager() {
   const [communityList, loadCommunityList] = useAtom(communityListAtom);
   const account = useAccount();
   const navigate = useNavigate();
-  const canAdminCommunityList = communityList.filter(item => item.isAdmin);
+  const canAdminCommunityList = communityList.filter(item => {
+    return item.isAdmin === true
+  });
+  console.log("CommunityManager", communityList, canAdminCommunityList)
   const [isShowCreateCommunityDialog, setIsShowCreateCommunityDialog] =
     useState(false);
   const communityTemplate = (communityList: Community[]) => {
