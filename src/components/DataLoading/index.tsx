@@ -1,16 +1,11 @@
 
-import { BlockUI } from 'primereact/blockui';
+
 import PacmanLoader from "react-spinners/PacmanLoader";
-export default function DataLoading({
-    loading
-} : {
-    loading: boolean
-}) {
+import styles from "./index.module.css"
+export default function DataLoading() {
     return (
-        <BlockUI blocked={loading} fullScreen template={
-            <div><PacmanLoader color='#2dd4bf'  size={50}/> </div>
-        }>
- 
-    </BlockUI>)
+        <div className={styles.Root}>
+            <PacmanLoader color='#3b82f6'  size={30}/> 
+    </div>)
 }
         

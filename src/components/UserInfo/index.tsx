@@ -40,6 +40,13 @@ function UserInfo() {
           },
         },
         {
+          label: "Order",
+          icon: "pi pi-wallet",
+          command: () => {
+            navigate("/order")
+          },
+        },
+        {
           label: "Sign out",
           icon: "pi pi-refresh",
           command: () => {
