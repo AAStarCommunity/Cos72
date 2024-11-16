@@ -360,12 +360,16 @@ function CommunityStoreGoodsManager() {
         new ethers.providers.JsonRpcProvider(currentChain.rpc)
       );
 
-      const tokenContract = new ethers.Contract(
-        communityGoods.payToken,
-        TetherTokenABI,
-        new ethers.providers.JsonRpcProvider(currentChain.rpc)
-      );
-      const tokenDecimals = await tokenContract.decimals();
+
+      let tokenDecimals = 18;
+      if (communityGoods.payToken !== ethers.constants.AddressZero) {
+        const tokenContract = new ethers.Contract(
+          communityGoods.payToken,
+          TetherTokenABI,
+          new ethers.providers.JsonRpcProvider(currentChain.rpc)
+        );
+        tokenDecimals = await tokenContract.decimals();
+      }
       // Encode the calls
       const callTo = [currentCommunityStore.address];
       const goodsData = {
