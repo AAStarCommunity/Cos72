@@ -98,11 +98,9 @@
     }
 }
 .Community {
-    background-color: #1f2937;
-    border: 1px solid #424b57;
-    border-radius: 6px;
-    padding: 20px;
-  
+    
+    
+    
     min-height: calc(100vh - 180px) ;
 }
 .CommunityDataView {
@@ -122,11 +120,11 @@
 }
 
 .CommunityCard {
-    border-radius: 10px;
-    background-color: #2D82B7; 
+   
     width: 32%;
     padding: 10px;
     cursor: pointer;
+    background-color: #f9fafb;
 }
 
 .CommunityCardInfo {

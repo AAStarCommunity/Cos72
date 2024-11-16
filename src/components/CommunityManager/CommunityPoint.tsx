@@ -1,11 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { Chip } from "primereact/chip";
-import { communityListAtom, currentCommunityAtom } from "../../atoms/Community";
+import { Community, communityListAtom } from "../../atoms/Community";
 import styles from "./index.module.css";
 import { Button } from "primereact/button";
 
-import { useAtomValue, useSetAtom } from "jotai";
+import { useAtom, useAtomValue } from "jotai";
 import { currentChainAtom } from "../../atoms/CurrentChain";
 import { userInfoAtom } from "../../atoms/UserInfo";
 
@@ -19,6 +19,8 @@ import TetherTokenJSON from "../../contracts/TetherToken.json";
 import CreateCommunityPointTokenDialog from "../CreateCommunityPointTokenDialog";
 import SentCommunityPointTokenDialog from "../SentCommunityPointTokenDialog";
 import { useAccount } from "wagmi";
+import { useParams } from "react-router-dom";
+import { find } from "lodash";
 
 const CommunityABI = CommunityJSON.abi;
 
@@ -27,10 +29,14 @@ function CommunityPointManager() {
   const currentChain = useAtomValue(currentChainAtom);
   const userInfo = useAtomValue(userInfoAtom);
   const account = useAccount();
-  const loadCommunityList = useSetAtom(communityListAtom);
-
-  const currentCommunity = useAtomValue(currentCommunityAtom);
-
+  const [communityList, loadCommunityList] = useAtom(communityListAtom);
+  let { address } = useParams();
+  const  currentCommunity = find(communityList, (item: Community) => {
+    return item.address === address;
+  })
+  if (!currentCommunity) {
+    return null;
+  }
   const [
     isShowCreateCommunityStoreDialog,
     setIsShowCreateCommunityStoreDialog,

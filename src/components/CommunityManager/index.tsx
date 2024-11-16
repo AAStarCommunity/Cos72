@@ -1,11 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { Chip } from "primereact/chip";
-import { Community, communityListAtom, currentCommunityAtom } from "../../atoms/Community";
+import { Community, communityListAtom } from "../../atoms/Community";
 import styles from "./index.module.css";
 import { Button } from "primereact/button";
 import { DataView } from "primereact/dataview";
-import { useAtom, useAtomValue, useSetAtom } from "jotai";
+import { useAtom, useAtomValue } from "jotai";
 import { currentChainAtom } from "../../atoms/CurrentChain";
 import { userInfoAtom } from "../../atoms/UserInfo";
 import CreateCommunityDialog from "../CreateCommunityDialog";
@@ -15,8 +15,11 @@ import { AAStarClient } from "../../sdk";
 import { ethers } from "ethers";
 import CommunityManagerJSON from "../../contracts/CommunityManager.json";
 import CommunityJSON from "../../contracts/Community.json";
-import { currentPathAtom } from "../../atoms/CurrentPath";
+
 import { useAccount } from "wagmi";
+import { Panel } from "primereact/panel";
+import { Card } from "primereact/card";
+import { useNavigate } from "react-router-dom";
 const CommunityManagerABI = CommunityManagerJSON.abi;
 const CommunityABI = CommunityJSON.abi;
 function CommunityManager() {
@@ -24,23 +27,22 @@ function CommunityManager() {
   const userInfo = useAtomValue(userInfoAtom);
   const [communityList, loadCommunityList] = useAtom(communityListAtom);
   const account = useAccount();
-  const setCurrentPath = useSetAtom(currentPathAtom);
-  const setCurrentCommunity = useSetAtom(currentCommunityAtom);
-
+  const navigate = useNavigate();
+  const canAdminCommunityList = communityList.filter(item => item.isAdmin);
   const [isShowCreateCommunityDialog, setIsShowCreateCommunityDialog] =
     useState(false);
   const communityTemplate = (communityList: Community[]) => {
     //console.log(tokenList, tokenIds);
     return (
       <div className={styles.CommunityCardList}>
-        {communityList.map((community: any) => {
+        {communityList.map((community: Community) => {
           return (
-            <div
+            <Card
+              title={community.name}
               className={styles.CommunityCard}
               key={community.address}
               onClick={() => {
-                 setCurrentCommunity(community);
-                 setCurrentPath("community-detail");
+                navigate(`/admin/community/${community.address}`)
               }}
             >
               {/* <div>{token.loading === true && <Skeleton height="100px"></Skeleton>}</div> */}
@@ -48,7 +50,7 @@ function CommunityManager() {
                 <img src={community.logo}></img>
               </div>
               <div className={styles.CommunityCardInfo}>
-                <div className={styles.CommunityText}>{community.name}</div>
+             
                 <div className={styles.CommunityText}>{community.description}</div>
                 <div className={styles.CommunityText}>
                   <Chip
@@ -64,7 +66,7 @@ function CommunityManager() {
                 </div>
               </div>
               <div></div>
-            </div>
+            </Card>
           );
         })}
       </div>
@@ -220,7 +222,7 @@ function CommunityManager() {
   };
   return (
     <>
-      <div className={styles.Community}>
+      <Panel header="Community Management">
         <div className={styles.btnRow}>
           <Button
             disabled={(!userInfo && !account.address) && currentChain.contracts.CommunityManager !== ethers.constants.AddressZero}
@@ -233,10 +235,10 @@ function CommunityManager() {
         </div>
         <DataView
           className={styles.CommunityDataView}
-          value={communityList}
+          value={canAdminCommunityList}
           listTemplate={communityTemplate as any}
         ></DataView>
-      </div>
+      </Panel>
       <CreateCommunityDialog
         visible={isShowCreateCommunityDialog}
         onHide={() => {
