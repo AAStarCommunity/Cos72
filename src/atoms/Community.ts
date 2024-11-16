@@ -9,6 +9,7 @@ import { currentChainAtom } from "./CurrentChain";
 import { find } from "lodash";
 import { breadCrumbListAtom } from "./CurrentPath";
 import { toSignificant } from "../util";
+import dayjs from "dayjs"
 const CommunityManagerABI = CommunityManagerJSON.abi;
 const CommunityABI = CommunityJSON.abi;
 const CommunityStoreABI = CommunityStoreJSON.abi;
@@ -20,10 +21,19 @@ export interface Store {
   logo: string;
   isAdmin: boolean;
   goodsList: Goods[];
+  orderList: Order[];
+}
+
+export interface Order {
+  storeName: string;
+  goodsName: string;
+  amount: number;
+  time: number;
+  formatTime: string;
 }
 
 export interface Goods {
-  id: number;
+  id: string;
   name: string;
   description: string;
   images: string[];
@@ -96,11 +106,28 @@ const loadCommunityList = async (currentNetwork: INetwork, account: string) => {
         provider
       );
       const storeInfo = await communityStore.getStoreInfo(account);
+      console.log("storeInfo", storeInfo)
       const storeLogo = await pinata.gateways.createSignedURL({
         cid: storeInfo.setting.image,
         expires: 365 * 24 * 60 * 60,
       });
       const goodsList: Goods[] = [];
+      const orderList: Order[] = [];
+      for (let x = 0, y = storeInfo.userPurchaseHistory.length; x < y; x++) {
+        const goods = find(storeInfo.goodsList, (item) => {
+          return item.id.eq(storeInfo.userPurchaseHistory[x].goodsId)
+        })
+        if (goods) {
+          orderList.push({
+            storeName: storeInfo.setting.name,
+            goodsName: goods.name,
+            amount: storeInfo.userPurchaseHistory[x].amount.toNumber(),
+            time: storeInfo.userPurchaseHistory[x].time.toNumber(),
+            formatTime: dayjs(storeInfo.userPurchaseHistory[x].time.toNumber() * 1000).format("YYYY-MM-DD HH:mm:ss")
+          })
+        }
+      }
+      console.log("orderList",orderList, storeInfo.userPurchaseHistory)
       for (let x = 0, y = storeInfo.goodsList.length; x < y; x++) {
         const goodsData = storeInfo.goodsList[x];
         const goodsAccountData = storeInfo.goodsAccountInfos[x];
@@ -123,7 +150,7 @@ const loadCommunityList = async (currentNetwork: INetwork, account: string) => {
         //   })
         // );
         goodsList.push({
-          id: goodsData.id.toNumber(),
+          id: `${storeAddressList[m]}-${goodsData.id.toNumber()}`,
           name: goodsData.name,
           description: goodsData.description,
           images,
@@ -155,6 +182,7 @@ const loadCommunityList = async (currentNetwork: INetwork, account: string) => {
         description: storeInfo.setting.description,
         isAdmin: storeInfo.isAdmin,
         goodsList: goodsList,
+        orderList: orderList
       });
       console.log(storeInfo);
     }

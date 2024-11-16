@@ -3,7 +3,9 @@
 }
 .GoodsList {
     display: flex;
-    gap: 20px;
+    gap: 10px;
+    width: 100%;
+    flex-flow: wrap;
 }
 .GoodsImage {
     width: 240px;
@@ -26,7 +28,7 @@
 
 .GoodsPrice {
     color: #ff6200;
-    font-size: 24px;
+    font-size: 20px;
     font-weight: 700;
 }
 .Store {
@@ -54,4 +56,17 @@
 .StoreImage {
     width: 70px;
     height: 70px;
+}
+
+.CommunityGoodsPrice {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.actionButtons {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
 }

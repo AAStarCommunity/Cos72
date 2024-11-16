@@ -30,6 +30,7 @@ import CommunityDetail from "./components/CommunityManager/CommunityDetail.tsx";
 import CommunityStoreDetail from "./components/CommunityManager/CommunityStoreDetail.tsx";
 import DataLoading from "./components/DataLoading/index.tsx";
 import 'react-toastify/dist/ReactToastify.css';
+import OrderApp from "./Order.tsx";
 const config = getDefaultConfig({
   appName: "COS72",
   projectId: "413eed66ad9f8b3bf84e79de8bde9604",
@@ -84,6 +85,7 @@ function App() {
       <div className={styles.Content}>
       <Routes>
           <Route path="/" element={<Goods />} />
+          <Route path="/order" element={<OrderApp />} />
           <Route path="/admin/community" element={<CommunityManager />} />
           <Route path="/admin/community/:address" element={<CommunityDetail />} />
           <Route path="/admin/community/:address/store/:storeAddress" element={<CommunityStoreDetail />} />
