@@ -32,6 +32,7 @@ import { InputTextarea } from "primereact/inputtextarea";
 import { useAccount } from "wagmi";
 import { useParams } from "react-router-dom";
 import { find } from "lodash";
+import { InputText } from "primereact/inputtext";
 
 const CommunityStoreV2ABI = CommunityStoreV2JSON.abi;
 const TetherTokenABI = TetherTokenJSON.abi;
@@ -306,20 +307,20 @@ function CommunityStoreGoodsManager() {
                 </div>
                 <div className={styles.CommunityGoodsField}>
                   <label>Price: </label>{" "}
-                  <InputNumber value={( goodsValueMap[goods.id] && goodsValueMap[goods.id].price) ? goodsValueMap[goods.id].price : goods.price}   onChange={(event) => {
+                  <InputText value={( goodsValueMap[goods.id] && goodsValueMap[goods.id].price) ? goodsValueMap[goods.id].price : goods.price}   onChange={(event) => {
                       setGoodsValueMap((valueMap: any) => {
                         const newData: any = {...valueMap};
                         if (newData[goods.id]) {
-                          newData[goods.id].price = event.value;
+                          newData[goods.id].price = event.target.value;
                         }
                         else {
                           newData[goods.id] = {
-                            price:  event.value
+                            price:  event.target.value
                           }
                         }
                         return newData;
                       })
-                    }}  ></InputNumber>{" "}
+                    }}  ></InputText>{" "}
                   <Button onClick={() => {
                       updateGoodsPrice(goods, ( goodsValueMap[goods.id] && goodsValueMap[goods.id].price) ? goodsValueMap[goods.id].price : goods.price )
                   }}>Update</Button>
@@ -436,13 +437,16 @@ function CommunityStoreGoodsManager() {
         CommunityStoreV2ABI,
         provider.getSigner()
       );
-
-      const tokenContract = new ethers.Contract(
-        communityGoods.payToken,
-        TetherTokenABI,
-        provider.getSigner()
-      );
-      const tokenDecimals = await tokenContract.decimals();
+      let tokenDecimals = 18;
+      if (communityGoods.payToken !== ethers.constants.AddressZero) {
+        const tokenContract = new ethers.Contract(
+          communityGoods.payToken,
+          TetherTokenABI,
+          provider.getSigner()
+        );
+        tokenDecimals = await tokenContract.decimals();
+      }
+    
       // Encode the calls
       //const callTo = [currentCommunityStore.address];
       const goodsData = {

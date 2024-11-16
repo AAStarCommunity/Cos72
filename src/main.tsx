@@ -20,15 +20,16 @@ import NetworkSelector from "./components/NetworkSelector/index.tsx";
 import UserInfo from "./components/UserInfo/index.tsx";
 import Goods from "./Goods";
 import AAStarLogo from "./assets/logo-aastar.png";
-import { useAtom, useSetAtom } from "jotai";
-import { communityListAtom } from "./atoms/Community.ts";
+import { useAtom, useAtomValue, useSetAtom } from "jotai";
+import { communityListAtom, loadCommunityListLoadingAtom } from "./atoms/Community.ts";
 import { userInfoAtom } from "./atoms/UserInfo.ts";
 import { ethers } from "ethers";
 import CommunityManager from "./components/CommunityManager/index.tsx";
 import { ToastContainer } from "react-toastify";
 import CommunityDetail from "./components/CommunityManager/CommunityDetail.tsx";
 import CommunityStoreDetail from "./components/CommunityManager/CommunityStoreDetail.tsx";
-
+import DataLoading from "./components/DataLoading/index.tsx";
+import 'react-toastify/dist/ReactToastify.css';
 const config = getDefaultConfig({
   appName: "COS72",
   projectId: "413eed66ad9f8b3bf84e79de8bde9604",
@@ -41,7 +42,7 @@ function App() {
   const [initLoaded, setInitLoaded] = useState(false);
   const [userInfo, loadUserInfo] = useAtom(userInfoAtom);
   const loadCommunityList = useSetAtom(communityListAtom);
-
+  const loading = useAtomValue(loadCommunityListLoadingAtom)
   useEffect(() => {
     loadUserInfo().then(() => {
       setInitLoaded(true)
@@ -87,9 +88,11 @@ function App() {
           <Route path="/admin/community/:address" element={<CommunityDetail />} />
           <Route path="/admin/community/:address/store/:storeAddress" element={<CommunityStoreDetail />} />
         </Routes>
+        <ToastContainer />
       </div>
-      <ToastContainer />
+     
     </div>
+    {loading && <DataLoading ></DataLoading>}
     </BrowserRouter>
   );
 }
