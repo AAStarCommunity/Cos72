@@ -27,7 +27,7 @@ import { Navigation } from "swiper/modules";
 import "swiper/css";
 import "swiper/css/navigation";
 
-import { InputNumber } from "primereact/inputnumber";
+
 import { InputTextarea } from "primereact/inputtextarea";
 import { useAccount } from "wagmi";
 import { useParams } from "react-router-dom";
