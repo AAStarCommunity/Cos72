@@ -41,7 +41,7 @@ function UserInfo() {
         },
         {
           label: "Order",
-          icon: "pi pi-wallet",
+          icon: "pi pi-book",
           command: () => {
             navigate("/order")
           },
