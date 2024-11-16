@@ -26,10 +26,17 @@ function UserInfo() {
      
       items: [
         {
-          label: "Admin",
+          label:"Shopping",
+          icon: "pi pi-shopping-bag",
+          command: () => {
+            navigate("/")
+          },
+        },
+        {
+          label: "Create Store",
           icon: "pi pi-wallet",
           command: () => {
-            navigate("/admin")
+            navigate("/admin/community")
           },
         },
         {

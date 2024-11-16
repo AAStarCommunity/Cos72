@@ -1,16 +1,15 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import {
+  Community,
   communityListAtom,
-  currentCommunityAtom,
-  currentCommunityStoreAtom,
   Goods,
   Store,
 } from "../../atoms/Community";
 import styles from "./index.module.css";
 import { Button } from "primereact/button";
 import { DataView } from "primereact/dataview";
-import { useAtomValue, useSetAtom } from "jotai";
+import { useAtom, useAtomValue } from "jotai";
 import { currentChainAtom } from "../../atoms/CurrentChain";
 import { userInfoAtom } from "../../atoms/UserInfo";
 
@@ -31,6 +30,8 @@ import "swiper/css/navigation";
 import { InputNumber } from "primereact/inputnumber";
 import { InputTextarea } from "primereact/inputtextarea";
 import { useAccount } from "wagmi";
+import { useParams } from "react-router-dom";
+import { find } from "lodash";
 
 const CommunityStoreV2ABI = CommunityStoreV2JSON.abi;
 const TetherTokenABI = TetherTokenJSON.abi;
@@ -38,10 +39,27 @@ function CommunityStoreGoodsManager() {
   const currentChain = useAtomValue(currentChainAtom);
   const userInfo = useAtomValue(userInfoAtom);
   const account = useAccount();
-  const loadCommunityList = useSetAtom(communityListAtom);
+  const [communityList,loadCommunityList] = useAtom(communityListAtom);
   const [goodsValueMap, setGoodsValueMap] = useState<any>({});
-  const currentCommunity = useAtomValue(currentCommunityAtom);
-  const currentCommunityStore = useAtomValue(currentCommunityStoreAtom);
+
+  let { address, storeAddress } = useParams();
+  const currentCommunity = find(communityList, (item: Community) => {
+    return item.address === address;
+  });
+  if (!currentCommunity) {
+    return null;
+  }
+
+  const currentCommunityStore = find(
+    currentCommunity.storeList,
+    (item: Store) => {
+      return item.address === storeAddress;
+    }
+  );
+
+  if (!currentCommunityStore) {
+    return null;
+  }
   const [
     isShowCreateCommunityGoodsDialog,
     setIsShowCreateCommunityGoodsDialog,

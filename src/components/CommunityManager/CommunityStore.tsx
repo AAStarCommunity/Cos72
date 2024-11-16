@@ -1,11 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { Chip } from "primereact/chip";
-import { communityListAtom, currentCommunityAtom, currentCommunityStoreAtom, Store } from "../../atoms/Community";
+import { Community, communityListAtom, Store } from "../../atoms/Community";
 import styles from "./index.module.css";
 import { Button } from "primereact/button";
 import { DataView } from "primereact/dataview";
-import {useAtomValue, useSetAtom } from "jotai";
+import {useAtom, useAtomValue } from "jotai";
 import { currentChainAtom } from "../../atoms/CurrentChain";
 import { userInfoAtom } from "../../atoms/UserInfo";
 
@@ -15,43 +15,50 @@ import { AAStarClient } from "../../sdk";
 import { ethers } from "ethers";
 import CommunityJSON from "../../contracts/Community.json";
 import CommunityStoreJSON from "../../contracts/CommunityStore.json";
-import { currentPathAtom } from "../../atoms/CurrentPath";
+
 import CreateCommunityStoreDialog from "../CreateCommunityStoreDialog";
 import { useAccount } from "wagmi";
+import { useNavigate, useParams } from "react-router-dom";
+import { find } from "lodash";
+import { Card } from "primereact/card";
 
 const CommunityABI = CommunityJSON.abi;
 const CommunityStoreABI = CommunityStoreJSON.abi;
 function CommunityStoreManager() {
   const currentChain = useAtomValue(currentChainAtom);
   const userInfo = useAtomValue(userInfoAtom);
-  const loadCommunityList = useSetAtom(communityListAtom);
+  const [communityList, loadCommunityList] = useAtom(communityListAtom);
   const account = useAccount();
-  const setCurrentPath = useSetAtom(currentPathAtom);
-  const currentCommunity = useAtomValue(currentCommunityAtom);
-  const setCurrentCommunityStore = useSetAtom(currentCommunityStoreAtom);
+
   const [isShowCreateCommunityStoreDialog, setIsShowCreateCommunityStoreDialog] =
     useState(false);
+    let { address } = useParams();
+    const navigate = useNavigate()
+    const  currentCommunity = find(communityList, (item: Community) => {
+      return item.address === address;
+    })
+    if (!currentCommunity) {
+      return null;
+    }
   const communityStoreTemplate = (storeList: Store[]) => {
     //console.log(tokenList, tokenIds);
     return (
       <div className={styles.CommunityCardList}>
         {storeList.map((store: Store) => {
           return (
-            <div
+            <Card
+              title={store.name}
               className={styles.CommunityCard}
               key={store.address}
               onClick={() => {
-                setCurrentCommunityStore(store);
-                 setCurrentPath("community-store-detail");
+                navigate(`/admin/community/${currentCommunity.address}/store/${store.address}`)
               }}
             >
               {/* <div>{token.loading === true && <Skeleton height="100px"></Skeleton>}</div> */}
               <div className={styles.CommunityImg}>
                 <img src={store.logo}></img>
               </div>
-              <div className={styles.CommunityCardInfo}>
-                <div className={styles.CommunityText}>{store.name}</div>
-                <div className={styles.CommunityText}>{store.description}</div>
+              <div className={styles.CommunityCardInfo}>    <div className={styles.CommunityText}>{store.description}</div>
                 <div className={styles.CommunityText}>
                   <Chip
                     className={styles.CommunityCardContractAddress}
@@ -66,7 +73,7 @@ function CommunityStoreManager() {
                 </div>
               </div>
               <div></div>
-            </div>
+            </Card>
           );
         })}
       </div>

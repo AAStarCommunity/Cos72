@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { Chip } from "primereact/chip";
-import { currentCommunityAtom } from "../../atoms/Community";
+import { Community, communityListAtom } from "../../atoms/Community";
 import styles from "./CommunityDetail.module.css";
 import { Button } from "primereact/button";
 
@@ -11,18 +11,24 @@ import { currentChainAtom } from "../../atoms/CurrentChain";
 import { TabPanel, TabView } from "primereact/tabview";
 import CommunityStoreManager from "./CommunityStore";
 import CommunityPointManager from "./CommunityPoint";
+import { useParams } from "react-router-dom";
+import { find } from "lodash";
+import { Panel } from "primereact/panel";
 
 function CommunityDetail() {
   const currentChain = useAtomValue(currentChainAtom);
- 
-  const  currentCommunity = useAtomValue(currentCommunityAtom);
+  const communityList = useAtomValue(communityListAtom)
+  let { address } = useParams();
+  const  currentCommunity = find(communityList, (item: Community) => {
+    return item.address === address;
+  })
   if (!currentCommunity) {
     return null;
   }
   return (
     <>
-       <div className={styles.Community}>
-            <div>{currentCommunity.name}</div>
+       <Panel header={currentCommunity.name}>
+           
             <div>{currentCommunity.description}</div>
             <div className={styles.communityContractAction}><Chip
                     className={styles.CommunityCardContractAddress}
@@ -74,7 +80,7 @@ function CommunityDetail() {
                 <CommunityPointManager></CommunityPointManager>
               </TabPanel>
             </TabView>
-          </div>
+          </Panel>
     </>
   );
 }

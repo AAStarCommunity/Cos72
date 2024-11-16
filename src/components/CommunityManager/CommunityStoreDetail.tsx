@@ -1,10 +1,14 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { Chip } from "primereact/chip";
-import { currentCommunityAtom, currentCommunityStoreAtom } from "../../atoms/Community";
+import {
+  Community,
+  communityListAtom,
+  Store,
+} from "../../atoms/Community";
 import styles from "./CommunityStoreDetail.module.css";
 import { Button } from "primereact/button";
-import {useAtomValue } from "jotai";
+import { useAtomValue } from "jotai";
 import { currentChainAtom } from "../../atoms/CurrentChain";
 import { toast } from "react-toastify";
 import { TabPanel, TabView } from "primereact/tabview";
@@ -12,13 +16,31 @@ import CommunityStoreGoodsManager from "./CommunityStoreGoods";
 import { AAStarClient } from "../../sdk";
 import { ethers } from "ethers";
 import CommunityStoreJSON from "../../contracts/CommunityStore.json";
+import { useParams } from "react-router-dom";
+import { find } from "lodash";
+import { Panel } from "primereact/panel";
 const CommunityStoreABI = CommunityStoreJSON.abi;
 function CommunityStoreDetail() {
   const currentChain = useAtomValue(currentChainAtom);
+  const communityList = useAtomValue(communityListAtom);
+  let { address, storeAddress } = useParams();
+  const currentCommunity = find(communityList, (item: Community) => {
+    return item.address === address;
+  });
+  if (!currentCommunity) {
+    return null;
+  }
 
- // const setCurrentPath = useSetAtom(currentPathAtom);
-  const currentCommunity = useAtomValue(currentCommunityAtom);
-  const currentCommunityStore = useAtomValue(currentCommunityStoreAtom)
+  const currentCommunityStore = find(
+    currentCommunity.storeList,
+    (item: Store) => {
+      return item.address === storeAddress;
+    }
+  );
+
+  if (!currentCommunityStore) {
+    return null;
+  }
   const updateCommunityContract = async () => {
     if (!currentCommunityStore) {
       return;
@@ -48,7 +70,6 @@ function CommunityStoreDetail() {
         new ethers.providers.JsonRpcProvider(currentChain.rpc)
       );
 
-
       // Encode the calls
       const callTo = [currentCommunityStore.address];
 
@@ -67,7 +88,7 @@ function CommunityStoreDetail() {
         isLoading: false,
         autoClose: 5000,
       });
-    //  await loadCommunityList();
+      //  await loadCommunityList();
       // setTransactionLogs((items) => {
       //   const newItems = [...items];
       //   newItems.unshift({
@@ -88,37 +109,43 @@ function CommunityStoreDetail() {
       });
     }
   };
- 
 
   if (!currentCommunityStore || !currentCommunity) {
     return null;
   }
   return (
     <>
-       <div className={styles.Community}>
-            <div>{currentCommunityStore.name}</div>
-            <div>{currentCommunityStore.description}</div>
-            <div className={styles.communityContractAction}><Chip
-                    className={styles.CommunityCardContractAddress}
-                    onClick={() => {
-                      window.open(
-                        `${currentChain.blockExplorerURL}/address/${currentCommunityStore.address}`,
-                        "_blank"
-                      );
-                    }}
-                    label={`Contract ${currentCommunityStore.address}`}
-                  ></Chip> Contract Version : V1 <Button onClick={() => {
-                    updateCommunityContract()
-                  }} disabled={!currentCommunity.isAdmin} size="small">Update Store Contract</Button></div>
-            <TabView >
-
-              <TabPanel header="Goods">
-                    <CommunityStoreGoodsManager></CommunityStoreGoodsManager>
-              </TabPanel>
-            </TabView>
-          </div>
+      <Panel header={currentCommunityStore.name}>
+        <div>{currentCommunityStore.description}</div>
+        <div className={styles.communityContractAction}>
+          <Chip
+            className={styles.CommunityCardContractAddress}
+            onClick={() => {
+              window.open(
+                `${currentChain.blockExplorerURL}/address/${currentCommunityStore.address}`,
+                "_blank"
+              );
+            }}
+            label={`Contract ${currentCommunityStore.address}`}
+          ></Chip>{" "}
+          Contract Version : V1{" "}
+          <Button
+            onClick={() => {
+              updateCommunityContract();
+            }}
+            disabled={!currentCommunity.isAdmin}
+            size="small"
+          >
+            Update Store Contract
+          </Button>
+        </div>
+        <TabView>
+          <TabPanel header="Goods">
+            <CommunityStoreGoodsManager></CommunityStoreGoodsManager>
+          </TabPanel>
+        </TabView>
+      </Panel>
     </>
-
   );
 }
 

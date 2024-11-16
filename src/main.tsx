@@ -14,7 +14,7 @@ import { PrimeReactProvider } from "primereact/api";
 
 import "primereact/resources/themes/lara-light-blue/theme.css";
 import "primeicons/primeicons.css";
-import CommunityAdmin from "./CommunityAdmin.tsx";
+
 import { Toolbar } from "primereact/toolbar";
 import NetworkSelector from "./components/NetworkSelector/index.tsx";
 import UserInfo from "./components/UserInfo/index.tsx";
@@ -24,6 +24,10 @@ import { useAtom, useSetAtom } from "jotai";
 import { communityListAtom } from "./atoms/Community.ts";
 import { userInfoAtom } from "./atoms/UserInfo.ts";
 import { ethers } from "ethers";
+import CommunityManager from "./components/CommunityManager/index.tsx";
+import { ToastContainer } from "react-toastify";
+import CommunityDetail from "./components/CommunityManager/CommunityDetail.tsx";
+import CommunityStoreDetail from "./components/CommunityManager/CommunityStoreDetail.tsx";
 
 const config = getDefaultConfig({
   appName: "COS72",
@@ -79,9 +83,12 @@ function App() {
       <div className={styles.Content}>
       <Routes>
           <Route path="/" element={<Goods />} />
-          <Route path="/admin" element={<CommunityAdmin />} />
+          <Route path="/admin/community" element={<CommunityManager />} />
+          <Route path="/admin/community/:address" element={<CommunityDetail />} />
+          <Route path="/admin/community/:address/store/:storeAddress" element={<CommunityStoreDetail />} />
         </Routes>
       </div>
+      <ToastContainer />
     </div>
     </BrowserRouter>
   );
