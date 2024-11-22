@@ -224,7 +224,8 @@ export class AirAccountAPI extends BaseAccountAPI {
         `${this.apiBaseUrl}/api/passkey/v1/account/info?network=${this.network}`,
         requestOptions
       );
-      if (response.status === 404) {
+      const infoBody = await response.json()
+      if (infoBody.code === 404) {
         const chainRequestOptions = {
           method: "POST",
           headers: myHeaders,
