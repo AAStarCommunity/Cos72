@@ -9,7 +9,11 @@ import { Dialog } from "primereact/dialog";
 
 import { Toast } from "primereact/toast";
 import { FileUpload, FileUploadHandlerEvent } from "primereact/fileupload";
-import { pinata } from "../../config";
+import { pinata, PinataGroup } from "../../config";
+import { Dropdown } from "primereact/dropdown";
+import { ethers } from "ethers";
+import { useAtomValue } from "jotai";
+import { currentChainAtom } from "../../atoms/CurrentChain";
 
 interface SendTokenDialogParams {
   onHide: () => void;
@@ -23,7 +27,8 @@ function CreateCommunityGoodsDialog({
   onCreate,
 }: SendTokenDialogParams) {
   const toast = useRef<Toast>(null);
-
+  const currentChain = useAtomValue(currentChainAtom);
+  
   const [name, setName] = useState<string | null>(null);
 
   const [logo, setLogo] = useState<string | null>(null);
@@ -39,11 +44,12 @@ function CreateCommunityGoodsDialog({
   const uploadImage = async (event: FileUploadHandlerEvent) => {
     try {
       const cids = [];
+   
       for(let i = 0, l = event.files.length; i < l; i++) {
-        const upload = await pinata.upload.file(event.files[i]);
+        const upload = await pinata.upload.file(event.files[i]).group(PinataGroup);
         cids.push(upload.cid);
       }
-     
+      
       setLogo(cids.join(","));
       if (fileUploadRef) {
         fileUploadRef.current.clear();
@@ -60,7 +66,7 @@ function CreateCommunityGoodsDialog({
     try {
       const cids = [];
       for(let i = 0, l = event.files.length; i < l; i++) {
-        const upload = await pinata.upload.file(event.files[i]);
+        const upload = await pinata.upload.file(event.files[i]).group(PinataGroup);
         cids.push(upload.cid);
       }
      
@@ -119,6 +125,11 @@ function CreateCommunityGoodsDialog({
                 setPayToken(event.target.value);
               }}
             ></InputText>
+               <Dropdown  onChange={(e) => setPayToken(e.value.code)} options={[
+                { name: 'ETH', code: ethers.constants.AddressZero },
+                { name: 'USDC', code: currentChain.contracts.USDC },
+               ]} optionLabel="name" 
+                placeholder="Select a Token" className="w-full md:w-14rem" />
           </div>
         </div>
         <div className={styles.inputRowWrapper}>

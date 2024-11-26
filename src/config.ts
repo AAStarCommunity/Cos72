@@ -19,11 +19,13 @@ export interface INetwork {
   blockExplorerURL: null | string;
   contracts: {
     USDT: string;
+    USDC: string;
     NFT: string;
     CommunityManager: string;
     CommunityV1: string;
     CommunityStoreV1: string;
     CommunityStoreV2: string;
+    CommunityStoreV3: string;
     EventManager: string;
   };
   bundler: BundlerConfig[];
@@ -38,9 +40,11 @@ export const NetworkdConfig: { [K in NetworkId]: INetwork } = {
     contracts: {
       USDT: "0x7169D38820dfd117C3FA1f22a697dBA58d90BA06",
       NFT: "0xCEf599508abd274bab8F0D9D9149d9ceeD9a2A07",
+      USDC: ethers.constants.AddressZero,
       CommunityV1: ethers.constants.AddressZero,
       CommunityStoreV1: ethers.constants.AddressZero,
       CommunityStoreV2: ethers.constants.AddressZero,
+      CommunityStoreV3: ethers.constants.AddressZero,
       CommunityManager: ethers.constants.AddressZero,
       EventManager: ethers.constants.AddressZero
     },
@@ -117,9 +121,11 @@ export const NetworkdConfig: { [K in NetworkId]: INetwork } = {
     blockExplorerURL: "https://explorer.optimism.io",
     contracts: {
       USDT: "0x1927e2d716d7259d06006bfaf3dbfa22a12d6945",
+      USDC: ethers.constants.AddressZero,
       CommunityV1: ethers.constants.AddressZero,
       CommunityStoreV1: ethers.constants.AddressZero,
       CommunityStoreV2: ethers.constants.AddressZero,
+      CommunityStoreV3: ethers.constants.AddressZero,
       NFT: ethers.constants.AddressZero,
       CommunityManager: ethers.constants.AddressZero,
       EventManager: ethers.constants.AddressZero
@@ -152,11 +158,13 @@ export const NetworkdConfig: { [K in NetworkId]: INetwork } = {
     blockExplorerURL: "https://sepolia-optimism.etherscan.io",
     contracts: {
       USDT: "0x1927E2D716D7259d06006bFaF3dBFA22A12d6945",
+      USDC: "0x5fd84259d66Cd46123540766Be93DFE6D43130D7",
       NFT: "0x9194618d3695902a426bfacc9e2182d2cb6ad880",
       CommunityV1: "0x1d34bbf294172d49a8d4aa02fc772cc9f3297f9a",
       CommunityStoreV1: "0x2fa277d572f1f204e0ca580594e402b9e353c5f3",
       CommunityStoreV2: "0x6E5C88b713c977aDa9ffa2fC4C0382788A6b9714",
-      CommunityManager:  "0x010dc3cc5842b1ffe3b154f150e30e6c84c91892",
+      CommunityStoreV3: "0x20Fb304d1Bca0e3Ec05Ba6EC07fABdA589bC70Fd",
+      CommunityManager:  "0x475459Ac7AB9bCA5cb8038d84b4B30095F126823",
       EventManager: ethers.constants.AddressZero,
     },
     bundler: [
@@ -185,9 +193,11 @@ export const NetworkdConfig: { [K in NetworkId]: INetwork } = {
     contracts: {
       USDT: "0x1927E2D716D7259d06006bFaF3dBFA22A12d6945",
       NFT: ethers.constants.AddressZero,
+      USDC: ethers.constants.AddressZero,
       CommunityV1: ethers.constants.AddressZero,
       CommunityStoreV1: ethers.constants.AddressZero,
       CommunityStoreV2: ethers.constants.AddressZero,
+      CommunityStoreV3: ethers.constants.AddressZero,
       CommunityManager:  ethers.constants.AddressZero,
       EventManager: ethers.constants.AddressZero,
     },
@@ -219,9 +229,11 @@ export const NetworkdConfig: { [K in NetworkId]: INetwork } = {
     contracts: {
       USDT: "0x1927E2D716D7259d06006bFaF3dBFA22A12d6945",
       NFT: "0xCEf599508abd274bab8F0D9D9149d9ceeD9a2A07",
+      USDC: ethers.constants.AddressZero,
       CommunityV1: ethers.constants.AddressZero,
       CommunityStoreV1: ethers.constants.AddressZero,
       CommunityStoreV2: ethers.constants.AddressZero,
+      CommunityStoreV3: ethers.constants.AddressZero,
       CommunityManager:  ethers.constants.AddressZero,
       EventManager: ethers.constants.AddressZero,
     },
@@ -252,3 +264,5 @@ export const pinata = new PinataSDK({
   pinataJwt: `${import.meta.env.VITE_PINATA_JWT}`,
   pinataGateway: `${import.meta.env.VITE_GATEWAY_URL}`
 })
+
+export const PinataGroup = "01934b09-bfc5-79c1-8626-aab1ce4f23e3"

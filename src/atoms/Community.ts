@@ -1,6 +1,6 @@
 import { ethers } from "ethers";
 import { atom } from "jotai";
-import { INetwork, pinata } from "../config";
+import { INetwork } from "../config";
 import CommunityManagerJSON from "../contracts/CommunityManager.json";
 import CommunityStoreJSON from "../contracts/CommunityStoreV2.json";
 import CommunityJSON from "../contracts/Community.json";
@@ -22,6 +22,7 @@ export interface Store {
   isAdmin: boolean;
   goodsList: Goods[];
   orderList: Order[];
+  version: number;
 }
 
 export interface Order {
@@ -33,7 +34,8 @@ export interface Order {
 }
 
 export interface Goods {
-  id: string;
+  id: ethers.BigNumber;
+  uuid: string;
   name: string;
   description: string;
   images: string[];
@@ -92,11 +94,13 @@ const loadCommunityList = async (currentNetwork: INetwork, account: string) => {
       community.getCommunityInfo(account),
     ]);
     console.log(communityInfo);
-    const logo = await pinata.gateways.createSignedURL({
-      cid: communityInfo.setting.logo,
-      expires: 365 * 24 * 60 * 60,
-    });
+    // const logo = await pinata.gateways.createSignedURL({
+    //   cid: communityInfo.setting.logo,
+    //   expires: 365 * 24 * 60 * 60,
+    // });
+    const logo = `https://crimson-misty-carp-561.mypinata.cloud/files/${communityInfo.setting.logo}`
     console.log("logo", logo);
+
     const storeAddressList = communityInfo.storeList;
     const storeList: Store[] = [];
     for (let m = 0, n = storeAddressList.length; m < n; m++) {
@@ -107,10 +111,11 @@ const loadCommunityList = async (currentNetwork: INetwork, account: string) => {
       );
       const storeInfo = await communityStore.getStoreInfo(account);
       console.log("storeInfo", storeInfo)
-      const storeLogo = await pinata.gateways.createSignedURL({
-        cid: storeInfo.setting.image,
-        expires: 365 * 24 * 60 * 60,
-      });
+    
+ 
+
+      const storeLogo = `https://crimson-misty-carp-561.mypinata.cloud/files/${storeInfo.setting.image}`
+
       const goodsList: Goods[] = [];
       const orderList: Order[] = [];
       for (let x = 0, y = storeInfo.userPurchaseHistory.length; x < y; x++) {
@@ -131,15 +136,10 @@ const loadCommunityList = async (currentNetwork: INetwork, account: string) => {
       for (let x = 0, y = storeInfo.goodsList.length; x < y; x++) {
         const goodsData = storeInfo.goodsList[x];
         const goodsAccountData = storeInfo.goodsAccountInfos[x];
-        const images = await Promise.all(
-          goodsData.images.map(async (item: string) => {
-            const newUrls = await pinata.gateways.createSignedURL({
-              cid: item,
-              expires: 365 * 24 * 60 * 60,
-            });
-            return newUrls;
-          })
-        );
+   
+        const images: string[] = goodsData.images.map((cid: string) => {
+          return `https://crimson-misty-carp-561.mypinata.cloud/files/${cid}`
+        });
         // const descImages = await Promise.all(
         //   goodsData.descImages.map(async (item: string) => {
         //     const newUrls = await pinata.gateways.createSignedURL({
@@ -150,7 +150,8 @@ const loadCommunityList = async (currentNetwork: INetwork, account: string) => {
         //   })
         // );
         goodsList.push({
-          id: `${storeAddressList[m]}-${goodsData.id.toNumber()}`,
+          uuid: `${storeAddressList[m]}-${goodsData.id.toNumber()}`,
+          id: goodsData.id,
           name: goodsData.name,
           description: goodsData.description,
           images,
@@ -174,7 +175,13 @@ const loadCommunityList = async (currentNetwork: INetwork, account: string) => {
           fixedFormatPayTokenBalance: toSignificant(ethers.utils.formatUnits(goodsAccountData.payTokenBalance, goodsData.payTokenDecimals))
         });
       }
-
+      let version = 1;
+      if (storeInfo.implementation === currentNetwork.contracts.CommunityStoreV2) {
+        version = 2;
+      }
+      if (storeInfo.implementation === currentNetwork.contracts.CommunityStoreV3) {
+        version = 3;
+      }
       storeList.push({
         address: storeAddressList[m],
         logo: storeLogo,
@@ -182,7 +189,8 @@ const loadCommunityList = async (currentNetwork: INetwork, account: string) => {
         description: storeInfo.setting.description,
         isAdmin: storeInfo.isAdmin,
         goodsList: goodsList,
-        orderList: orderList
+        orderList: orderList,
+        version: version
       });
       console.log(storeInfo);
     }

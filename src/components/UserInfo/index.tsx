@@ -33,6 +33,13 @@ function UserInfo() {
           },
         },
         {
+          label: "Setting",
+          icon: "pi pi-wrench",
+          command: () => {
+            navigate("/admin/setting")
+          },
+        },
+        {
           label: "Create Store",
           icon: "pi pi-wallet",
           command: () => {
