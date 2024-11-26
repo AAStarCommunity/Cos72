@@ -127,7 +127,7 @@ function CommunityStoreManager() {
       const callData = [
         CommunityContract.interface.encodeFunctionData(
           "createStore",
-          [currentChain.contracts.CommunityStoreV2, data]
+          [currentChain.contracts.CommunityStoreV3, data]
         ),
       ];
       console.log("Waiting for transaction...");
@@ -204,7 +204,7 @@ function CommunityStoreManager() {
       // ];
       console.log("Waiting for transaction...");
 
-      const transactionObject = await CommunityContract.createStore(currentChain.contracts.CommunityStoreV2, data);
+      const transactionObject = await CommunityContract.createStore(currentChain.contracts.CommunityStoreV3, data);
    //   return transactionObject.hash;
       // 第三步 发送 UserOperation
       await provider.waitForTransaction(transactionObject.hash)

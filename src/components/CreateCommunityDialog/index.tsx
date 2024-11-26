@@ -9,7 +9,8 @@ import { Dialog } from "primereact/dialog";
 
 import { Toast } from "primereact/toast";
 import { FileUpload, FileUploadHandlerEvent } from "primereact/fileupload";
-import { pinata } from "../../config";
+import { pinata, PinataGroup } from "../../config";
+import { InputTextarea } from "primereact/inputtextarea";
 
 interface SendTokenDialogParams {
   onHide: () => void;
@@ -30,7 +31,7 @@ function CreateCommunityDialog({
   const fileUploadRef = useRef<any>(null);
   const uploadImage = async (event: FileUploadHandlerEvent) => {
     try {
-      const upload = await pinata.upload.file(event.files[0]);
+      const upload = await pinata.upload.file(event.files[0]).group(PinataGroup);
       setLogo(upload.cid);
       if (fileUploadRef) {
         fileUploadRef.current.clear();
@@ -64,13 +65,13 @@ function CreateCommunityDialog({
       
         <div className={styles.inputRow}>
           <div>Description</div>
-          <InputText
-            value={desc}
+          <InputTextarea
+            value={desc as any}
             className={styles.input}
             onChange={(event) => {
               setDesc(event.target.value);
             }}
-          ></InputText>
+          ></InputTextarea>
         </div>
         <div className={styles.inputRow}>
           <div>Logo</div>

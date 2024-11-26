@@ -8,7 +8,7 @@ import { useRef, useState } from "react";
 import { Dialog } from "primereact/dialog";
 
 import { FileUpload, FileUploadHandlerEvent } from "primereact/fileupload";
-import { pinata } from "../../config";
+import { pinata, PinataGroup } from "../../config";
 
 interface SendTokenDialogParams {
   onHide: () => void;
@@ -30,7 +30,7 @@ function CreateCommunityStoreDialog({
   const fileUploadRef = useRef<any>(null);
   const uploadImage = async (event: FileUploadHandlerEvent) => {
     try {
-      const upload = await pinata.upload.file(event.files[0]);
+      const upload = await pinata.upload.file(event.files[0]).group(PinataGroup);
       setLogo(upload.cid);
       if (fileUploadRef) {
         fileUploadRef.current.clear();

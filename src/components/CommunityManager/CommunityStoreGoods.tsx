@@ -230,7 +230,7 @@ function CommunityStoreGoodsManager() {
           return (
             <div
               className={styles.CommunityCard}
-              key={goods.id}
+              key={goods.uuid}
               onClick={() => {}}
             >
               {/* <div>{token.loading === true && <Skeleton height="100px"></Skeleton>}</div> */}
@@ -261,15 +261,15 @@ function CommunityStoreGoodsManager() {
                   <label>Description: </label>{" "}
                   <InputTextarea
                     cols={40}
-                    value={( goodsValueMap[goods.id] && goodsValueMap[goods.id].description) ? goodsValueMap[goods.id].description : goods.description}
+                    value={( goodsValueMap[goods.uuid] && goodsValueMap[goods.uuid].description) ? goodsValueMap[goods.uuid].description : goods.description}
                     onChange={(event) => {
                       setGoodsValueMap((valueMap: any) => {
                         const newData: any = {...valueMap};
-                        if (newData[goods.id]) {
-                          newData[goods.id].description = event.target.value;
+                        if (newData[goods.uuid]) {
+                          newData[goods.uuid].description = event.target.value;
                         }
                         else {
-                          newData[goods.id] = {
+                          newData[goods.uuid] = {
                             description:  event.target.value
                           }
                         }
@@ -285,15 +285,15 @@ function CommunityStoreGoodsManager() {
                   <label>Pay Token: </label>{" "}
                   <InputTextarea
                     cols={40}
-                    value={( goodsValueMap[goods.id] && goodsValueMap[goods.id].payToken) ? goodsValueMap[goods.id].payToken : goods.payToken} 
+                    value={( goodsValueMap[goods.uuid] && goodsValueMap[goods.uuid].payToken) ? goodsValueMap[goods.uuid].payToken : goods.payToken} 
                     onChange={(event) => {
                       setGoodsValueMap((valueMap: any) => {
                         const newData: any = {...valueMap};
-                        if (newData[goods.id]) {
-                          newData[goods.id].payToken = event.target.value;
+                        if (newData[goods.uuid]) {
+                          newData[goods.uuid].payToken = event.target.value;
                         }
                         else {
-                          newData[goods.id] = {
+                          newData[goods.uuid] = {
                             payToken:  event.target.value
                           }
                         }
@@ -302,19 +302,19 @@ function CommunityStoreGoodsManager() {
                     }}  
                   ></InputTextarea>{" "}
                   <Button  onClick={() => {
-                    updateGoodsPayToken(goods, ( goodsValueMap[goods.id] && goodsValueMap[goods.id].payToken) ? goodsValueMap[goods.id].payToken : goods.payToken )
+                    updateGoodsPayToken(goods, ( goodsValueMap[goods.uuid] && goodsValueMap[goods.uuid].payToken) ? goodsValueMap[goods.uuid].payToken : goods.payToken )
                   }}>Update</Button>
                 </div>
                 <div className={styles.CommunityGoodsField}>
                   <label>Price: </label>{" "}
-                  <InputText value={( goodsValueMap[goods.id] && goodsValueMap[goods.id].price) ? goodsValueMap[goods.id].price : goods.price}   onChange={(event) => {
+                  <InputText value={( goodsValueMap[goods.uuid] && goodsValueMap[goods.uuid].price) ? goodsValueMap[goods.uuid].price : goods.price}   onChange={(event) => {
                       setGoodsValueMap((valueMap: any) => {
                         const newData: any = {...valueMap};
-                        if (newData[goods.id]) {
-                          newData[goods.id].price = event.target.value;
+                        if (newData[goods.uuid]) {
+                          newData[goods.uuid].price = event.target.value;
                         }
                         else {
-                          newData[goods.id] = {
+                          newData[goods.uuid] = {
                             price:  event.target.value
                           }
                         }
@@ -322,7 +322,7 @@ function CommunityStoreGoodsManager() {
                       })
                     }}  ></InputText>{" "}
                   <Button onClick={() => {
-                      updateGoodsPrice(goods, ( goodsValueMap[goods.id] && goodsValueMap[goods.id].price) ? goodsValueMap[goods.id].price : goods.price )
+                      updateGoodsPrice(goods, ( goodsValueMap[goods.uuid] && goodsValueMap[goods.uuid].price) ? goodsValueMap[goods.uuid].price : goods.price )
                   }}>Update</Button>
                 </div>
               </div>

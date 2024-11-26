@@ -245,7 +245,7 @@ function GoodsApp() {
               return (
                 <div
                   className={styles.Goods}
-                  key={`${item.storeAddress}-${item.id}`}
+                  key={item.uuid}
                 >
                   <img src={item.images[0]} className={styles.GoodsImage}></img>
                   <div className={styles.GoodsName}>{item.name}</div>
@@ -263,7 +263,7 @@ function GoodsApp() {
                   <div className={styles.actionButtons}>
                     <InputNumber
                       className={styles.numberInput}
-                      value={amountMap[item.id] ? amountMap[item.id] : 1}
+                      value={amountMap[item.uuid] ? amountMap[item.uuid] : 1}
                       size={2}
                       mode="decimal"
                       showButtons
@@ -272,7 +272,7 @@ function GoodsApp() {
                       onValueChange={(e) => {
                         setAmountMap((data: any) => {
                           const newData = { ...data };
-                          newData[item.id] = e.value;
+                          newData[item.uuid] = e.value;
                           return newData;
                         });
                       }}
@@ -280,8 +280,8 @@ function GoodsApp() {
                     {item.buyAllowance.gte(
                       ethers.utils.parseUnits(
                         `${
-                          item.price * amountMap[item.id]
-                            ? amountMap[item.id]
+                          item.price * amountMap[item.uuid]
+                            ? amountMap[item.uuid]
                             : 1
                         }`,
                         item.payTokenDecimals
@@ -291,12 +291,12 @@ function GoodsApp() {
                         onClick={() => {
                           if (account.connector) {
                             buyByEOA(
-                              amountMap[item.id] ? amountMap[item.id] : 1,
+                              amountMap[item.uuid] ? amountMap[item.uuid] : 1,
                               item
                             );
                           } else if (userInfo) {
                             buy(
-                              amountMap[item.id] ? amountMap[item.id] : 1,
+                              amountMap[item.uuid] ? amountMap[item.uuid] : 1,
                               item
                             );
                           }
@@ -308,8 +308,8 @@ function GoodsApp() {
                     {item.buyAllowance.lt(
                       ethers.utils.parseUnits(
                         `${
-                          item.price * amountMap[item.id]
-                            ? amountMap[item.id]
+                          item.price * amountMap[item.uuid]
+                            ? amountMap[item.uuid]
                             : 1
                         }`,
                         item.payTokenDecimals

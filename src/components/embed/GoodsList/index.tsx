@@ -250,7 +250,7 @@ function GoodsList({}: AccountSignDialogParams) {
         <div className={styles.CommunityGoodsList}>
           {goodsList.map((item) => {
             return (
-              <div key={item.id} className={styles.CommunityGoods}>
+              <div key={item.uuid} className={styles.CommunityGoods}>
                 <div>
                   <div className={styles.CommunityGoodsHeader}>
                     <div className={styles.CommunityGoodsName}>{item.name}</div>
@@ -281,7 +281,7 @@ function GoodsList({}: AccountSignDialogParams) {
                   <div className={styles.actionButtons}>
                     <InputNumber
                       className={styles.numberInput}
-                      value={amountMap[item.id] ? amountMap[item.id] : 1}
+                      value={amountMap[item.uuid] ? amountMap[item.uuid] : 1}
                       size={2}
                       mode="decimal"
                       showButtons
@@ -290,27 +290,27 @@ function GoodsList({}: AccountSignDialogParams) {
                       onValueChange={(e) => {
                         setAmountMap((data: any) => {
                           const newData = { ...data };
-                          newData[item.id] = e.value;
+                          newData[item.uuid] = e.value;
                           return newData;
                         });
                       }}
                     />
                     {item.buyAllowance.gte(
                       ethers.utils.parseUnits(
-                        `${item.price * amountMap[item.id] ? amountMap[item.id] : 1}`,
+                        `${item.price * amountMap[item.uuid] ? amountMap[item.uuid] : 1}`,
                       item.payTokenDecimals)
                     ) && (
                       <Button
                         onClick={() => {
                           if (account.connector) {
                             buyByEOA(
-                              amountMap[item.id] ? amountMap[item.id] : 1,
+                              amountMap[item.uuid] ? amountMap[item.uuid] : 1,
                               item
                             );
                           }
                           else if (userInfo) {
                             buy(
-                              amountMap[item.id] ? amountMap[item.id] : 1,
+                              amountMap[item.uuid] ? amountMap[item.uuid] : 1,
                               item
                             );
                           }
@@ -322,7 +322,7 @@ function GoodsList({}: AccountSignDialogParams) {
                     )}
                        {item.buyAllowance.lt(
                       ethers.utils.parseUnits(
-                        `${item.price * amountMap[item.id] ? amountMap[item.id] : 1}`,
+                        `${item.price * amountMap[item.uuid] ? amountMap[item.uuid] : 1}`,
                       item.payTokenDecimals)
                     ) && (
                       <Button
