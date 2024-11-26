@@ -17,6 +17,7 @@ const loadUserInfo = async (currentChain: INetwork) => {
     });
     try {
       const result = await airAccount.getAccountInfo();
+      console.log(result)
       if (result) {
        return result;
       } else {

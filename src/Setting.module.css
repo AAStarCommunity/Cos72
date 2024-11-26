@@ -3,3 +3,9 @@
     align-items: center;
     gap: 20px;
 }
+
+.ContractList {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}

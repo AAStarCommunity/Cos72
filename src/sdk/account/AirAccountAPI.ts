@@ -225,6 +225,7 @@ export class AirAccountAPI extends BaseAccountAPI {
         requestOptions
       );
       const infoBody = await response.json()
+      console.log("infoBody", infoBody)
       if (infoBody.code === 404) {
         const chainRequestOptions = {
           method: "POST",
@@ -245,11 +246,8 @@ export class AirAccountAPI extends BaseAccountAPI {
         }
        
       }
-      if (response.ok) {
-        const body = await response.json();
-        if (body.code === 200) {
-          return body.data;
-        }
+      if (infoBody.code === 200) {
+        return infoBody.data;
       }
     }
     catch(error) {

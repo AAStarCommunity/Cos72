@@ -12,45 +12,46 @@ import { Menu } from "primereact/menu";
 import { MenuItem } from "primereact/menuitem";
 import { useAccount, useDisconnect } from "wagmi";
 import { useNavigate } from "react-router-dom";
+import { CopyToClipboard } from "react-copy-to-clipboard";
 
 function UserInfo() {
   const menuLeft = useRef<Menu>(null);
-  const account  = useAccount(); 
-  const { disconnect } = useDisconnect()
-  
+  const account = useAccount();
+  const { disconnect } = useDisconnect();
+
   const [userInfo, loadUserInfo] = useAtom<any>(userInfoAtom);
   const [isShowAccountSignDialog, setIsShowAccountSignDialog] = useState(false);
   const navigate = useNavigate();
+  const [copyState, setCopyState] = useState(false);
   const accountItems: MenuItem[] = [
     {
-     
       items: [
         {
-          label:"Shopping",
+          label: "Shopping",
           icon: "pi pi-shopping-bag",
           command: () => {
-            navigate("/")
+            navigate("/");
           },
         },
         {
           label: "Setting",
           icon: "pi pi-wrench",
           command: () => {
-            navigate("/admin/setting")
+            navigate("/admin/setting");
           },
         },
         {
           label: "Create Store",
           icon: "pi pi-wallet",
           command: () => {
-            navigate("/admin/community")
+            navigate("/admin/community");
           },
         },
         {
           label: "Order",
           icon: "pi pi-book",
           command: () => {
-            navigate("/order")
+            navigate("/order");
           },
         },
         {
@@ -61,7 +62,7 @@ function UserInfo() {
               disconnect();
             }
             if (userInfo) {
-              (loadUserInfo as any)("signOut")
+              (loadUserInfo as any)("signOut");
             }
           },
         },
@@ -72,22 +73,22 @@ function UserInfo() {
     if (account && account.address) {
       setIsShowAccountSignDialog(false);
     }
-  }, [account])
+  }, [account]);
   return (
     <>
-     <Menu model={accountItems} popup ref={menuLeft} />
+      <Menu model={accountItems} popup ref={menuLeft} />
       <div
         className={styles.Avatar}
         onClick={(event) => {
           if (!userInfo && !account.address) {
             setIsShowAccountSignDialog(true);
           } else {
-             menuLeft.current?.toggle(event);
+            menuLeft.current?.toggle(event);
           }
         }}
       >
-        <Avatar icon="pi pi-user" shape="circle" /> 
-        {userInfo  ? userInfo.email : ( !account.address ? "Sign in" : "")}
+        <Avatar icon="pi pi-user" shape="circle" />
+        {userInfo ? userInfo.email : !account.address ? "Sign in" : ""}
         {userInfo && (
           <Chip
             // onClick={() => {
@@ -96,24 +97,38 @@ function UserInfo() {
             //     "_blank"
             //   );
             // }}
-            label={`AAccount ${userInfo.aa.substring(
-              0,
-              6
-            )}....${userInfo.aa.substring(userInfo.aa.length - 4)}`}
+
+            template={
+              <div className={styles.UserAddress}>
+                AAccount {userInfo.aa.substring(0, 6)}....{userInfo.aa.substring(userInfo.aa.length - 4)}{" "}
+                <CopyToClipboard onCopy={() => {
+                  setCopyState(true);
+                  setTimeout(() => {
+                    setCopyState(false)
+                  }, 5000)
+                }} text={userInfo.aa}><span className={`pi ${copyState ? "pi-check": "pi-copy"}`} onClick={(event) => {
+                  event.stopPropagation()
+                }}></span></CopyToClipboard>
+              </div>
+            }
           ></Chip>
         )}
-          {(account && account.address) && (
+        {account && account.address && (
           <Chip
-            // onClick={() => {
-            //   window.open(
-            //     `${currentChain.blockExplorerURL}/address/${account.address}`,
-            //     "_blank"
-            //   );
-            // }}
-            label={`Wallet ${account.address.substring(
-              0,
-              6
-            )}....${account.address.substring(account.address.length - 4)}`}
+            template={
+              <div className={styles.UserAddress}>
+                Wallet {account.address.substring(0, 6)}....
+                {account.address.substring(account.address.length - 4)}{" "}
+                <CopyToClipboard onCopy={() => {
+                  setCopyState(true);
+                  setTimeout(() => {
+                    setCopyState(false)
+                  }, 5000)
+                }} text={account.address}><span className={`pi ${copyState ? "pi-check": "pi-copy"}`} onClick={(event) => {
+                  event.stopPropagation()
+                }}></span></CopyToClipboard>
+              </div>
+            }
           ></Chip>
         )}
       </div>
