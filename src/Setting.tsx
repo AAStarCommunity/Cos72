@@ -14,7 +14,7 @@ import CommunityStoreV3 from "./contracts/CommunityStoreV3.json";
 import CommunityManager from "./contracts/CommunityManager.json";
 function Setting() {
   const currentChain = useAtomValue(currentChainAtom);
-  const account = useAccount()
+  const account = useAccount();
   const deployCommunityManagerByEOA = async () => {
     if (!account.address || !account.connector) {
       return;
@@ -34,16 +34,14 @@ function Setting() {
         CommunityManager.bytecode,
         provider.getSigner()
       );
-      const address = await provider.getSigner().getAddress()
-
+      const address = await provider.getSigner().getAddress();
 
       const contract = await factory.deploy(address);
       console.log(contract);
 
       await contract.deployTransaction.wait();
       console.log(contract.address);
-    
-    
+
       toast.update(id, {
         render: "Success",
         type: "success",
@@ -79,16 +77,14 @@ function Setting() {
         CommunityStoreV3.bytecode,
         provider.getSigner()
       );
-  //    const address = await provider.getSigner().getAddress()
-
+      //    const address = await provider.getSigner().getAddress()
 
       const contract = await factory.deploy();
       console.log(contract);
 
       await contract.deployTransaction.wait();
       console.log(contract.address);
-    
-    
+
       toast.update(id, {
         render: "Success",
         type: "success",
@@ -108,42 +104,52 @@ function Setting() {
   return (
     <div className={styles.Root}>
       <Panel header="Setting">
-      <Card title="CommunityManager">
-          <div className={styles.ContractSetting}>
-            Contract Address:{" "}
-            <Chip
-              className={styles.CommunityCardContractAddress}
-              onClick={() => {
-                window.open(
-                  `${currentChain.blockExplorerURL}/address/${currentChain.contracts.CommunityManager}`,
-                  "_blank"
-                );
-              }}
-              label={`${currentChain.contracts.CommunityManager}`}
-            ></Chip>
-            <Button onClick={() => {
-              deployCommunityManagerByEOA();
-            }}>Deploy CommunityManager</Button>
-          </div>
-        </Card>
-        <Card title="CommunityStore V3">
-          <div className={styles.ContractSetting}>
-            Contract Address:{" "}
-            <Chip
-              className={styles.CommunityCardContractAddress}
-              onClick={() => {
-                window.open(
-                  `${currentChain.blockExplorerURL}/address/${currentChain.contracts.CommunityStoreV3}`,
-                  "_blank"
-                );
-              }}
-              label={`${currentChain.contracts.CommunityStoreV3}`}
-            ></Chip>
-            <Button onClick={() => {
-              deployCommunityStoreV3ByEOA();
-            }}>Deploy CommunityStore V3</Button>
-          </div>
-        </Card>
+        <div className={styles.ContractList}>
+          <Card title="CommunityManager">
+            <div className={styles.ContractSetting}>
+              Contract Address:{" "}
+              <Chip
+                className={styles.CommunityCardContractAddress}
+                onClick={() => {
+                  window.open(
+                    `${currentChain.blockExplorerURL}/address/${currentChain.contracts.CommunityManager}`,
+                    "_blank"
+                  );
+                }}
+                label={`${currentChain.contracts.CommunityManager}`}
+              ></Chip>
+              <Button
+                onClick={() => {
+                  deployCommunityManagerByEOA();
+                }}
+              >
+                Deploy CommunityManager
+              </Button>
+            </div>
+          </Card>
+          <Card title="CommunityStore V3">
+            <div className={styles.ContractSetting}>
+              Contract Address:{" "}
+              <Chip
+                className={styles.CommunityCardContractAddress}
+                onClick={() => {
+                  window.open(
+                    `${currentChain.blockExplorerURL}/address/${currentChain.contracts.CommunityStoreV3}`,
+                    "_blank"
+                  );
+                }}
+                label={`${currentChain.contracts.CommunityStoreV3}`}
+              ></Chip>
+              <Button
+                onClick={() => {
+                  deployCommunityStoreV3ByEOA();
+                }}
+              >
+                Deploy CommunityStore V3
+              </Button>
+            </div>
+          </Card>
+        </div>
       </Panel>
     </div>
   );
