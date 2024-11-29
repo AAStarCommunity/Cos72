@@ -41,7 +41,7 @@ function UserInfo() {
           },
         },
         {
-          label: "Create Store",
+          label: "Organization",
           icon: "pi pi-wallet",
           command: () => {
             navigate("/admin/community");
