@@ -15,7 +15,7 @@ import { PrimeReactProvider } from "primereact/api";
 import "primereact/resources/themes/lara-light-blue/theme.css";
 import "primeicons/primeicons.css";
 
-import { Toolbar } from "primereact/toolbar";
+
 import NetworkSelector from "./components/NetworkSelector/index.tsx";
 import UserInfo from "./components/UserInfo/index.tsx";
 import Goods from "./Goods";
@@ -30,8 +30,12 @@ import CommunityDetail from "./components/CommunityManager/CommunityDetail.tsx";
 import CommunityStoreDetail from "./components/CommunityManager/CommunityStoreDetail.tsx";
 import DataLoading from "./components/DataLoading/index.tsx";
 import 'react-toastify/dist/ReactToastify.css';
+import "swiper/css";
+import "swiper/css/navigation";
 import OrderApp from "./Order.tsx";
 import Setting from "./Setting.tsx";
+import GoodsDetail from "./GoodsDetail.tsx";
+import StoreDetail from "./StoreDetail.tsx";
 const config = getDefaultConfig({
   appName: "COS72",
   projectId: "413eed66ad9f8b3bf84e79de8bde9604",
@@ -70,33 +74,46 @@ function App() {
   }, [address, userInfo, initLoaded])
   return (
     <BrowserRouter>
-    <div className={styles.Root}>
-      <Toolbar
-        start={<img alt="logo" src={AAStarLogo} className={styles.Logo}></img>}
-        end={
-          <div className={styles.End}>
-            <div className={styles.NetworkDropdown}>
-              Network
-              <NetworkSelector></NetworkSelector>
+      <div className={styles.Root}>
+        <div className={styles.NavWrapper}>
+          <div className={styles.Nav}>
+            <img alt="logo" src={AAStarLogo} className={styles.Logo}></img>
+            <div className={styles.End}>
+              <div className={styles.NetworkDropdown}>
+                Network
+                <NetworkSelector></NetworkSelector>
+              </div>
+              <UserInfo></UserInfo>
             </div>
-            <UserInfo></UserInfo>
           </div>
-        }
-      />
-      <div className={styles.Content}>
-      <Routes>
-          <Route path="/" element={<Goods />} />
-          <Route path="/order" element={<OrderApp />} />
-          <Route path="/admin/setting" element={<Setting />} />
-          <Route path="/admin/community" element={<CommunityManager />} />
-          <Route path="/admin/community/:address" element={<CommunityDetail />} />
-          <Route path="/admin/community/:address/store/:storeAddress" element={<CommunityStoreDetail />} />
-        </Routes>
-        <ToastContainer />
+        </div>
+        <div className={styles.Content}>
+          <Routes>
+            <Route path="/" element={<Goods />} />
+            <Route path="/order" element={<OrderApp />} />
+            <Route path="/admin/setting" element={<Setting />} />
+            <Route path="/admin/community" element={<CommunityManager />} />
+            <Route
+              path="/admin/community/:address"
+              element={<CommunityDetail />}
+            />
+            <Route
+              path="/admin/community/:address/store/:storeAddress"
+              element={<CommunityStoreDetail />}
+            />
+            <Route
+              path="/community/:address/store/:storeAddress"
+              element={<StoreDetail />}
+            />
+            <Route
+              path="/community/:address/store/:storeAddress/goods/:goodsId"
+              element={<GoodsDetail />}
+            />
+          </Routes>
+          <ToastContainer />
+        </div>
       </div>
-     
-    </div>
-    {loading && <DataLoading ></DataLoading>}
+      {loading && <DataLoading></DataLoading>}
     </BrowserRouter>
   );
 }

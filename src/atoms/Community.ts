@@ -16,6 +16,7 @@ const CommunityStoreABI = CommunityStoreJSON.abi;
 
 export interface Store {
   name: string;
+  communityAddress: string;
   address: string;
   description: string;
   logo: string;
@@ -183,6 +184,7 @@ const loadCommunityList = async (currentNetwork: INetwork, account: string) => {
         version = 3;
       }
       storeList.push({
+        communityAddress: result[i],
         address: storeAddressList[m],
         logo: storeLogo,
         name: storeInfo.setting.name,

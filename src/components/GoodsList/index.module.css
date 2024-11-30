@@ -1,0 +1,30 @@
+.GoodsList {
+    display: flex;
+    gap: 10px;
+    width: 100%;
+    flex-flow: wrap;
+}
+.GoodsImage {
+    width: 240px;
+    height: 240px;
+    border-radius: 8px;
+}
+.Goods {
+    border: 1px solid transparent;
+    padding: 5px;
+    border-radius: 8px;
+    cursor: pointer;
+}
+.Goods:hover {
+    border: 1px solid #3b82f6;
+}
+.GoodsName {
+    color: #11192d;
+    font-size: 16px;
+}
+
+.GoodsPrice {
+    color: #ff6200;
+    font-size: 20px;
+    font-weight: 700;
+}

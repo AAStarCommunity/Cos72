@@ -16,4 +16,25 @@
 
 .Content {
     margin-top: 20px;
+    width: 1552px;
+    margin-left: auto;
+    margin-right: auto;
+}
+.NavWrapper {
+    background-color: #FFF;
+    height: 64px;
+}
+.Nav {
+    display: flex;
+    width: 1552px;
+    margin-left: auto;
+    margin-right: auto;
+    align-items: center;
+    height: 64px;
+    justify-content: space-between;
+}
+body {
+    padding: 0px;
+    margin: 0px;
+    background-color:  #f3f6f8;
 }
