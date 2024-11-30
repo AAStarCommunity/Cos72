@@ -1,0 +1,77 @@
+
+.Root {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+
+.goodsInfo {
+    border-radius: 16px;
+    background-color: #FFF;
+    display: flex;
+    padding: 16px 16px;
+    gap: 20px;
+}
+.Swiper {
+    width: 100%;
+}
+.goodsItemImage {
+    width: 100%;
+
+}
+.goodsImage {
+    flex: 1;
+}
+
+.goodsText {
+    flex: 1;
+}
+
+.goodsName {
+   color:  #11192d;
+   font-size: 24px;
+   font-weight: bold;
+   margin-bottom: 20px;
+}
+
+.goodsDesc {
+    color: #7c889c;
+    font-size: 16px;
+    margin-bottom: 40px;
+
+}
+.goodsPrice {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+.goodsTokenPrice {
+    color: #ff5000;
+    font-size: 28px;
+    font-weight: bold;
+}
+.goodsBuyInfo {
+    width: 500px;
+}
+.actionButtons {
+    display: flex;
+    gap: 20px;
+
+}
+.numberInput {
+    width: 100%;
+}
+.button {
+    width: 100%;
+    text-align: center;
+}
+.balance {
+    color: #FFF;
+    font-size: 18px;
+    font-weight: bold;
+    border-radius: 20px;
+    background-color: #ff5000;
+    padding: 5px 10px;
+}
