@@ -281,7 +281,7 @@ function GoodsDetail() {
   };
   return (
     <div className={styles.Root}>
-       <StoreInfo data={currentCommunityStore}></StoreInfo>
+       <StoreInfo data={currentCommunityStore} isShowEnter={true}></StoreInfo>
       
        <div className={styles.goodsInfo}>
             <div className={styles.goodsImage}>
