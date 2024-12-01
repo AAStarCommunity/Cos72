@@ -21,10 +21,16 @@
 .GoodsName {
     color: #11192d;
     font-size: 16px;
+    font-weight: bold;
 }
 
 .GoodsPrice {
     color: #ff6200;
     font-size: 20px;
     font-weight: 700;
+}
+
+.GoodsStore {
+    display: flex;
+    justify-content: space-between;
 }

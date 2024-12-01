@@ -28,7 +28,7 @@ export default function GoodsList({ data }: { data: Goods[] }) {
             </div>
 
             <div className={styles.GoodsStore}>
-              {item.communityName} {item.storeName}
+              <div>{item.communityName}</div> <div>{item.storeName}</div>
             </div>
           </div>
         );
