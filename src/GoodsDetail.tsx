@@ -309,6 +309,7 @@ function GoodsDetail() {
                     </div>
                     <div className={styles.balance}>Balance: {currentGoods.fixedFormatPayTokenBalance}</div> 
                   </div> 
+                  {/* <a href="https://faucet.circle.com/">GET USDC</a> */}
                     <div className={styles.actionButtons}>
                     <InputNumber
                       className={styles.numberInput}
@@ -350,6 +351,8 @@ function GoodsDetail() {
                     )}
                     {currentGoods.buyAllowance.lt(currentTotalAmount) && (
                       <Button 
+                       label="Approve"
+                       className={styles.button}
                         onClick={() => {
                           if (account && account.connector) {
                             approveByEOA(currentGoods);
@@ -358,7 +361,7 @@ function GoodsDetail() {
                           }
                         }}
                       >
-                        Approve
+                        
                       </Button>
                     )}
                   </div> 
