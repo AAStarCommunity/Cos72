@@ -112,7 +112,7 @@ export class AAStarClient {
     }
   }
 
-  async sendUserOperation(callTo: string[], callData: string[]) {
+  async sendUserOperation(callTo: string[], callData: string[], value? : ethers.BigNumber) {
     if (!this.aaWallet) {
       if (this.aaConfig.provider === "SimpleAccount") {
         this.aaWallet = new SimpleAccountAPI({
@@ -138,11 +138,16 @@ export class AAStarClient {
     }
 
     const address = await this.aaWallet.getCounterFactualAddress();
-
-    const op = await this.aaWallet.createSignedUserOp({
+    const params: any = {
       target: address,
       data: [callTo, callData],
-    });
+    }
+    if (value) {
+      params.value = value;
+      params.target = callTo[0]
+      params.data = callData[0];
+    }
+    const op = await this.aaWallet.createSignedUserOp(params);
     const userOpHash = await this.bundlerClient.sendUserOpToBundler(op);
     const transactionHash = await this.aaWallet.getUserOpReceipt(userOpHash);
     return {

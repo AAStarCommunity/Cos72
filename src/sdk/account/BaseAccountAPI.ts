@@ -180,11 +180,13 @@ export abstract class BaseAccountAPI {
     }
 
     const value = parseNumber(detailsForUserOp.value) ?? BigNumber.from(0)
+    console.log("value", value, detailsForUserOp)
     let callData;
-    if (detailsForUserOp.data.length) {
+    if (detailsForUserOp.data.length &&  detailsForUserOp.data.forEach) {
       callData = await this.encodeBatchExecute(detailsForUserOp.data)
     }
     else {
+     
       callData = await this.encodeExecute(detailsForUserOp.target, value, detailsForUserOp.data)
     }
     
@@ -241,6 +243,7 @@ export abstract class BaseAccountAPI {
    * @param info
    */
   async createUnsignedUserOp (info: TransactionDetailsForUserOp): Promise<UserOperationStruct> {
+    console.log(info);
     const {
       callData,
       callGasLimit
