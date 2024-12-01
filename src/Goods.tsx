@@ -2,18 +2,18 @@
 
 import { useAtomValue } from "jotai";
 import { TabPanel, TabView } from "primereact/tabview";
-import { communityListAtom, Goods, Store } from "./atoms/Community";
+import { Community, communityListAtom, Goods, Store } from "./atoms/Community";
 
 import styles from "./Goods.module.css";
-
-import { useNavigate } from "react-router-dom";
 import GoodsList from "./components/GoodsList";
+import StoreList from "./components/StoreList";
+import CommunityList from "./components/CommunityList";
 
 
 function GoodsApp() {
   const communityList = useAtomValue(communityListAtom);
 
-  const navigate = useNavigate();
+  const allCommunity: Community [] = [];
   const allGoods: Goods[] = [];
   const allStore: Store[] = [];
   communityList.forEach((community) => {
@@ -23,6 +23,7 @@ function GoodsApp() {
         allGoods.push(goods);
       });
     });
+    allCommunity.push(community)
   });
 
 
@@ -33,43 +34,11 @@ function GoodsApp() {
           <GoodsList data={allGoods}></GoodsList>
         </TabPanel>
         <TabPanel header="Store">
-          <div className={styles.StoreList}>
-            {allStore.map((store: Store) => {
-              return (
-                <div className={styles.Store} key={`${store.address}`} onClick={() => {
-                  navigate(`/community/${store.communityAddress}/store/${store.address}`)
-                }}>
-                  <div className={styles.StoreInfo}>
-                    <img src={store.logo} className={styles.StoreImage}></img>
-                    <div className={styles.GoodsName}>{store.name}</div>
-                  </div>
-                  <div className={styles.StoreGoodsList}>
-                    {store.goodsList.map((item) => {
-                      return (
-                        <div
-                          className={styles.StoreGoods}
-                          key={`${item.storeAddress}-${item.id}`}
-                        >
-                          <img
-                            src={item.images[0]}
-                            className={styles.StoreGoodsImage}
-                          ></img>
-
-                          <div className={styles.StoreGoodsPrice}>
-                            <div>
-                              {item.price} {item.payTokenSymbol}
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+          <StoreList data={allStore}></StoreList>
         </TabPanel>
-        <TabPanel header="Community"> </TabPanel>
+        <TabPanel header="Community"> 
+          <CommunityList data={allCommunity}></CommunityList>
+        </TabPanel>
       </TabView>
     </div>
   );

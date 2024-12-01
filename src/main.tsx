@@ -26,7 +26,7 @@ import { userInfoAtom } from "./atoms/UserInfo.ts";
 import { ethers } from "ethers";
 import CommunityManager from "./components/CommunityManager/index.tsx";
 import { ToastContainer } from "react-toastify";
-import CommunityDetail from "./components/CommunityManager/CommunityDetail.tsx";
+import CommunityAdminDetail from "./components/CommunityManager/CommunityDetail.tsx";
 import CommunityStoreDetail from "./components/CommunityManager/CommunityStoreDetail.tsx";
 import DataLoading from "./components/DataLoading/index.tsx";
 import 'react-toastify/dist/ReactToastify.css';
@@ -36,6 +36,7 @@ import OrderApp from "./Order.tsx";
 import Setting from "./Setting.tsx";
 import GoodsDetail from "./GoodsDetail.tsx";
 import StoreDetail from "./StoreDetail.tsx";
+import CommunityDetail from "./CommunityDetail.tsx";
 const config = getDefaultConfig({
   appName: "COS72",
   projectId: "413eed66ad9f8b3bf84e79de8bde9604",
@@ -94,13 +95,18 @@ function App() {
             <Route path="/admin/setting" element={<Setting />} />
             <Route path="/admin/community" element={<CommunityManager />} />
             <Route
-              path="/admin/community/:address"
+              path="/community/:address"
               element={<CommunityDetail />}
+            />
+            <Route
+              path="/admin/community/:address"
+              element={<CommunityAdminDetail />}
             />
             <Route
               path="/admin/community/:address/store/:storeAddress"
               element={<CommunityStoreDetail />}
             />
+           
             <Route
               path="/community/:address/store/:storeAddress"
               element={<StoreDetail />}

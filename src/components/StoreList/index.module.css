@@ -1,0 +1,28 @@
+.Store {
+    display: flex;
+    padding: 20px 0px;
+    border-bottom: 1px solid #e5e7eb;
+}
+.StoreInfo {
+    width: 300px;
+    display: flex;
+    gap: 20px;
+    cursor: pointer;
+}
+.StoreGoodsList {
+    display: flex;
+    gap: 20px;
+    cursor: pointer;
+}
+.StoreGoodsImage {
+    width: 140px;
+}
+
+.StoreGoodsPrice {
+    font-size: 12px;
+}
+
+.StoreImage {
+    width: 70px;
+    height: 70px;
+}
