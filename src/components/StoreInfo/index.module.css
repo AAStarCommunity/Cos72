@@ -1,8 +1,15 @@
-.storeInfo {
+.Root {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     border-radius: 16px;
     background-color: #FFF;
-    display: flex;
     padding: 16px 16px;
+}
+.storeInfo {
+    
+    display: flex;
+  
    
     align-items: center;
 }
