@@ -80,11 +80,12 @@ function GoodsDetail() {
 
   const buy = async (amount: number, goods: Goods) => {
     //do something else
+    const id = toast.loading("Please wait...");
     try {
       //     const wallet = getWallet();
 
       // 第一步 创建 AAStarClient
-
+     
       const bundlerConfig = NetworkdConfig[networkIds.OP_SEPOLIA].bundler[0];
 
       const payMasterConfig =
@@ -110,14 +111,27 @@ function GoodsDetail() {
       const callTo = [goods.storeAddress];
       console.log(goods.id, goods.storeAddress, amount);
       const callData = [
-        GoodsContract.interface.encodeFunctionData("buy", [goods.id, amount]),
+        GoodsContract.interface.encodeFunctionData("buy", [goods.id, ethers.BigNumber.from(amount)]),
       ];
       console.log("Waiting for transaction...");
       // 第三步 发送 UserOperation
-      const response = await smartAccount.sendUserOperation(callTo, callData);
+      const response = await smartAccount.sendUserOperation(callTo, callData,  (goods.payToken === ethers.constants.AddressZero) ? ethers.utils.parseEther(`${goods.price}`).mul(amount) : undefined);
       console.log(`Transaction hash: ${response.transactionHash}`);
+      toast.update(id, {
+        render: "Success",
+        type: "success",
+        isLoading: false,
+        autoClose: 5000,
+      });
+      await loadCommunityList((userInfo as any).aa);
     } catch (error) {
       console.log(error);
+      toast.update(id, {
+        render: "Transaction Fail",
+        type: "error",
+        isLoading: false,
+        autoClose: 5000,
+      });
     }
   };
 
