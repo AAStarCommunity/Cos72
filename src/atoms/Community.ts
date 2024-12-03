@@ -2,7 +2,7 @@ import { ethers } from "ethers";
 import { atom } from "jotai";
 import { INetwork } from "../config";
 import CommunityManagerJSON from "../contracts/CommunityManager.json";
-import CommunityStoreJSON from "../contracts/CommunityStoreV2.json";
+import CommunityStoreJSON from "../contracts/CommunityStoreV3.json";
 import CommunityJSON from "../contracts/Community.json";
 import { currentChainAtom } from "./CurrentChain";
 
@@ -75,7 +75,7 @@ const currentCommunityStore = atom<Store | null>(null);
 export const loadCommunityListLoadingAtom = atom(false);
 const loadCommunityList = async (currentNetwork: INetwork, account: string) => {
   const provider = new ethers.providers.JsonRpcProvider(currentNetwork.rpc);
-
+  
   console.log(
     "loadCommunityList",
     currentNetwork.rpc,
