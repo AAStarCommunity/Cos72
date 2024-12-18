@@ -153,7 +153,7 @@ export const NetworkdConfig: { [K in NetworkId]: INetwork } = {
   },
   [networkIds.OP_SEPOLIA]: {
     name: "OP Sepolia",
-    rpc: "https://optimism-sepolia.blockpi.network/v1/rpc/public",
+    rpc: "https://sepolia.optimism.io",
     chainId: networkIds.OP_SEPOLIA,
     blockExplorerURL: "https://sepolia-optimism.etherscan.io",
     contracts: {
