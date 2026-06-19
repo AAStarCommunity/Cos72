@@ -195,6 +195,45 @@ export default function RecoveryPage() {
               The guardians will each need to approve the recovery.
             </div>
 
+            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 text-sm text-blue-800 dark:text-blue-300 space-y-2">
+              <p className="font-semibold">Choosing guardians: trust &amp; loss trade-offs</p>
+              <p className="text-blue-700 dark:text-blue-300/90">
+                A guardian is whoever can approve your recovery. Each kind shifts two things —{" "}
+                <span className="font-medium">who/what you trust</span> and{" "}
+                <span className="font-medium">how it can be lost</span>:
+              </p>
+              <ul className="space-y-1 text-xs text-blue-700 dark:text-blue-300/90 list-disc pl-4">
+                <li>
+                  <span className="font-medium">Passkey on Apple</span> — trust: your iCloud. Loss:
+                  low (syncs across your Apple devices).
+                </li>
+                <li>
+                  <span className="font-medium">Passkey on Google</span> — trust: your Google
+                  account. Loss: low (syncs across your Android devices).
+                </li>
+                <li>
+                  <span className="font-medium">MetaMask (self-custody)</span> — trust: only you.
+                  Loss: higher — lose the phone or seed phrase and it&apos;s gone.
+                </li>
+                <li>
+                  <span className="font-medium">A friend&apos;s AirAccount</span> — trust: that
+                  friend + their platform. Loss: low (they have their own backup).
+                </li>
+                <li>
+                  <span className="font-medium">Passkey via KMS (today)</span> — trust: the KMS
+                  service. Loss: medium (if KMS is down, that guardian can&apos;t sign).
+                </li>
+              </ul>
+              <p className="text-blue-700 dark:text-blue-300/90">
+                <span className="font-medium">Pick diverse guardians</span> — different methods,
+                people and platforms (e.g. one Apple passkey + one Google passkey + one
+                friend&apos;s wallet). Recovery only needs{" "}
+                <span className="font-medium">2 of 3</span>, so losing one guardian still lets you
+                recover — diversity makes sure no single failure (a lost phone, one platform, or the
+                KMS) can block them all at once.
+              </p>
+            </div>
+
             {[
               {
                 label: "Account Address (to recover)",
