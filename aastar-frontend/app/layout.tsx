@@ -22,7 +22,8 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "AAStar - ERC4337 Account Abstraction",
+  title:
+    "Cos72: A Cooperation System, Open Source, Powerful and Easy to Use: Any one, Any Where, Any time",
   description: "ERC4337 Account Abstraction with BLS Signatures",
   manifest: "/manifest.json",
   appleWebApp: {
@@ -31,7 +32,8 @@ export const metadata: Metadata = {
     title: "AAStar",
   },
   icons: {
-    icon: [{ url: "/favicon.ico" }, { url: "/icon-512.png", sizes: "512x512", type: "image/png" }],
+    // 🍄 favicon comes from app/icon.svg (file convention); icon-512 for PWA/larger.
+    icon: [{ url: "/icon-512.png", sizes: "512x512", type: "image/png" }],
     apple: [{ url: "/apple-icon.png", sizes: "180x180", type: "image/png" }],
   },
 };
