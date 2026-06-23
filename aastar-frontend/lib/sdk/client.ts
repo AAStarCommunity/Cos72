@@ -12,6 +12,7 @@ import { createPublicClient, createWalletClient, custom, http } from "viem";
 import type { Address, Chain, PublicClient, WalletClient } from "viem";
 import { sepolia } from "viem/chains";
 import { applyConfig, CHAIN_SEPOLIA } from "@aastar/sdk/core";
+import { TokenSaleClient } from "@aastar/sdk/tokens";
 
 let sdkConfigured = false;
 
@@ -48,10 +49,44 @@ export async function connectWallet(
   if (!provider) {
     throw new Error("No injected wallet found. Please install MetaMask or a compatible wallet.");
   }
-  const walletClient = createWalletClient({
-    chain,
-    transport: custom(provider as Parameters<typeof custom>[0]),
-  });
-  const [address] = await walletClient.requestAddresses();
+  const transport = custom(provider as Parameters<typeof custom>[0]);
+  // Resolve the selected account first, then bind it to the wallet client so
+  // SDK actions that sign / send (TokenSaleClient.buy*, operator writes) don't
+  // need the account threaded through every call.
+  const [address] = await createWalletClient({ chain, transport }).requestAddresses();
+  const walletClient = createWalletClient({ account: address, chain, transport });
   return { address, walletClient };
+}
+
+/**
+ * Build the SDK's launch-sale client (buy GToken / aPNTs — gasless USDC via the
+ * relayer, or self-pay USDC/USDT). viem is a single hoisted version across the
+ * monorepo (both workspaces on ^2.47 + a root `viem` override), and
+ * @aastar/sdk@0.26.4 declares viem as a peerDependency, so the SDK's types
+ * resolve against that one viem — no version-drift cast needed.
+ */
+export function buildTokenSaleClient(
+  publicClient: PublicClient,
+  walletClient?: WalletClient
+): TokenSaleClient {
+  return new TokenSaleClient(publicClient, walletClient, { chainId: CHAIN_SEPOLIA });
+}
+
+/** Ensure the injected wallet is on the expected chain; prompts a switch if not. */
+export async function ensureChain(chainId: number = CHAIN_SEPOLIA): Promise<boolean> {
+  const provider = getInjectedProvider() as
+    | { request: (a: { method: string; params?: unknown[] }) => Promise<unknown> }
+    | undefined;
+  if (!provider) return false;
+  const current = (await provider.request({ method: "eth_chainId" })) as string;
+  if (parseInt(current, 16) === chainId) return true;
+  try {
+    await provider.request({
+      method: "wallet_switchEthereumChain",
+      params: [{ chainId: "0x" + chainId.toString(16) }],
+    });
+    return true;
+  } catch {
+    return false;
+  }
 }
