@@ -50,6 +50,37 @@ function env(key: string): string | undefined {
 const client = () => createPublicClient({ chain: sepolia, transport: http(env("ETH_RPC_URL")) });
 const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
 
+// Retry a flaky RPC op (timeouts / transient errors). Each attempt is bounded by
+// the op's own timeout; we just re-try the same call (idempotent — same tx hash).
+export async function withRetry<T>(
+  fn: () => Promise<T>,
+  attempts = 5,
+  delayMs = 4_000
+): Promise<T> {
+  let last: unknown;
+  for (let i = 0; i < attempts; i++) {
+    try {
+      return await fn();
+    } catch (e) {
+      last = e;
+      await sleep(delayMs);
+    }
+  }
+  throw last;
+}
+
+// Wait for a receipt, surviving RPC blips: short per-attempt timeout, retried.
+async function confirmTx(
+  pc: ReturnType<typeof client>,
+  hash: `0x${string}`,
+  label = "tx"
+): Promise<void> {
+  const receipt = await withRetry(() =>
+    pc.waitForTransactionReceipt({ hash, timeout: 90_000, pollingInterval: 4_000 })
+  );
+  if (receipt.status !== "success") throw new Error(`${label} reverted: ${hash}`);
+}
+
 export async function fundWithEth(to: Address, eth: string): Promise<string> {
   const key = env("TEST_EOA_PRIVATE_KEY");
   if (!key) throw new Error("TEST_EOA_PRIVATE_KEY unset (scripts/test/.env.test)");
@@ -62,20 +93,49 @@ export async function fundWithEth(to: Address, eth: string): Promise<string> {
   const hash = await wc.sendTransaction({
     to,
     value: parseEther(eth),
-    maxFeePerGas: parseGwei("12"),
+    maxFeePerGas: parseGwei("20"),
     maxPriorityFeePerGas: parseGwei("2"),
   });
-  const receipt = await pc.waitForTransactionReceipt({
-    hash,
-    timeout: 120_000,
-    pollingInterval: 3_000,
-  });
-  if (receipt.status !== "success") throw new Error(`fund tx reverted: ${hash}`);
+  await confirmTx(pc, hash, "fund");
   return hash;
 }
 
 export async function getEthBalance(addr: Address): Promise<bigint> {
   return client().getBalance({ address: addr });
+}
+
+const ERC20_TRANSFER_ABI = [
+  {
+    type: "function",
+    name: "transfer",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "to", type: "address" },
+      { name: "amount", type: "uint256" },
+    ],
+    outputs: [{ type: "bool" }],
+  },
+] as const;
+
+/** Fund an address with GToken (ERC-20 transfer from the test EOA). `amount` in GT. */
+export async function fundGToken(to: Address, amount: string): Promise<string> {
+  const key = env("TEST_EOA_PRIVATE_KEY");
+  if (!key) throw new Error("TEST_EOA_PRIVATE_KEY unset");
+  const acct = privateKeyToAccount(key as `0x${string}`);
+  const transport = http(env("ETH_RPC_URL"));
+  const pc = createPublicClient({ chain: sepolia, transport });
+  const wc = createWalletClient({ account: acct, chain: sepolia, transport });
+  const gToken = getCanonicalAddresses(11155111).gToken as Address;
+  const hash = await wc.writeContract({
+    address: gToken,
+    abi: ERC20_TRANSFER_ABI,
+    functionName: "transfer",
+    args: [to, parseEther(amount)],
+    maxFeePerGas: parseGwei("20"),
+    maxPriorityFeePerGas: parseGwei("2"),
+  });
+  await confirmTx(pc, hash, "GToken transfer");
+  return hash;
 }
 
 /**
@@ -97,11 +157,10 @@ export async function depositToEntryPoint(account: Address, eth: string): Promis
     functionName: "depositTo",
     args: [account],
     value: parseEther(eth),
-    maxFeePerGas: parseGwei("12"),
+    maxFeePerGas: parseGwei("20"),
     maxPriorityFeePerGas: parseGwei("2"),
   });
-  const r = await pc.waitForTransactionReceipt({ hash, timeout: 120_000, pollingInterval: 3_000 });
-  if (r.status !== "success") throw new Error(`depositTo reverted: ${hash}`);
+  await confirmTx(pc, hash, "depositTo");
   return hash;
 }
 

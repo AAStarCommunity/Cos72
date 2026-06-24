@@ -108,9 +108,12 @@
 | 读流程：登录 → /community 广场 + /role + /operator 渲染 | ✅正向 | ✅ **PASS（17s）** | `community.spec.ts`：注册后三页都渲染（社区广场列出官方 AAStar/Mycelium；/role、/operator 对新账户正常渲染）。无链上写 |
 | COM-A 建社区（买 GToken→注册→发 xPNTs→Gas 策略） | ✅正向 | ⬜ 待补 | 重型多步**链上写**：与 GRD 同源（账户 UserOp 部署/签名），或运营者 EOA 经 MetaMask 签名——需 GRD 的 deploy 基建解决 **或** L3 注入式测试钱包自动化 |
 | COM-U 购 ticket/SBT、加入/退出社区 | ✅正向 | ⬜ 待补 | 同上（链上写） |
-| OPR 运营者准入（stake→register→deploy paymaster） | ✅正向 | ⬜ 待补 | 运营者 EOA 经 MetaMask；需注入式测试钱包 |
+| **OPR connect + 资源预检** 运营者向导（注入式 EOA） | ✅正向 | ✅ **PASS（34s）** | `operator.spec.ts` + `helpers/wallet.ts`：**注入式 EIP-1193 钱包**（签名留 node 侧测试 EOA，exposeFunction 桥接，key 不进浏览器）→ /operator/deploy → 检测钱包→连接→显运营者地址→选 AOA→**资源预检渲染**（断言渲染而非"资源满足"——共享 EOA 的 GToken 会随其他测试消耗波动）。资源检查**经注入 provider 的 RPC 透传读链上状态**，端到端验证了 harness 读路径 |
+| **OPR-01** 完整准入（registerRole→deploy xPNTs→paymaster→deposit） | ✅正向 | 🟡 **已建，推进到 register，fixme** | `operator-onboarding.spec.ts`。**进展**：换新 Infura RPC + `withRetry`(receipt 等待) + 注入钱包 sendTx 显式 gas(25/3) 后，**注资 → connect → AOA → 资源预检全部通过**，推进到首个写步骤 **Register Community**。**两个剩余 blocker**：(1) register 写（approve+registerRole）不前进到 Continue——registerRole 步骤未完成（revert/合约前置/步骤 UI），需抓 register revert 原因；(2) 共享测试 EOA 的 **GToken 已耗尽**（每 run fundGToken 70 给 fresh EOA，873→43<60/run），需经 sale 补 GToken 才能再跑。标 `test.fixme` |
 
-**S5 小结**：**读/渲染流程全自动跑通**（社区广场 + 角色 + 运营者页）。**写流程**（建社区、购 ticket、运营者准入）是重型链上多步，分两类——(a) AirAccount UserOp（与 GRD 同源，待 deploy 基建）、(b) 运营者自有 EOA 经 MetaMask（需 L3 注入式测试钱包）——作为后续专项。
+**S5 小结**：**读/渲染流程全自动跑通**（社区广场 + 角色 + 运营者页）；**写流程的注入式钱包 enabler 已建并验证**（operator 向导连上注入 EOA）。剩余的重型链上多步写流程分两类——(a) AirAccount UserOp（与 GRD 同源，待 deploy 基建）、(b) 运营者 EOA 经注入钱包（enabler 已就绪，多步准入待逐步接）——作为后续专项。
+
+> e2e 含真实链上+注册流程，偶发 flaky（链上时序/OTP race）；重跑即过。
 
 ---
 
