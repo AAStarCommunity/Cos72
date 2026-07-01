@@ -32,6 +32,8 @@ import {
   type TransferResolution,
 } from "@aastar/sdk/airaccount";
 import { ensureSdkConfig, getPublicClient } from "@/lib/sdk/client";
+import { webauthnRpId } from "@/lib/webauthn-rp";
+import { getDefaultPaymaster } from "@/lib/default-paymaster";
 
 // Tier-3 only: collect a guardian co-signature over the prepared userOpHash from the
 // user's self-hosted guardian wallet (injected EIP-1193). signMessage({ raw }) is
@@ -67,8 +69,58 @@ function bufToB64url(buf: ArrayBuffer | Uint8Array): string {
   return btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
+function b64urlToBytes(b64url: string): Uint8Array {
+  const b64 =
+    b64url.replace(/-/g, "+").replace(/_/g, "/") + "=".repeat((4 - (b64url.length % 4)) % 4);
+  const bin = atob(b64);
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
+
+function bytesToHex(bytes: Uint8Array): string {
+  let h = "0x";
+  for (const b of bytes) h += b.toString(16).padStart(2, "0");
+  return h;
+}
+
+function hexToBytes(hex: string): Uint8Array {
+  const h = hex.startsWith("0x") ? hex.slice(2) : hex;
+  const out = new Uint8Array(h.length / 2);
+  for (let i = 0; i < out.length; i++) out[i] = parseInt(h.slice(i * 2, i * 2 + 2), 16);
+  return out;
+}
+
+type DeviceWebAuthn = { authenticatorData: string; clientDataJSON: string; signature: string };
+
+/**
+ * Tier-2/3 WebAuthn passkey path (#234): run ONE navigator.credentials.get() ceremony with
+ * `challenge = userOpHash` (32 raw bytes), then normalise the assertion's three response fields
+ * into the encodings the SDK's packWebAuthnBlob expects:
+ *   - authenticatorData, signature: 0x-hex
+ *   - clientDataJSON: the RAW JSON text (must start with {"type":"webauthn.get","challenge":"…)
+ * The browser returns base64url for all three, so we decode here. The clientDataJSON challenge
+ * the browser writes is base64url(userOpHash) — exactly what the SDK + contract re-derive.
+ */
+async function runWebAuthnPasskeyAssertion(userOpHash: string): Promise<DeviceWebAuthn> {
+  const assertion = await startAuthentication({
+    optionsJSON: {
+      challenge: bufToB64url(hexToBytes(userOpHash)),
+      rpId: webauthnRpId(),
+      userVerification: "required",
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any,
+  });
+  const r = assertion.response;
+  return {
+    authenticatorData: bytesToHex(b64urlToBytes(r.authenticatorData)),
+    clientDataJSON: new TextDecoder().decode(b64urlToBytes(r.clientDataJSON)),
+    signature: bytesToHex(b64urlToBytes(r.signature)),
+  };
+}
+
 async function runDvtConfirmation(userOpHash: string, nodeEndpoint: string): Promise<boolean> {
-  const req = confirmationCredentialRequest(userOpHash, { rpId: window.location.hostname });
+  const req = confirmationCredentialRequest(userOpHash, { rpId: webauthnRpId() });
   const assertion = await startAuthentication({
     optionsJSON: {
       challenge: bufToB64url(req.challenge),
@@ -111,6 +163,9 @@ export default function TransferPage() {
   const [_loadingTokenBalance, setLoadingTokenBalance] = useState(false);
   const [gasEstimate, setGasEstimate] = useState<GasEstimate | null>(null);
   const [savedPaymasters, setSavedPaymasters] = useState<any[]>([]);
+  // Preset metadata (SuperPaymaster / PaymasterV4 canonical addresses + requiresCommunity)
+  // used to detect the selected paymaster's type and show its prerequisite hint.
+  const [paymasterPresets, setPaymasterPresets] = useState<any[]>([]);
   const [showPaymasterDropdown, setShowPaymasterDropdown] = useState(false);
   const [addressBook, setAddressBook] = useState<any[]>([]);
   const [showAddressDropdown, setShowAddressDropdown] = useState(false);
@@ -128,6 +183,7 @@ export default function TransferPage() {
   });
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const isPollingRef = useRef(false);
+  const defaultPaymasterAppliedForRef = useRef<string | null>(null);
   const touchStartY = useRef(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
@@ -135,6 +191,22 @@ export default function TransferPage() {
   useEffect(() => {
     loadPageData();
   }, []);
+
+  // Auto-apply the account-scoped default paymaster once PER ACCOUNT, after both the
+  // account (the preference's storage scope) and the saved list are available. The ref
+  // tracks the account it last applied for, so a mid-session account switch re-applies
+  // the new account's default, while a manual un-toggle within one account is never
+  // overridden.
+  useEffect(() => {
+    if (!account?.address || savedPaymasters.length === 0) return;
+    if (defaultPaymasterAppliedForRef.current === account.address) return;
+    defaultPaymasterAppliedForRef.current = account.address;
+    const def = getDefaultPaymaster(account.address);
+    const match = def && savedPaymasters.find(p => p.address?.toLowerCase() === def);
+    if (match) {
+      setFormData(prev => ({ ...prev, usePaymaster: true, paymasterAddress: match.address }));
+    }
+  }, [account?.address, savedPaymasters]);
 
   // Judge the transfer (tier + required signatures, ETH/ERC-20 unified) whenever the
   // amount or token changes, debounced. Drives the indicator + fail-fast on block.
@@ -174,8 +246,14 @@ export default function TransferPage() {
     try {
       // Load saved paymasters
       try {
-        const paymasterResponse = await paymasterAPI.getAvailable();
-        setSavedPaymasters(paymasterResponse.data);
+        const [paymasterResponse, presetResponse] = await Promise.all([
+          paymasterAPI.getAvailable(),
+          paymasterAPI.getPresets().catch(() => ({ data: [] })),
+        ]);
+        setPaymasterPresets((presetResponse.data ?? []) as any[]);
+        setSavedPaymasters((paymasterResponse.data ?? []) as any[]);
+        // The persisted default paymaster is applied by a dedicated effect once the
+        // account address (its storage scope) and the saved list are both ready.
       } catch (error) {
         console.error("Failed to load saved paymasters:", error);
         setSavedPaymasters([]);
@@ -374,6 +452,31 @@ export default function TransferPage() {
       // tier-aware payload, calls KMS BeginAuthentication, and returns
       // publicKeyOptions whose `challenge` is already the WYSIWYS commitment. We
       // never compute commitChallenge or talk to KMS directly here.
+      // Decide the signing path BEFORE prepare. Tier-2/3 (the transfer needs the on-chain
+      // BLS/guardian factors) use the device-passkey cumulative path (algId 0x09/0x0a, #234):
+      // the SDK skips the KMS ceremony and the passkey signs the userOpHash directly. Tier-1
+      // keeps the KMS owner-ceremony commitment path. resolveTransfer (the same judging the
+      // indicator shows) gives the tier; fall back to a fresh resolve if it hasn't settled.
+      let tier: number | null = resolution?.tier ?? null;
+      if (tier == null && account?.address) {
+        try {
+          const isEth = !selectedToken || selectedToken.address === "ETH";
+          const amt = isEth
+            ? parseEther(formData.amount)
+            : parseUnits(formData.amount, selectedToken?.decimals ?? 18);
+          const res = await resolveTransfer({
+            client: publicClient as never,
+            account: account.address as Address,
+            amount: amt,
+            token: isEth ? "ETH" : (selectedToken!.address as Address),
+          });
+          tier = res.tier;
+        } catch {
+          /* keep null → Tier-1 KMS path */
+        }
+      }
+      const useWebAuthnPasskey = (tier ?? 1) >= 2;
+
       loadingToast = toast.loading("Preparing transaction...");
       const prep = await transferAPI.prepare({
         to: formData.to,
@@ -384,15 +487,24 @@ export default function TransferPage() {
             ? formData.paymasterAddress
             : undefined,
         tokenAddress: selectedToken?.address === "ETH" ? undefined : selectedToken?.address,
+        useWebAuthnPasskey,
       });
 
-      // Phase 2: browser ceremony — the user's device passkey signs the
-      // SDK-computed commitment. Use publicKeyOptions verbatim.
+      // Phase 2: browser ceremony. On the WebAuthn passkey path (no publicKeyOptions) the
+      // passkey signs the userOpHash itself; on the KMS path it signs the SDK-computed
+      // commitment (publicKeyOptions verbatim).
+      const isWebAuthnPath = !prep.data.publicKeyOptions;
       toast.dismiss(loadingToast);
       loadingToast = toast.loading("Please verify with your passkey...");
-      const credential = await startAuthentication({
-        optionsJSON: prep.data.publicKeyOptions as any,
-      });
+      let credential: unknown;
+      let deviceWebAuthn: DeviceWebAuthn | undefined;
+      if (isWebAuthnPath) {
+        deviceWebAuthn = await runWebAuthnPasskeyAssertion(prep.data.userOpHash);
+      } else {
+        credential = await startAuthentication({
+          optionsJSON: prep.data.publicKeyOptions as any,
+        });
+      }
 
       // Phase 2.5: Tier-3 guardian co-sign. When prepare resolves to Tier 3, a
       // guardian must co-sign the userOpHash on top of the passkey + DVT/BLS. We
@@ -406,17 +518,24 @@ export default function TransferPage() {
         guardianSignature = await collectGuardianSignature(prep.data.userOpHash);
       }
 
-      // Phase 3: submit. The committed digest matches what prepare bound, so the
-      // KMS accepts the assertion under strict mode. guardianSignature is sent only
-      // for Tier 3 (undefined otherwise).
+      // Phase 3: submit. Build exactly the variant for the path taken (device-passkey
+      // vs KMS ceremony) so the payload type stays a discriminated union; a Scheme-2
+      // resubmit reuses this same value verbatim.
+      const submitPayload = isWebAuthnPath
+        ? {
+            transferId: prep.data.transferId,
+            deviceWebAuthn: deviceWebAuthn as DeviceWebAuthn,
+            guardianSignature,
+          }
+        : {
+            transferId: prep.data.transferId,
+            challengeId: prep.data.challengeId as string,
+            credential,
+            guardianSignature,
+          };
       toast.dismiss(loadingToast);
       loadingToast = toast.loading("Processing transfer...");
-      let response = await transferAPI.submit({
-        transferId: prep.data.transferId,
-        challengeId: prep.data.challengeId,
-        credential,
-        guardianSignature,
-      });
+      let response = await transferAPI.submit(submitPayload);
 
       // Scheme 2: a high-value transfer can be withheld by a DVT node pending out-of-band
       // approval. Approve by signing the userOpHash with the device passkey, POST it to the
@@ -433,12 +552,7 @@ export default function TransferPage() {
         if (!approved) throw new Error("Out-of-band confirmation was rejected or expired.");
         toast.dismiss(loadingToast);
         loadingToast = toast.loading("Approved — completing transfer…");
-        response = await transferAPI.submit({
-          transferId: prep.data.transferId,
-          challengeId: prep.data.challengeId,
-          credential,
-          guardianSignature,
-        });
+        response = await transferAPI.submit(submitPayload);
       }
       setTransferResult(response.data);
 
@@ -464,9 +578,15 @@ export default function TransferPage() {
         toast.dismiss(loadingToast);
       }
 
-      // Handle passkey verification errors
+      // Handle passkey verification errors. NotAllowedError covers both an explicit
+      // cancel and "no passkey on this device matched" — the latter is what a user sees
+      // when their passkey was registered under a different domain (rpId), so point
+      // them at re-registration rather than a bare "cancelled".
       if (error.name === "NotAllowedError") {
-        toast.error("Transaction verification was cancelled");
+        toast.error(
+          "Passkey verification was cancelled, or no matching passkey was found. If you registered it on a different domain, re-register your passkey on this site and try again.",
+          { duration: 7000 }
+        );
         setLoading(prev => ({ ...prev, transfer: false }));
         return;
       } else if (error.name === "NotSupportedError") {
@@ -474,7 +594,10 @@ export default function TransferPage() {
         setLoading(prev => ({ ...prev, transfer: false }));
         return;
       } else if (error.name === "SecurityError") {
-        toast.error("Security error during verification");
+        toast.error(
+          "Security error during verification — this site's domain may not match where your passkey was registered. Re-register your passkey here and try again.",
+          { duration: 7000 }
+        );
         setLoading(prev => ({ ...prev, transfer: false }));
         return;
       }
@@ -1314,12 +1437,43 @@ export default function TransferPage() {
                             for no paymaster.
                           </p>
                           {formData.paymasterAddress && (
-                            <div className="mt-2">
+                            <div className="mt-2 space-y-2">
                               <div className="p-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-700 dark:text-slate-300">
-                                💡 Using custom paymaster: {formData.paymasterAddress.slice(0, 10)}
-                                ...
+                                💡 Using paymaster: {formData.paymasterAddress.slice(0, 10)}...
                                 {formData.paymasterAddress.slice(-8)}
                               </div>
+                              {/* Detect the selected paymaster's type and show its prerequisite. */}
+                              {(() => {
+                                const preset = paymasterPresets.find(
+                                  p =>
+                                    p.address?.toLowerCase() ===
+                                    formData.paymasterAddress.toLowerCase()
+                                );
+                                if (preset?.requiresCommunity) {
+                                  return (
+                                    <div className="p-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-700 rounded-xl text-xs text-amber-800 dark:text-amber-300">
+                                      ⚠️ {preset.name} pays gas with {preset.gasToken}. You must join
+                                      a community and hold its xPNTs first — otherwise sponsorship
+                                      will be rejected on submit.
+                                    </div>
+                                  );
+                                }
+                                if (preset) {
+                                  return (
+                                    <div className="p-2 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-300 dark:border-emerald-700 rounded-xl text-xs text-emerald-800 dark:text-emerald-300">
+                                      ✅ {preset.name} — pay gas with {preset.gasToken}. PaymasterV4
+                                      is a template (this is the AAStar community instance; any
+                                      community can deploy its own). Make sure you hold {preset.gasToken}.
+                                    </div>
+                                  );
+                                }
+                                return (
+                                  <div className="p-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-600 dark:text-slate-400">
+                                    ℹ️ Custom paymaster — confirm you hold the gas token it accepts
+                                    and that it has enough deposit to sponsor your gas.
+                                  </div>
+                                );
+                              })()}
                             </div>
                           )}
                         </div>

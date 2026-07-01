@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 /**
- * Tier-3 WebAuthn cumulative composite (algId 0x0a) — on-chain regression on Sepolia (v0.21.0).
+ * Tier-3 WebAuthn cumulative composite (algId 0x0a) — on-chain regression on Sepolia (v0.22.0).
  *
  * YAA-side port of the SDK's authoritative reference
  * (`tier3-webauthn-composite-e2e.ts`). Proves YAA can assemble — using ONLY the published
  * `@aastar/sdk` packers — a Tier-3 composite signature (on-chain WebAuthn P256 passkey + DVT BLS
- * aggregate + guardian ECDSA) that the deployed v0.21.0 AirAccount ACCEPTS (validateUserOp == 0).
+ * aggregate + guardian ECDSA) that the deployed v0.22.0 AirAccount ACCEPTS (validateUserOp == 0).
  *
  * The "device passkey" is simulated with a software P-256 key (registered via setP256Key) and a
  * SYNTHETIC WebAuthn assertion built exactly as `navigator.credentials.get()` produces it:
@@ -13,7 +13,7 @@
  *   - the key signs sha256(authenticatorData ‖ sha256(clientDataJSON))  (ECDSA-SHA256, prehash=false)
  * so the on-chain WebAuthn reconstruction + P256VERIFY (0x100 precompile) passes — no browser needed.
  *
- * Flow (all live): deploy via the v0.21.0 factory (approvedAlgIds=[0x0a]) → setValidator + setP256Key
+ * Flow (all live): deploy via the v0.22.0 factory (approvedAlgIds=[0x0a]) → validator + passkey AT BIRTH
  * → build userOp + userOpHash → WebAuthn assertion → packWebAuthnBlob → DVT BLS aggregate → guardian
  * → packCumulativeT3WA → eth_call validateUserOp == 0. Negative: a tampered challenge is rejected.
  *
@@ -62,8 +62,10 @@ import {
 } from "@aastar/sdk/core";
 import {
   packWebAuthnBlob,
+  packCumulativeT2WA,
   packCumulativeT3WA,
   packBlsPayload,
+  ALG_CUMULATIVE_T2_WA,
   ALG_CUMULATIVE_T3_WA,
 } from "@aastar/sdk/kms";
 
@@ -126,7 +128,7 @@ function eip2537ToG2(sig256) {
 
 async function main() {
   console.log("═══════════════════════════════════════════════════════════════════════════");
-  console.log(" YAA Tier-3 WebAuthn cumulative (0x0a) — passkey + DVT BLS + guardian, Sepolia v0.21.0");
+  console.log(" YAA Tier-3 WebAuthn cumulative (0x0a) — passkey + DVT BLS + guardian, Sepolia v0.22.0");
   console.log("═══════════════════════════════════════════════════════════════════════════");
 
   const rpcUrl = env("ETH_RPC_URL");
@@ -137,7 +139,7 @@ async function main() {
 
   applyConfig({ chainId: CHAIN_ID });
   const C = CANONICAL_ADDRESSES[CHAIN_ID];
-  const FACTORY = getAddress(C.airAccountFactoryV7); // v0.21.0
+  const FACTORY = getAddress(C.airAccountFactoryV7); // v0.22.0 (passkey-at-birth)
   const ENTRY_POINT = getAddress(C.entryPoint);
   const VALIDATOR_ROUTER = getAddress(C.aaStarValidator);
   const BLS_VERIFIER = getAddress(C.aaStarBLSAlgorithm);
@@ -153,18 +155,20 @@ async function main() {
   const p256Y = norm(Buffer.from(p256Pub.slice(33, 65)).toString("hex"));
   const guardian = privateKeyToAccount(GUARDIAN_PK);
   const guardianWallet = createWalletClient({ account: guardian, chain: sepolia, transport });
-  console.log(`\n[0a] factory(v0.21.0)=${FACTORY}  owner=${owner.address}  guardian=${guardian.address}`);
+  console.log(`\n[0a] factory(v0.22.0)=${FACTORY}  owner=${owner.address}  guardian=${guardian.address}`);
 
   // ── Deploy a fresh account approving algId 0x0a, with the guardian ──────────────────────────
   const config = buildInitConfig({
     guardians: [{ ecdsa: guardian.address }],
     dailyLimit: 10n ** 18n,
-    approvedAlgIds: [ALG_CUMULATIVE_T3_WA],
+    approvedAlgIds: [ALG_CUMULATIVE_T2_WA, ALG_CUMULATIVE_T3_WA], // Tier-2 (passkey+BLS) + Tier-3 (+guardian)
   });
   const account = await airAccountFactoryActions(FACTORY)(pc).getAddress({
     owner: owner.address,
     salt: SALT,
     config,
+    ownerP256X: p256X,
+    ownerP256Y: p256Y,
   });
   console.log(`[0b] account = ${account}`);
   const code = await pc.getCode({ address: account });
@@ -175,6 +179,8 @@ async function main() {
       owner: owner.address,
       salt: SALT,
       config,
+      ownerP256X: p256X,
+      ownerP256Y: p256Y,
       account: owner,
     });
     const r = await pc.waitForTransactionReceipt({ hash: tx, timeout: 120_000, pollingInterval: 3_000 });
@@ -182,43 +188,23 @@ async function main() {
     if (r.status !== "success") throw new Error("deploy reverted");
   }
 
-  // ── setValidator (set-once) + register the passkey via setP256Key ───────────────────────────
+  // ── v0.22.0: validator + passkey are wired AT BIRTH (no setValidator/setP256Key tx) ──────────
   const curValidator = await pc.readContract({
     address: account,
     abi: AAStarAirAccountV7ABI,
     functionName: "validator",
   });
-  if (curValidator === "0x0000000000000000000000000000000000000000") {
-    const tx = await walletClient.writeContract({
-      address: account,
-      abi: AAStarAirAccountV7ABI,
-      functionName: "setValidator",
-      args: [VALIDATOR_ROUTER],
-      chain: sepolia,
-    });
-    await pc.waitForTransactionReceipt({ hash: tx, timeout: 120_000, pollingInterval: 3_000 });
-    console.log(`[0c] setValidator ✓`);
-  } else {
-    console.log(`[0c] validator already set`);
-  }
+  if (curValidator === "0x0000000000000000000000000000000000000000")
+    throw new Error("v0.22.0: validator not auto-wired at birth");
+  console.log(`[0c] validator @birth = ${curValidator} ✓ (auto-wired from factory immutable)`);
   const curX = await pc.readContract({
     address: account,
     abi: AAStarAirAccountV7ABI,
     functionName: "p256KeyX",
   });
-  if (curX === ZERO_BYTES32) {
-    const tx = await walletClient.writeContract({
-      address: account,
-      abi: AAStarAirAccountV7ABI,
-      functionName: "setP256Key",
-      args: [p256X, p256Y],
-      chain: sepolia,
-    });
-    await pc.waitForTransactionReceipt({ hash: tx, timeout: 120_000, pollingInterval: 3_000 });
-    console.log(`     setP256Key ✓ (x=${p256X.slice(0, 14)}…)`);
-  } else {
-    console.log(`     p256Key already set`);
-  }
+  if (curX.toLowerCase() !== p256X.toLowerCase())
+    throw new Error(`v0.22.0: passkey not injected at birth (p256KeyX ${curX} != supplied ${p256X})`);
+  console.log(`     p256KeyX @birth = ${curX.slice(0, 14)}… ✓ (== supplied passkey)`);
 
   // ── Build userOp + userOpHash ───────────────────────────────────────────────────────────────
   const nonce = await entryPointActions(ENTRY_POINT)(pc).getNonce({ sender: account, key: 0n });
@@ -325,6 +311,15 @@ async function main() {
     `\n[5] validateUserOp(0x0a WebAuthn composite) = ${accepted} -> ${accepted === 0n ? "0 ✅ ACCEPTED" : "❌ REJECTED"}`
   );
 
+  // ── Tier-2 (algId 0x09): passkey + DVT BLS, NO guardian — same account approves both ────────
+  const compositeT2 = packCumulativeT2WA(waBlob, blsPayload);
+  const acceptedT2 = await validate(compositeT2);
+  console.log(
+    `[5b] validateUserOp(0x09 Tier-2 = passkey+BLS, no guardian) = ${(compositeT2.length - 2) / 2}B -> ${
+      acceptedT2 === 0n ? "0 ✅ ACCEPTED" : "❌ REJECTED"
+    }`
+  );
+
   // ── Negative: an assertion over a DIFFERENT hash must be rejected ───────────────────────────
   let negResult = "sdk-rejected";
   try {
@@ -338,19 +333,21 @@ async function main() {
     `[6] negative (challenge != userOpHash) -> ${negResult === 0n ? "❌ accepted (BAD)" : `✅ rejected (${negResult})`}`
   );
 
-  console.log("\n┌─────────────── EVIDENCE (Tier-3 WebAuthn composite, v0.21.0) ───────────────");
-  console.log(`│ factory        : ${FACTORY} (v0.21.0)`);
+  console.log("\n┌─────────────── EVIDENCE (Tier-3 WebAuthn composite, v0.22.0) ───────────────");
+  console.log(`│ factory        : ${FACTORY} (v0.22.0)`);
   console.log(`│ account        : ${account}`);
   console.log(`│ userOpHash     : ${userOpHash}`);
   console.log(`│ waBlob bytes   : ${(waBlob.length - 2) / 2}`);
   console.log(`│ composite bytes: ${(composite.length - 2) / 2} (algId 0x0a)`);
-  console.log(`│ validate(WA)   : ${accepted} ${accepted === 0n ? "= 0 ✅ ACCEPTED" : "❌"}`);
+  console.log(`│ validate(T3 0x0a): ${accepted} ${accepted === 0n ? "= 0 ✅ ACCEPTED" : "❌"}`);
+  console.log(`│ validate(T2 0x09): ${acceptedT2} ${acceptedT2 === 0n ? "= 0 ✅ ACCEPTED" : "❌"}`);
   console.log(`│ negative       : ${negResult} ${negResult !== 0n ? "✅ rejected" : "❌"}`);
   console.log("└──────────────────────────────────────────────────────────────────────────");
 
-  if (accepted !== 0n) throw new Error("FAIL: WebAuthn 0x0a composite was NOT accepted on-chain");
+  if (accepted !== 0n) throw new Error("FAIL: WebAuthn 0x0a (Tier-3) composite was NOT accepted on-chain");
+  if (acceptedT2 !== 0n) throw new Error("FAIL: WebAuthn 0x09 (Tier-2) composite was NOT accepted on-chain");
   if (negResult === 0n) throw new Error("FAIL: wrong-challenge negative was accepted");
-  console.log("\n🎉 PASS — Tier-3 WebAuthn composite ACCEPTED on-chain; wrong-challenge rejected.");
+  console.log("\n🎉 PASS — Tier-2 (0x09) + Tier-3 (0x0a) WebAuthn composites ACCEPTED on-chain; wrong-challenge rejected.");
 }
 
 main().catch(e => {

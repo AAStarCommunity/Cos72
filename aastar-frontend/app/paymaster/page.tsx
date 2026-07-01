@@ -4,9 +4,21 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import Layout from "@/components/Layout";
 import { paymasterAPI } from "@/lib/api";
+import { useDashboard } from "@/contexts/DashboardContext";
 import SwipeableListItem from "@/components/SwipeableListItem";
 import toast from "react-hot-toast";
-import { PlusIcon, CheckCircleIcon, ExclamationCircleIcon } from "@heroicons/react/24/outline";
+import {
+  PlusIcon,
+  CheckCircleIcon,
+  ExclamationCircleIcon,
+  StarIcon,
+} from "@heroicons/react/24/outline";
+import { StarIcon as StarIconSolid } from "@heroicons/react/24/solid";
+import {
+  getDefaultPaymaster,
+  setDefaultPaymaster,
+  clearDefaultPaymaster,
+} from "@/lib/default-paymaster";
 interface Paymaster {
   name: string;
   address: string;
@@ -25,11 +37,14 @@ interface PaymasterPreset {
 }
 
 export default function PaymasterPage() {
+  const { data } = useDashboard();
+  const accountAddress = data?.account?.address ?? null;
   const [paymasters, setPaymasters] = useState<Paymaster[]>([]);
   const [presets, setPresets] = useState<PaymasterPreset[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string>("");
   const [showAddForm, setShowAddForm] = useState(false);
+  const [defaultPaymaster, setDefaultPm] = useState<string | null>(null);
   const [newPaymaster, setNewPaymaster] = useState({
     name: "",
     address: "",
@@ -41,6 +56,27 @@ export default function PaymasterPage() {
   useEffect(() => {
     loadPaymasters();
   }, []);
+
+  // Re-read the account-scoped default whenever the (async-loaded) account resolves,
+  // so the ☆ / "Default" state reflects THIS account's preference.
+  useEffect(() => {
+    setDefaultPm(getDefaultPaymaster(accountAddress));
+  }, [accountAddress]);
+
+  // Toggle a saved paymaster as the persisted default (client-side preference the
+  // transfer page auto-applies). Clicking the current default again clears it.
+  const handleToggleDefault = (address: string) => {
+    const addr = address.toLowerCase();
+    if (defaultPaymaster === addr) {
+      clearDefaultPaymaster(accountAddress);
+      setDefaultPm(null);
+      toast.success("Default paymaster cleared");
+    } else {
+      setDefaultPaymaster(addr, accountAddress);
+      setDefaultPm(addr);
+      toast.success("Set as default paymaster");
+    }
+  };
 
   const loadPaymasters = async () => {
     setLoading(true);
@@ -129,7 +165,13 @@ export default function PaymasterPage() {
 
     setActionLoading(`remove-${name}`);
     try {
+      const removed = paymasters.find(p => p.name === name);
       await paymasterAPI.remove(name);
+      // If the removed paymaster was the persisted default, drop the stale preference.
+      if (removed && defaultPaymaster === removed.address.toLowerCase()) {
+        clearDefaultPaymaster(accountAddress);
+        setDefaultPm(null);
+      }
       toast.success("Paymaster removed successfully!");
       await loadPaymasters();
     } catch (error) {
@@ -469,8 +511,56 @@ export default function PaymasterPage() {
                               Address Only
                             </span>
                           )}
+                          {defaultPaymaster === paymaster.address.toLowerCase() && (
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300">
+                              Default
+                            </span>
+                          )}
                         </div>
+                        {defaultPaymaster === paymaster.address.toLowerCase() &&
+                          (() => {
+                            const preset = presets.find(
+                              p => p.address?.toLowerCase() === paymaster.address.toLowerCase()
+                            );
+                            const req = preset?.requiresCommunity;
+                            return (
+                              <p
+                                className={`mt-2 text-xs ${
+                                  req
+                                    ? "text-amber-700 dark:text-amber-400"
+                                    : "text-gray-500 dark:text-gray-400"
+                                }`}
+                              >
+                                {req
+                                  ? `⚠️ Auto-applied on transfers — needs a community + its ${preset.gasToken}.`
+                                  : preset
+                                    ? `✅ Auto-applied on transfers — needs ${preset.gasToken}.`
+                                    : "✅ Auto-applied on transfers — ensure you hold its gas token and it has deposit."}
+                              </p>
+                            );
+                          })()}
                       </div>
+                      <button
+                        type="button"
+                        onClick={() => handleToggleDefault(paymaster.address)}
+                        aria-label={
+                          defaultPaymaster === paymaster.address.toLowerCase()
+                            ? "Unset default paymaster"
+                            : "Set as default paymaster"
+                        }
+                        title={
+                          defaultPaymaster === paymaster.address.toLowerCase()
+                            ? "Default — click to unset"
+                            : "Set as default"
+                        }
+                        className="ml-3 shrink-0 p-2 rounded-lg text-gray-400 hover:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors touch-manipulation active:scale-95"
+                      >
+                        {defaultPaymaster === paymaster.address.toLowerCase() ? (
+                          <StarIconSolid className="w-5 h-5 text-emerald-500" />
+                        ) : (
+                          <StarIcon className="w-5 h-5" />
+                        )}
+                      </button>
                     </div>
                   </SwipeableListItem>
                 ))}
@@ -493,6 +583,7 @@ export default function PaymasterPage() {
                   <li>Address-only paymasters work without API keys</li>
                   <li>API-configured paymasters provide better sponsorship reliability</li>
                   <li>You can use multiple paymasters and choose per transaction</li>
+                  <li>Tap the ☆ to set a default — transfers auto-select it (this device only)</li>
                 </ul>
               </div>
             </div>

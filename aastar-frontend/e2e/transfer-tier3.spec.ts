@@ -1,6 +1,6 @@
 import { test, expect, type Page } from "@playwright/test";
 import { privateKeyToAccount, generatePrivateKey } from "viem/accounts";
-import { parseEther, formatEther, type Address } from "viem";
+import { formatEther, type Address } from "viem";
 import { getCanonicalAddresses } from "@aastar/sdk/core";
 import { installVirtualAuthenticator } from "./helpers/webauthn";
 import { installTestWallet } from "./helpers/wallet";
@@ -9,6 +9,7 @@ import {
   getEthBalance,
   getTier2Limit,
   onboardAPNTsGas,
+  waitForNonceStable,
   withRetry,
 } from "./helpers/fund";
 
@@ -75,31 +76,83 @@ test("XFER-T3: Tier-3 transfer with guardian co-sign (passkey + BLS + guardian)"
   await registerOnly(page);
   const auth = await authHeaders(page);
 
-  // 2) Create-with-guardians: prepare → guardians accept (eth-prefixed) → create.
-  const prep = await page.request.post("/api/v1/account/guardian-setup/prepare", {
-    ...auth,
-    data: { dailyLimit: parseEther("1").toString() },
-  });
-  expect(prep.ok(), `guardian-setup/prepare: ${prep.status()}`).toBeTruthy();
-  const gp = await prep.json();
-  const acceptanceHash = gp.acceptanceHash as `0x${string}`;
-  const g1Sig = await g1.signMessage({ message: { raw: acceptanceHash } });
-  const g2Sig = await g2.signMessage({ message: { raw: acceptanceHash } });
-  const created = await page.request.post("/api/v1/account/create-with-guardians", {
+  // 2) Create a Tier-2/3 account via the TWO-PHASE passkey-at-birth flow (aastar-sdk#249):
+  // prepare (backend pins nonce/deadline + builds the CREATE_ACCOUNT digest + begins the KMS
+  // WebAuthn ceremony) → browser ceremony (challenge = the digest, signed by the device passkey
+  // via the virtual authenticator) → submit (KMS owner signs the digest, the deployer relays the
+  // deploy; the v0.22.0 factory wires validator + owner passkey AT BIRTH — no setValidator/setP256Key).
+  // The device passkey captured at registration is the on-chain owner factor; g1 is the ECDSA Tier-3 co-signer.
+  const profileResp = await page.request.get("/api/v1/auth/profile", auth);
+  const profile = (await profileResp.json()) as { passkeyX?: string; passkeyY?: string };
+  expect(
+    Boolean(profile.passkeyX && profile.passkeyY),
+    `registration must capture the device passkey (x,y); got ${JSON.stringify(profile)}`
+  ).toBeTruthy();
+  const prepResp = await page.request.post("/api/v1/account/prepare-create-with-passkey", {
     ...auth,
     data: {
-      guardian1: g1.address,
-      guardian1Sig: g1Sig,
-      guardian2: g2.address,
-      guardian2Sig: g2Sig,
-      dailyLimit: parseEther("1").toString(),
-      salt: gp.salt,
+      p256Guardians: [{ x: profile.passkeyX, y: profile.passkeyY }],
+      ecdsaGuardians: [g1.address],
+      dailyLimit: "1",
       entryPointVersion: "0.7",
     },
   });
   expect(
+    prepResp.ok(),
+    `prepare-create-with-passkey: ${prepResp.status()} ${await prepResp.text()}`
+  ).toBeTruthy();
+  const prep = (await prepResp.json()) as {
+    createId: string;
+    challengeId: string;
+    publicKeyOptions: Record<string, unknown>;
+    predictedAddress: string;
+  };
+  // Browser WebAuthn ceremony over the prepared CREATE_ACCOUNT digest (the virtual authenticator
+  // auto-signs). publicKeyOptions is the @simplewebauthn optionsJSON form (base64url) — decode for
+  // navigator.credentials.get(), then re-encode the assertion to AuthenticationResponseJSON.
+  const credential = await page.evaluate(async pko => {
+    const b64urlToBuf = (s: string) => {
+      const bin = atob(s.replace(/-/g, "+").replace(/_/g, "/"));
+      const u = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+      return u.buffer;
+    };
+    const bufToB64url = (buf: ArrayBuffer) => {
+      const u = new Uint8Array(buf);
+      let s = "";
+      for (const b of u) s += String.fromCharCode(b);
+      return btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+    };
+    const o = pko as any;
+    const publicKey: any = {
+      challenge: b64urlToBuf(o.challenge),
+      rpId: o.rpId,
+      timeout: o.timeout,
+      userVerification: o.userVerification,
+      allowCredentials: (o.allowCredentials || []).map((c: any) => ({ ...c, id: b64urlToBuf(c.id) })),
+    };
+    const cred: any = await navigator.credentials.get({ publicKey });
+    const r = cred.response;
+    return {
+      id: cred.id,
+      rawId: bufToB64url(cred.rawId),
+      type: cred.type,
+      clientExtensionResults: cred.getClientExtensionResults?.() ?? {},
+      response: {
+        authenticatorData: bufToB64url(r.authenticatorData),
+        clientDataJSON: bufToB64url(r.clientDataJSON),
+        signature: bufToB64url(r.signature),
+        ...(r.userHandle ? { userHandle: bufToB64url(r.userHandle) } : {}),
+      },
+    };
+  }, prep.publicKeyOptions);
+  const created = await page.request.post("/api/v1/account/submit-create-with-passkey", {
+    ...auth,
+    data: { createId: prep.createId, challengeId: prep.challengeId, credential },
+  });
+  expect(
     created.ok(),
-    `create-with-guardians: ${created.status()} ${await created.text()}`
+    `submit-create-with-passkey: ${created.status()} ${await created.text()}`
   ).toBeTruthy();
   const acctResp = await page.request.get("/api/v1/account", auth);
   const acctJson = (await acctResp.json()) as { address?: string; account?: { address?: string } };
@@ -138,6 +191,10 @@ test("XFER-T3: Tier-3 transfer with guardian co-sign (passkey + BLS + guardian)"
   // The apply toast fires on submit, before the self-call UserOps mine. Wait until the armed
   // tier-2 is actually on-chain so the transfer's resolveTransfer reads it (not pre-arm zero).
   await expect.poll(() => getTier2Limit(account), { timeout: 90_000 }).toBeGreaterThan(0n);
+  // The persona apply submits TWO UserOps (setTierLimits + setWeightConfig); the tier2 poll only
+  // confirms the first landed. Wait for the account nonce to stop advancing so the transfer doesn't
+  // prepare a stale nonce that the still-mining setWeightConfig consumes → AA25 invalid account nonce.
+  await waitForNonceStable(account);
 
   // 5) Tier-3 transfer: 0.051 ETH > tier2 (0.05) → needs passkey + BLS + guardian. The UI flow
   // collects the guardian co-sign from window.ethereum (g1) over the userOpHash.

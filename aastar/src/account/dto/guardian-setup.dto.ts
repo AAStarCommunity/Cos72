@@ -10,6 +10,7 @@ import {
   ArrayMaxSize,
   ValidateNested,
   Matches,
+  IsObject,
 } from "class-validator";
 import { Type } from "class-transformer";
 import { EntryPointVersionDto } from "./create-account.dto";
@@ -119,6 +120,20 @@ export class CreateWithP256GuardiansDto {
 
   @ApiProperty({
     description:
+      "Optional ECDSA guardian addresses installed via the SAME full-config path (no acceptance " +
+      "signatures — the config-hash-in-salt binding stands in for them). Used as the Tier-3 guardian " +
+      "co-signers for the WebAuthn cumulative path (algId 0x0a). Total guardians (P-256 + ECDSA) ≤ 3.",
+    type: [String],
+    required: false,
+  })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(2)
+  @IsEthereumAddress({ each: true })
+  ecdsaGuardians?: string[];
+
+  @ApiProperty({
+    description:
       "Daily transfer limit in ETH. MUST be > 0 — a guardian set enables the on-chain guard.",
     example: "1.0",
   })
@@ -139,4 +154,23 @@ export class CreateWithP256GuardiansDto {
   @IsOptional()
   @IsEnum(EntryPointVersionDto)
   entryPointVersion?: EntryPointVersionDto;
+}
+
+export class SubmitCreateWithPasskeyDto {
+  @ApiProperty({ description: "createId returned by prepare-create-with-passkey (PHASE 1)" })
+  @IsString()
+  createId: string;
+
+  @ApiProperty({
+    description: "KMS ceremony ChallengeId returned by prepare-create-with-passkey",
+  })
+  @IsString()
+  challengeId: string;
+
+  @ApiProperty({
+    description: "The navigator.credentials.get() WebAuthn assertion (one-time ceremony).",
+    type: Object,
+  })
+  @IsObject()
+  credential: Record<string, unknown>;
 }
