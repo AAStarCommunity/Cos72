@@ -4,6 +4,7 @@ import "./globals.css";
 import { Toaster } from "react-hot-toast";
 import { ThemeProvider } from "@/lib/theme";
 import { DashboardProvider } from "@/contexts/DashboardContext";
+import { Cos72SessionProvider } from "@/contexts/Cos72SessionContext";
 import { TaskProvider } from "@/contexts/TaskContext";
 import I18nProvider from "@/lib/i18n/I18nProvider";
 
@@ -50,10 +51,12 @@ export default function RootLayout({
         <I18nProvider>
           <ThemeProvider>
             <DashboardProvider>
-              <TaskProvider>
-                {children}
-                <Toaster position="top-right" />
-              </TaskProvider>
+              <Cos72SessionProvider>
+                <TaskProvider>
+                  {children}
+                  <Toaster position="top-right" />
+                </TaskProvider>
+              </Cos72SessionProvider>
             </DashboardProvider>
           </ThemeProvider>
         </I18nProvider>
