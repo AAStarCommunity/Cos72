@@ -31,6 +31,21 @@ api.interceptors.response.use(
   }
 );
 
+// Generic gasless UserOperation API (Phase 0 §0.2 — the backend contract cosSend calls).
+// Two-phase like transferAPI: `prepare` returns the userOpHash for the browser to sign
+// via passkey (WebAuthn assertion whose challenge = userOpHash); `submit` hands the
+// assertion back for the backend to assemble + KMS/BLS-sign + bundler-submit (gasless).
+// AirAccount-only, KMS is server-only, so the write MUST go through the backend.
+// TODO(backend): implement POST /userop/{prepare,submit,status} in NestJS by generalizing
+// the existing transfer/* flow to an arbitrary { to, data, value } call.
+export const userOpAPI = {
+  prepare: (data: { to: string; data: string; value?: string; accountAddress?: string }) =>
+    api.post<{ opId: string; userOpHash: string }>("/userop/prepare", data),
+  submit: (data: { opId: string; deviceWebAuthn?: unknown; guardianSignature?: string }) =>
+    api.post<{ txHash: string }>("/userop/submit", data),
+  getStatus: (id: string) => api.get(`/userop/status/${id}`),
+};
+
 // Auth API
 export const authAPI = {
   // Passwordless email OTP — register + login in one flow.
