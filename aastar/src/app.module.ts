@@ -4,6 +4,7 @@ import { AppService } from "./app.service";
 import { AuthModule } from "./auth/auth.module";
 import { AccountModule } from "./account/account.module";
 import { TransferModule } from "./transfer/transfer.module";
+import { UserOpModule } from "./userop/userop.module";
 import { BlsModule } from "./bls/bls.module";
 import { EthereumModule } from "./ethereum/ethereum.module";
 import { DatabaseModule } from "./database/database.module";
@@ -29,6 +30,7 @@ import { SaleModule } from "./sale/sale.module";
     SdkModule, // After DatabaseModule and AuthModule (provides YAAA_SERVER_CLIENT globally)
     AccountModule,
     TransferModule,
+    UserOpModule,
     BlsModule,
     EthereumModule,
     PaymasterModule,
