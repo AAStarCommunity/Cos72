@@ -78,7 +78,7 @@ MyTask 丢弃自带的 look-alike `IERC8004ValidationRegistry`（不兼容官方
 | P0 | 停止自铸 GToken/aPNTs → 用 `xPNTsFactory` 发 xPNTs | MyShop | CONFLICT（brand+安全）|
 | P0 | permit 明文私钥 → KMS agent-key 签名 | MyShop | CONFLICT（密钥安全）|
 | P0 | ERC-8004 look-alike → SuperPaymaster canonical 注册表 | MyTask | CONFLICT（已决策）|
-| P1 | Jury 质押/惩罚 → GTokenStaking + DVT/BLS（现惩罚是空壳）| MyTask | SHOULD-USE-INFRA |
+| P1 | Jury 质押/惩罚 → **复用 DVT**（GTokenStaking + DVTValidator/BLS，现惩罚是空壳）；需加 proposal/配合 jury 重构 → Phase1 **提需求给 repo:sp(CC)** | MyTask | SHOULD-USE-INFRA |
 | P1 | **去掉自定义 MySBT，用生态 MySBT**（角色走 Registry.registerRole）| MyTask | DUPLICATE |
 | P1 | 结账 → SuperPaymaster gasless + 预言机 + 信用额度；**生态内 xPNTs 信用透支购物**（CC `d50b88b0` @sp 调研中）| MyShop | SHOULD-USE-INFRA |
 | P2 | 手搓 EIP-712 校验 → `isValidOwnerAuth` | 两者 | CONFLICT |

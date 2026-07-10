@@ -5,6 +5,26 @@
 
 ---
 
+## 架构分层（jason 2026-07-10 澄清）
+
+```
+皮肤层：Cos72（= YAAA 增强版；YAAA / Cos72 都是皮肤）
+   ↓ 依赖
+SDK：@aastar/sdk（需要一点配置，配置在【应用层】暴露 = self-host 的核心）
+   ↓ 建在其上
+合约 + Infra
+   · 合约：AirAccount / SuperPaymaster / …
+   · Infra（≥2，我们独有生态）：① KMS   ② DVT
+        - DVT 节点下挂【可加载模块】：relay、x402 facilitator
+        - keeper / relayer 等 SDK 不 care；但未来 app 可能依赖 relay
+```
+
+- **self-host 是第一目标**：SDK 的必要配置（RPC / bundler）在应用层暴露 → 用户填好自己的 RPC 即可下载 Cos72 **自运行、零外部依赖**，不必用母站。母站提供一份基础运营**兜底**（有成本 → 收 aPNTs 社区积分；**可用给社区做贡献换积分，不必花钱**；同逻辑适用其他社区）。
+- **配置策略**：**KMS / DVT = 用 SDK 默认（生态锁定，用户不配）**；**bundler / RPC = 用户自配 or 用母站（用母站需 KMS api-key，server-only）**。aPNTs 支付/订阅抵扣**后续再说**。
+- **auth**：无独立 `auth.aastar.io`，passkey RP / WebAuthn ceremony 已并入 **`kms.aastar.io`**。
+
+---
+
 ## 0.0 前置
 
 - **bump `@aastar/sdk` 0.39.4 → 0.41.0**（前端 `aastar-frontend` + 后端 `aastar`）——拿 `getCredibility`/`COMMUNITY_SAFE`/token-tier 修复。外科式改 lockfile（见 [[lockfile-surgical-bump-gotcha]] 经验）。
@@ -26,7 +46,8 @@ useCos72Session(): {
 }
 ```
 - 复用现有 `lib/auth.ts`（JWT）+ `lib/kms-client.ts` + `lib/tier-profiles.ts` + `lib/webauthn-rp.ts`（rpId=aastar.io）。
-- **区分两类签名主体**：终端用户操作（建任务/买货/投票）= AirAccount 智能账户 + gasless；operator 治理操作 = 现有 `WalletContext` 的 EOA（Track C，`lib/sdk/operator.ts`）——两者并存，模块业务默认走 AirAccount 会话。
+- **AirAccount-only，无 EOA fallback**（jason 定）：cos72 **不兼容 EOA**（passkey+email 即一切；EOA 是半成品、UX 差）。会话 = AirAccount 智能账户 + gasless，模块的 `window.ethereum` 路径是**替换**不是并存。日后若要兼容 EOA，从 AirAccount 侧加一个 EOA 兼容入口。
+  - ⚠️ **开放问题（待 jason，不自作主张）**：YAAA 现有 operator / DVT-register 流程签名走 operator EOA（`WalletContext` Track C，`lib/sdk/operator.ts`）——这些也一律 AirAccount-only，还是保留一个「高级 operator EOA」轨道？
 
 ## 0.2 SDK 中介的 gasless 写路径（core）
 
@@ -44,11 +65,19 @@ cosRead({ to, abi, functionName, args }): Promise<T>             // viem public 
 - infra 地址从 `@aastar/sdk/core` 的 `CANONICAL_ADDRESSES` / `COMMUNITY_SAFE` / `DVT_VALIDATOR_ADDRESS` 取，**不手填**。
 - 模块合约（TaskEscrowV2/JuryContract/MyShops/MyShopItems…）**SDK 还没 canonical** → 过渡期 `config/modules.ts`：vendored ABI（copy 自各源仓）+ 部署地址读 `.env`（Sepolia）。调通后再切 SDK canonical（SDK 缺口暂缓）。
 
-## 0.4 角色 → 菜单
+## 0.4 导航模型（仿 GitHub 三层，jason 2026-07-10）
 
-**建**：`lib/roles.ts` + `useRoles()` hook + `components/RoleMenu.tsx` ——
-- 读 `Registry.hasRole(ROLE_COMMUNITY/…)`（`registryActions`）+ 生态 `MySBT` memberships（`sbtActions.verifyCommunityMembership`）→ `RoleFlags`。
-- 菜单按 `RoleFlags` 显隐（社区 owner 看治理/发币；普通用户看任务/商店/投票入口）。
+**不是简单「按角色显隐一个菜单」，是仿 GitHub 的三层导航**（user → org → repo）：
+
+| 层 | GitHub 类比 | Cos72 | 谁提供 |
+|---|---|---|---|
+| **L1 用户菜单**（跨社区）| 右上角用户下拉（Profile/Repos/Organizations/Settings）| **沿用 YAAA 现有右上用户菜单** —— 用户跨社区（可属于/新建多个社区，像切 org）| **保留 YAAA，不动** |
+| **L2 社区菜单**（进入某社区后横向 tab）| org 横向导航（Overview/Repositories/People…）| **横向 tab = 我们新增的模块，对所有社区通用**：MyTask / MyShop / MyVote（未来更多）+ 概览/成员/治理 | cos72 新增，**按用户在该社区的角色显隐** |
+| **L3 模块子导航**（进入某模块后横向 tab）| 进入 repo 后菜单变化（Code/Issues/Actions…）| 模块自己的 sub-nav（如 MyShop：广场/我的订单/店铺后台）—— 变的是子 tab，不是全新页面壳 | 各模块内部 |
+
+- **建**：`components/nav/{UserMenu(L1,复用), CommunityTabs(L2), ModuleSubnav(L3)}` + `lib/roles.ts` / `useRoles(communityId)`。
+- **角色门控**：角色决定 L2 哪些 tab 可见（社区 owner 见治理/发币；成员见任务/商店/投票）+ L3 里哪些操作可用。读 `Registry.hasRole` + 生态 `MySBT` memberships（`sbtActions.verifyCommunityMembership`）。
+- **无多租户**：用户平等，只是「当前在哪个社区上下文 + 在该社区的角色」决定看到什么（= GitHub 切 org + 你在该 org 的权限）。
 
 ## 0.5 社区 + xPNTs（模块经济地基）
 
