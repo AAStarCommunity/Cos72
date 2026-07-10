@@ -65,7 +65,8 @@
 
 ### 2.3 MyVote（独立 app + AirAccount SSO）
 
-**决定**：保持独立 Vue app，Cos72 用 AirAccount SSO 链接（不移植进 Next）。
+**决定（jason 2026-07-10）**：保持独立 Vue app，**独立部署**（自己的站点/Cloudflare Pages，**不与 Cos72 打包**）。Cos72 侧只做一件事：**AirAccount 登录后跳转进 MyVote 部署的网站**（带 SSO token）。MyVote 内部改造照旧（建 adapter + 投票签名 + 会话）。投票权重**随大流 = 常规模式**（按社区 token 余额的标准 Snapshot strategy，不做花活）。
+> ⚠️ **技术栈统一 = viem，不用 ethers.js**：MyVote 现用 ethers v5，要迁到 viem。但 `snapshot.js` `Client712.vote()` 要 ethers 签名器 → 方案：用 **viem `signTypedData` 直接产出 EIP-712 签名 + 直接 POST 到 Snapshot hub**，绕过 `Client712` 的 ethers 依赖（或最薄的 viem→ethers signer 适配）。全线统一 viem。
 
 **现实**：AirAccount 集成是空 stub，且投票路径硬编码 window.ethereum、绕过 auth 抽象；用 **ethers v5**（非 viem），**没装 @aastar/sdk**。要从零做：
 - **建真 AirAccountAdapter**（`apps/web/src/auth/airAccountProvider.ts`）：装 `@aastar/sdk`（或薄 passkey 客户端直连 `kms.aastar.io`）；`connect()`→passkey 会话→`{address}`；`signTypedData()`→AirAccount EIP-712 签名。
@@ -103,10 +104,28 @@
 
 ---
 
-## 5. 待 jason 拍板（开发前需定）
+## 5. 决策已定（jason 2026-07-10）
 
-1. **链选择**：模块合约部署到哪张网？（现全 anvil/占位；x402 facilitator 仅 Base → 自托管还是对齐链）
-2. **后端运行时**：MyTask `agent-mock` / MyShop `worker` → 并入 NestJS `aastar` 后端，还是独立/CF Worker？
-3. **合约部署 + owner**：三模块合约都要真实部署（现全占位），owner 收敛到 `COMMUNITY_SAFE`？谁来部署？
-4. **SDK 缺口**：SDK 目前**没有 TaskClient primitive**——是推动 SDK 新增（跨仓 ask），还是先在 Cos72 本地封装？
-5. **MyVote 投票权 strategy**：按社区 xPNTs 余额 / SBT / reputation 计权，选哪个？
+1. **链** = **Sepolia**（x402 facilitator 仅 Base 的问题 → MyTask 侧自托管 facilitator 或对齐，落地时定）。
+2. **技术栈统一** = **viem**，全线不用 ethers.js（含 MyVote 迁移，见 §2.3）。
+3. **过渡期集成方式** = 各模块合约**先在自己仓部署（Sepolia）→ copy ABI 进 cos72 → 部署地址写进 `.env` 配置**；调通完善后再切 `@aastar/sdk` canonical。
+4. **合约部署** = 用 **SuperPaymaster / AirAccount 仓的 `env.sepolia`** + 相关部署 owner key（**jason / anni / bob**）；owner 生产收敛到 `COMMUNITY_SAFE`。
+5. **SDK 缺口（TaskClient 等 primitive）= 暂缓**，过渡期先 vendored ABI + env 地址，不推 SDK。
+6. **皮肤层 Phase 2/3 重写** = 同意（MyShop 前端 Phase 2 重建、MyVote Phase 3 改造）。
+7. **MyVote** = 独立部署 + 登录后跳转 + 常规投票权重（见 §2.3）。
+8. **后端运行时**（agent-mock / worker → NestJS vs 独立/CF）= 落地时定，非阻塞。
+9. **ERC-8004 = 用 SuperPaymaster 的能力**（jason 2026-07-10）。MyTask **丢弃自带的 look-alike `IERC8004ValidationRegistry`**（`tag: bytes32`/0-100，与官方不兼容），改接 **SuperPaymaster 生态 canonical ERC-8004 agent 注册表**（identity / reputation / validation，`CANONICAL_ADDRESSES` 里 Sepolia 已部署；OP 网还是 `0x0`，我们选 Sepolia 不受影响）。JuryContract 的任务打分保留，但**身份/信誉/校验记录走 SuperPaymaster ERC-8004**，slash 走 DVT/BLS（见 §6）。
+   - SDK 现状：identity + reputation 有 `ERC8004Service` wrapper；**ValidationRegistry 无 SDK wrapper = 追加候选**（SDK 缺口暂缓，过渡期 vendored ABI + canonical 地址直连）。
+
+## 6. 新增分析任务（jason 要求，进行中）
+
+**透彻分析 MyTask/MyShop 合约 vs 基础设施合约的「重复 / 冲突 / 应改用 infra」**：
+- MyTask/MyShop 的合约整体机制，是否与 **AirAccount / SuperPaymaster** 仓里的合约**重复甚至冲突**？
+- 它们自己做的事（例如 MyTask 的 jury 校验/惩罚、MySBT；MyShop 的 aPNTs/GToken 铸造、permit 签名），是否**应优先改用我们的 infra 底层（KMS / DVT / SuperPaymaster）**？
+- 这些 infra 能力**是否已在 `@aastar/sdk` 暴露 API**？有 → 用；无 → 追加（暂缓推 SDK，先记录缺口）。
+
+产出：`docs/MODULES_VS_INFRA_OVERLAP.md`（独立分析报告，待 review）。已知重点嫌疑（走查初判，待深挖确认）：
+- **MySBT 命名+概念撞车**：MyTask 自带 `MySBT`（TASKOR/SUPPLIER/JUROR 角色）vs SuperPaymaster `tokens/MySBT.sol`（社区 membership/mintForRole）。
+- **代币铸造重复**：MyShop `sales/{APNTsSale,GTokenSale}` 自铸 aPNTs/GToken（GToken 还硬编码 21M cap）vs 生态 canonical `GToken`/`xPNTsFactory`——可能**冲突**。
+- **Jury 校验/惩罚 vs DVT/BLS**：MyTask `JuryContract` 自建质押投票+slashing vs SuperPaymaster `DVTValidator`/`BLSAggregator` + ERC-8004 agent 校验注册表。
+- **Permit 签名密钥 vs KMS**：MyShop worker 用 env 明文私钥签 SerialPermit/RiskAllowance → 应迁 KMS。
