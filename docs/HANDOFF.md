@@ -1,5 +1,7 @@
 # Cos72 — 会话交接 / HANDOFF
 
+> **START HERE（新会话）**：在 `~/Dev/aastar/cos72` 开新会话，先读完本文档即可无缝接手。今天完整对话原始记录也在 `~/.claude/projects/-Users-jason-Dev-aastar-cos72/`（`flycc --resume` 或许能选到，但 `-c` 不认复制的会话，以本文档为准）。
+>
 > 这份文档是给**新的 Claude Code 会话**接手用的（在 `~/Dev/aastar/cos72` 开新会话即可无缝续上）。
 > 记录时间：2026-07-11。配套细节文档：`docs/{MODULES_REFACTOR_DESIGN,MODULES_VS_INFRA_OVERLAP,PHASE0_SHARED_LAYER}.md`。
 
@@ -32,7 +34,8 @@
 | #3 | 0.4 GitHub 三层导航 CommunityNav + lib/roles + EOA 分层 | ✅ merged |
 | #4 | 后端 src/userop/* 通用 gasless UserOp（全 tier passthrough）| ✅ merged |
 | #5 | 前端 cosSend 全 tier 统一 + 轮询 | ✅ merged |
-| #6 | fix: /phase0 演示页套进 YAA Layout + 样式 | 🟡 **open, 待 merge**（jason 说「样子先这样」）|
+| #6 | fix: /phase0 演示页套进 YAA Layout + 样式 | 🟡 **open**（jason 说「样子先这样」）|
+| #7 | feat: 无登录 infra 初始化页(社区节点 onboarding, CC-40) | 🟡 **open**（build 绿）|
 
 **分支**：`fix/phase0-page-yaa-shell`(=PR6)；`feat/phase1-mytask-cossend`（基于 PR6，含 1 个已 commit：会话挂全局 layout.tsx；**未推、未 PR**，等 TaskContext 重构一起）。
 
@@ -103,6 +106,7 @@
 - **建 PR**：`gh pr create` GraphQL 发空 sha 报错 → 用 `gh api repos/AAStarCommunity/Cos72/pulls -f title=.. -f head=.. -f base=master -F body=@file`。
 - **macOS 大小写不敏感**：`Cos72`==`cos72` 同一路径，`rm`/`mv` 会误伤——避免只差大小写的路径。
 - **dev server 服工作树**：切 git 分支会改前端外观（见 §1）。
+- **⚠️ @aastar/sdk 0.42 /operator 泄 child_process**：0.42 的 `/operator` 子包有个 Foundry-CLI 签名路径 `await import('child_process')`(node-only)会泄进浏览器 bundle → `next build` 报 `Can't resolve child_process`。**修法(PR#7 已加)**：`next.config.ts` `turbopack.resolveAlias.child_process → ./stubs/empty.ts`。**应报 repo:sdk 让 SDK node-guard 该路径**(0.41 无此问题)。
 - **合约部署**：`~/Dev/mycelium/MyTask/contracts/script/DeployLocal.s.sol` **硬编码 anvil burn key，别对 Sepolia 跑**；用新写的 `DeploySepolia.s.sol`（env 驱动）。forge 1.7.1，solc auto ^0.8.23（部署实际用了 0.8.33），forge-std 在、无 OZ。
 
 ---
