@@ -51,13 +51,15 @@ useCos72Session(): {
 
 ## 0.2 SDK 中介的 gasless 写路径（core）
 
-**建**：`lib/sdk/cosTx.ts` ——
+**已建**：`lib/sdk/cosTx.ts` + `lib/api.ts` 的 `userOpAPI` ✅（本轮落地）。
 ```ts
-cosSend({ to, abi, functionName, args, value? }): Promise<Hash>   // 构 UserOp → SuperPaymaster 赞助 → AirAccount 签 → bundler 提交
-cosRead({ to, abi, functionName, args }): Promise<T>             // viem public client（brand.ts RPC）
+cosRead({ to, abi, functionName, args }): Promise<T>            // viem public client（brand.ts RPC），已实现
+cosSend(call, sign): Promise<Hash>                              // 见下，已实现前端半
 ```
-- 用 `@aastar/paymaster` 的 `getSuperPaymasterMiddleware`/`checkEligibility` + `PaymasterClient.submitGaslessUserOperation`；复用 `lib/sdk/client.ts` 的 `ensureSdkConfig()`。
-- **这是最关键的一件**：三模块所有 `walletClient.writeContract(...)` 调用点，日后全部换成 `cosSend(...)`。Phase 1 起逐个替换。
+- **架构现实（已核）**：cos72 现是**后端栈**，AirAccount 端用户交易走 NestJS 两段式（`transfer/prepare` 返 `userOpHash` → 浏览器 passkey 断言 → `transfer/submit`，后端 KMS/BLS 签+bundler）。因 **KMS 是 server-only**，gasless 写**必须经后端**，不是纯客户端构 UserOp。
+- 所以 `cosSend` = 把这套 prepare/submit **从「转账专用」泛化成「任意合约调用」**：`encodeFunctionData` → `userOpAPI.prepare({to,data,value})` → `sign(userOpHash)`（passkey 断言，由 §0.1 会话提供）→ `userOpAPI.submit`。
+- **待做（后端半，Phase 0 backend）**：NestJS 实现 `POST /userop/{prepare,submit,status}`（泛化现有 `transfer/*`）。前端契约已在 `userOpAPI`。
+- **这是最关键的一件**：三模块所有 `walletClient.writeContract(...)` 日后全换成 `cosSend(...)`。
 
 ## 0.3 canonical 地址 + 模块地址（过渡）
 
