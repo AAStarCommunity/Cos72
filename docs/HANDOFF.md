@@ -34,8 +34,8 @@
 | #3 | 0.4 GitHub 三层导航 CommunityNav + lib/roles + EOA 分层 | ✅ merged |
 | #4 | 后端 src/userop/* 通用 gasless UserOp（全 tier passthrough）| ✅ merged |
 | #5 | 前端 cosSend 全 tier 统一 + 轮询 | ✅ merged |
-| #6 | fix: /phase0 演示页套进 YAA Layout + 样式 | 🟡 **open**（jason 说「样子先这样」）|
-| #7 | feat: 无登录 infra 初始化页(社区节点 onboarding, CC-40) | 🟡 **open**（build 绿）|
+| #6 | fix: /phase0 演示页套进 YAA Layout + 样式 | ✅ merged |
+| #7 | feat: 无登录 infra 初始化页(社区节点 onboarding, CC-40) | ✅ merged |
 
 **分支**：`fix/phase0-page-yaa-shell`(=PR6)；`feat/phase1-mytask-cossend`（基于 PR6，含 1 个已 commit：会话挂全局 layout.tsx；**未推、未 PR**，等 TaskContext 重构一起）。
 
