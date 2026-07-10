@@ -17,7 +17,6 @@ import type { ReactNode } from "react";
 import type { Address, Hash } from "viem";
 import { accountAPI } from "@/lib/api";
 import { isAuthenticated } from "@/lib/auth";
-import { assertUserOpHash } from "@/lib/webauthn-assert";
 import { cosSend, type ContractCall } from "@/lib/sdk/cosTx";
 
 interface Cos72Session {
@@ -58,8 +57,15 @@ export function Cos72SessionProvider({ children }: { children: ReactNode }) {
     void refresh();
   }, [refresh]);
 
-  // Gasless write: cosSend handles encode → backend prepare → passkey assert → submit.
-  const send = useCallback((call: ContractCall) => cosSend(call, assertUserOpHash), []);
+  // Gasless write: cosSend runs the full multi-tier flow (resolve tier → prepare →
+  // ceremony → submit → DVT-pending → poll txHash). Needs the AirAccount address.
+  const send = useCallback(
+    (call: ContractCall) => {
+      if (!address) throw new Error("Not connected — passkey login required.");
+      return cosSend(call, address);
+    },
+    [address]
+  );
 
   return (
     <Cos72SessionCtx.Provider

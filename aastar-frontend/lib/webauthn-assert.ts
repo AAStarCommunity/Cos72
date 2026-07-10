@@ -13,7 +13,8 @@
  * @module lib/webauthn-assert
  */
 import { startAuthentication } from "@simplewebauthn/browser";
-import type { Hex } from "viem";
+import { createWalletClient, custom, type Address, type Hex } from "viem";
+import { confirmationCredentialRequest, submitDvtConfirmation } from "@aastar/sdk/airaccount";
 import { webauthnRpId } from "@/lib/webauthn-rp";
 
 export type DeviceWebAuthn = {
@@ -70,4 +71,58 @@ export async function assertUserOpHash(userOpHash: Hex): Promise<DeviceWebAuthn>
     clientDataJSON: new TextDecoder().decode(b64urlToBytes(r.clientDataJSON)),
     signature: bytesToHex(b64urlToBytes(r.signature)),
   };
+}
+
+/**
+ * Tier-3 only: collect a guardian co-signature over the prepared userOpHash from
+ * the user's self-hosted guardian wallet (injected EIP-1193). `signMessage({raw})`
+ * is eth-prefixed, matching the SDK GuardianSigner the backend wraps it in. The
+ * guardian is a separate infra-ish co-signer — this is the one place a user-layer
+ * op touches an injected wallet, and only for high-value Tier-3.
+ */
+export async function collectGuardianSignature(userOpHash: Hex): Promise<string> {
+  const eth =
+    typeof window === "undefined"
+      ? undefined
+      : (
+          window as unknown as {
+            ethereum?: { request: (a: { method: string; params?: unknown[] }) => Promise<unknown> };
+          }
+        ).ethereum;
+  if (!eth) {
+    throw new Error("A guardian wallet (e.g. MetaMask) is required to co-sign a Tier-3 op.");
+  }
+  const accounts = (await eth.request({ method: "eth_requestAccounts" })) as Address[];
+  if (!accounts?.length) throw new Error("No guardian account available to co-sign.");
+  const wallet = createWalletClient({ transport: custom(eth) });
+  return wallet.signMessage({ account: accounts[0], message: { raw: userOpHash } });
+}
+
+/**
+ * Scheme-2 out-of-band DVT approval: when a high-value op is withheld (backend
+ * returns pendingConfirmation), the owner approves by signing the userOpHash with
+ * the device passkey and POSTing the assertion to the withholding node, which then
+ * releases its co-signature so the op can be resubmitted.
+ */
+export async function runDvtConfirmation(
+  userOpHash: string,
+  nodeEndpoint: string
+): Promise<boolean> {
+  const req = confirmationCredentialRequest(userOpHash, { rpId: webauthnRpId() });
+  const assertion = await startAuthentication({
+    optionsJSON: {
+      challenge: bufToB64url(req.challenge),
+      rpId: req.rpId,
+      userVerification: req.userVerification,
+      timeout: req.timeout,
+      allowCredentials: (req.allowCredentials ?? []).map((c) => ({
+        id: bufToB64url(c.id as ArrayBuffer),
+        type: "public-key" as const,
+      })),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any,
+  });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const r = await submitDvtConfirmation(nodeEndpoint, userOpHash, assertion as any);
+  return r.confirmed;
 }

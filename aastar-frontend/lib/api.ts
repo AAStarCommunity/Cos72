@@ -39,11 +39,38 @@ api.interceptors.response.use(
 // TODO(backend): implement POST /userop/{prepare,submit,status} in NestJS by generalizing
 // the existing transfer/* flow to an arbitrary { to, data, value } call.
 export const userOpAPI = {
-  prepare: (data: { to: string; data: string; value?: string; accountAddress?: string }) =>
-    api.post<{ opId: string; userOpHash: string }>("/userop/prepare", data),
-  submit: (data: { opId: string; deviceWebAuthn?: unknown; guardianSignature?: string }) =>
-    api.post<{ txHash: string }>("/userop/submit", data),
-  getStatus: (id: string) => api.get(`/userop/status/${id}`),
+  prepare: (data: {
+    to: string;
+    data: string;
+    value?: string;
+    useWebAuthnPasskey?: boolean;
+    paymasterAddress?: string;
+  }) =>
+    api.post<{
+      opId: string;
+      userOpHash: string;
+      challengeId?: string;
+      publicKeyOptions?: unknown; // present iff Tier-1 KMS ceremony
+      tier?: number | null;
+      requiredSigs?: { bls?: number; guardian?: number };
+    }>("/userop/prepare", data),
+  submit: (data: {
+    opId: string;
+    deviceWebAuthn?: unknown; // Tier-2/3 WebAuthn path
+    challengeId?: string; // Tier-1 KMS path
+    credential?: unknown; // Tier-1 KMS path
+    guardianSignature?: string; // Tier-3
+  }) =>
+    api.post<{
+      success?: boolean;
+      pendingConfirmation?: boolean; // Scheme-2 DVT withhold
+      userOpHash?: string;
+      nodeEndpoint?: string;
+      transferId?: string;
+      transactionHash?: string;
+    }>("/userop/submit", data),
+  getStatus: (id: string) =>
+    api.get<{ status?: string; transactionHash?: string; error?: string }>(`/userop/status/${id}`),
 };
 
 // Auth API
