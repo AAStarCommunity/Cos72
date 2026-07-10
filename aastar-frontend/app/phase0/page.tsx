@@ -12,6 +12,7 @@ import { useState } from "react";
 import { formatUnits } from "viem";
 import type { Address } from "viem";
 import { Cos72SessionProvider, useCos72Session } from "@/contexts/Cos72SessionContext";
+import { CommunityNav } from "@/components/nav/CommunityNav";
 import { infraAddresses } from "@/lib/addresses";
 import { listCommunityTokens, readCredibility, type Credibility } from "@/lib/community";
 
@@ -112,8 +113,15 @@ export default function Phase0Page() {
       <main className="mx-auto max-w-2xl space-y-4 p-6">
         <h1 className="text-xl font-bold">Cos72 Phase 0 — 共享层验证</h1>
         <p className="text-sm text-gray-500">
-          验证会话 / canonical 地址 / 社区可信度。写路径（cosSend）待后端 /userop 上线。
+          验证会话 / canonical 地址 / 社区可信度 / 角色导航。写路径（cosSend）待后端 /userop 上线。
         </p>
+        <section className="rounded-lg border p-4">
+          <h2 className="mb-2 font-semibold">0.4 社区导航（L2，按链上角色显隐）</h2>
+          <CommunityNav active="overview" />
+          <p className="mt-2 text-xs text-gray-400">
+            治理 / 发币仅社区 owner 可见；运维·Operator（EOA 轨道）仅持 operator 角色可见。
+          </p>
+        </section>
         <SessionPanel />
         <AddressPanel />
         <CredibilityPanel />
