@@ -54,6 +54,15 @@ export async function cosRead<T = unknown>(
  *
  * This is the one place module writes converge; swapping the sponsorship/bundler
  * strategy later is a backend concern, invisible to callers.
+ *
+ * SECURITY — trust boundary (PR #1 review note 1): the passkey signs
+ * `prepared.userOpHash` exactly as the backend returned it. The browser cannot
+ * independently recompute that hash (it lacks the fully-assembled sponsored op),
+ * so the signature's binding to `{to,data,value}` is only as trustworthy as the
+ * backend. This is inherent to the KMS-server-only / backend-prepares-the-UserOp
+ * model and acceptable for AirAccount-only with our own backend. Future
+ * hardening: have `prepare` echo the decoded op for the user to confirm before
+ * the passkey ceremony.
  */
 export async function cosSend(call: ContractCall, sign: SignUserOpHash): Promise<Hash> {
   const data = encodeFunctionData({
