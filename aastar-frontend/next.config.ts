@@ -12,6 +12,12 @@ const nextConfig: NextConfig = {
   // restricting what it compiles. Must match outputFileTracingRoot.
   turbopack: {
     root: path.join(__dirname, ".."),
+    // @aastar/sdk 0.42 的 /operator 子包有个 Foundry-CLI 签名路径 `await import('child_process')`
+    // (node-only)，会泄进浏览器 bundle 让 `next build` 报 "Can't resolve child_process"。浏览器永远
+    // 不走那条路，stub 成空模块即可。TODO(repo:sdk): SDK 侧应 node-guard 该路径，别进 browser-safe 子包。
+    resolveAlias: {
+      child_process: "./stubs/empty.ts",
+    },
   },
   // Only use standalone output when explicitly enabled (e.g., for Docker builds)
   // Set NEXT_BUILD_STANDALONE=true when building for Docker
