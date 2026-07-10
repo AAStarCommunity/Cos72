@@ -67,15 +67,18 @@ export function CommunityNav({ active }: { active?: string }) {
   const tabs = TABS.filter((t) => !t.ownerOnly || roles.community);
 
   return (
-    <nav className="border-b">
+    <nav className="border-b border-gray-200 dark:border-gray-700">
       <ul className="flex flex-wrap items-center gap-1">
         {tabs.map((t) => {
           const isActive = t.key === active;
-          const base = "px-3 py-2 text-sm rounded-t";
+          const base = "px-3 py-2 text-sm rounded-t transition-colors";
           if (t.soon) {
             return (
               <li key={t.key}>
-                <span className={`${base} cursor-not-allowed text-gray-400`} title="即将上线">
+                <span
+                  className={`${base} cursor-not-allowed text-gray-400 dark:text-gray-500`}
+                  title="即将上线"
+                >
                   {t.label}
                 </span>
               </li>
@@ -85,7 +88,11 @@ export function CommunityNav({ active }: { active?: string }) {
             <li key={t.key}>
               <Link
                 href={t.href}
-                className={`${base} ${isActive ? "border-b-2 border-black font-medium" : "text-gray-600 hover:text-black"}`}
+                className={`${base} ${
+                  isActive
+                    ? "border-b-2 border-emerald-500 font-medium text-gray-900 dark:text-white"
+                    : "text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
+                }`}
               >
                 {t.label}
               </Link>
@@ -95,13 +102,18 @@ export function CommunityNav({ active }: { active?: string }) {
         {/* infra/operator = EOA 轨道，独立入口，非社区 tab */}
         {roles.operator && (
           <li className="ml-auto">
-            <Link href="/operator" className="px-3 py-2 text-sm text-gray-500 hover:text-black">
+            <Link
+              href="/operator"
+              className="px-3 py-2 text-sm text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
+            >
               运维 · Operator（EOA）
             </Link>
           </li>
         )}
       </ul>
-      {loading && <p className="px-3 py-1 text-xs text-gray-400">读取角色中…</p>}
+      {loading && (
+        <p className="px-3 py-1 text-xs text-gray-400 dark:text-gray-500">读取角色中…</p>
+      )}
     </nav>
   );
 }
