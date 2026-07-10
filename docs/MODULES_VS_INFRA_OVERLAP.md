@@ -30,7 +30,7 @@
 | `TaskEscrowV2.acceptTaskWithSignature`（自搓 EIP-712 domain+`ecrecover`+nonce）| `AirAccountExtension.isValidOwnerAuth` + SuperPaymaster gasless | **SHOULD-USE-INFRA**（若 taskor 是 AA 账户）/ KEEP（若纯 EOA）| ✅ `airAccountExtension` actions |
 | `agentId` 身份（走自家 MySBT）| `AgentRegistry.isRegisteredAgent`/`getHumanOwner` 或官方 ERC-8004 identity | **SHOULD-USE-INFRA**（跨生态 agent 身份）| ✅ `agentRegistryActions`/`ERC8004Service` |
 
-**要点**：MyTask 的 escrow 是真专属，保留；但 **① MySBT 改名 + 走 Registry.registerRole；② Jury 的质押/惩罚改用 GTokenStaking/DVT/BLS（现在惩罚是空承诺）；③ ERC-8004 用 SuperPaymaster（§3）**。
+**要点**：MyTask 的 escrow 是真专属，保留；但 **① 去掉自定义 MySBT、直接用生态 SuperPaymaster MySBT（角色走 Registry.registerRole）〔jason 定〕；② Jury 的质押/惩罚改用 GTokenStaking/DVT/BLS（现在惩罚是空承诺）；③ ERC-8004 用 SuperPaymaster（§3）**。
 
 ---
 
@@ -79,8 +79,8 @@ MyTask 丢弃自带的 look-alike `IERC8004ValidationRegistry`（不兼容官方
 | P0 | permit 明文私钥 → KMS agent-key 签名 | MyShop | CONFLICT（密钥安全）|
 | P0 | ERC-8004 look-alike → SuperPaymaster canonical 注册表 | MyTask | CONFLICT（已决策）|
 | P1 | Jury 质押/惩罚 → GTokenStaking + DVT/BLS（现惩罚是空壳）| MyTask | SHOULD-USE-INFRA |
-| P1 | MySBT 改名 + 走 Registry.registerRole | MyTask | DUPLICATE |
-| P1 | 结账 → SuperPaymaster gasless + 预言机 + 信用额度 | MyShop | SHOULD-USE-INFRA |
+| P1 | **去掉自定义 MySBT，用生态 MySBT**（角色走 Registry.registerRole）| MyTask | DUPLICATE |
+| P1 | 结账 → SuperPaymaster gasless + 预言机 + 信用额度；**生态内 xPNTs 信用透支购物**（CC `d50b88b0` @sp 调研中）| MyShop | SHOULD-USE-INFRA |
 | P2 | 手搓 EIP-712 校验 → `isValidOwnerAuth` | 两者 | CONFLICT |
 | P2 | 挂 `recordActivity`/`setNFTBoost` 累积声誉 | MyShop | SHOULD-USE-INFRA |
 | P2 | 治理/提库 → 多签 / DVT co-sign | MyShop | SHOULD-USE-INFRA（前瞻）|

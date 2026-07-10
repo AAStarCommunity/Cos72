@@ -116,6 +116,9 @@
 8. **后端运行时**（agent-mock / worker → NestJS vs 独立/CF）= 落地时定，非阻塞。
 9. **ERC-8004 = 用 SuperPaymaster 的能力**（jason 2026-07-10）。MyTask **丢弃自带的 look-alike `IERC8004ValidationRegistry`**（`tag: bytes32`/0-100，与官方不兼容），改接 **SuperPaymaster 生态 canonical ERC-8004 agent 注册表**（identity / reputation / validation，`CANONICAL_ADDRESSES` 里 Sepolia 已部署；OP 网还是 `0x0`，我们选 Sepolia 不受影响）。JuryContract 的任务打分保留，但**身份/信誉/校验记录走 SuperPaymaster ERC-8004**，slash 走 DVT/BLS（见 §6）。
    - SDK 现状：identity + reputation 有 `ERC8004Service` wrapper；**ValidationRegistry 无 SDK wrapper = 追加候选**（SDK 缺口暂缓，过渡期 vendored ABI + canonical 地址直连）。
+10. **MyTask MySBT = 去掉自定义、直接用生态**（jason 2026-07-10，不只是改名）：删 MyTask `MySBT.sol`，TASKOR/SUPPLIER/JUROR 走 `Registry.registerRole` → 生态 SuperPaymaster `MySBT`，身份/质押/声誉与整个 Mycelium 统一。
+11. **MyShop credit purchase = 生态内 xPNTs 信用透支购物**（jason 2026-07-10，**非** gas 垫付那种）：用户用 xPNTs（多币种 a/b/c…）+ 自己的信用额度透支买店内商品。复用现有 credit/debt 快速机制（`Registry.getCreditLimit` + `xPNTsToken.recordDebtWithOpHash`），**部分要新写**。已发 CC 任务 **`d50b88b0`** @ repo:sp 调研+确认可复用接口/新增缺口 + 复核 SP 信用系统安全项（P1-35/C-1/H-3/P1-21/P1-11，我方信息可能过时）。**等 sp 回复再定 MyShop 结账接线。**
+12. **治理多签落地方式**（jason 2026-07-10）：开发/部署配置期用 EOA owner，**稳定配置完后 `transferOwnership` 给多签 `COMMUNITY_SAFE`**；退款等动金操作**必须走多签 check**。手搓 EIP712→`isValidOwnerAuth`、声誉挂钩（`recordActivity`/`setNFTBoost`）均采纳。
 
 ## 6. 新增分析任务（jason 要求，进行中）
 
