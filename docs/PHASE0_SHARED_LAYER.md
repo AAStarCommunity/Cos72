@@ -47,7 +47,7 @@ useCos72Session(): {
 ```
 - 复用现有 `lib/auth.ts`（JWT）+ `lib/kms-client.ts` + `lib/tier-profiles.ts` + `lib/webauthn-rp.ts`（rpId=aastar.io）。
 - **AirAccount-only，无 EOA fallback**（jason 定）：cos72 **不兼容 EOA**（passkey+email 即一切；EOA 是半成品、UX 差）。会话 = AirAccount 智能账户 + gasless，模块的 `window.ethereum` 路径是**替换**不是并存。日后若要兼容 EOA，从 AirAccount 侧加一个 EOA 兼容入口。
-  - ⚠️ **开放问题（待 jason，不自作主张）**：YAAA 现有 operator / DVT-register 流程签名走 operator EOA（`WalletContext` Track C，`lib/sdk/operator.ts`）——这些也一律 AirAccount-only，还是保留一个「高级 operator EOA」轨道？
+  - **分层定稿（jason 2026-07-10 答）**：**用户层 = AirAccount-only**；**infra / operator 层 = EOA**（operator 部署 / DVT-register / infra 初始化）——infra 参与者本身没有 AirAccount，用 EOA 部署密钥。YAAA 的 operator EOA 轨道（`WalletContext` Track C / `lib/sdk/operator.ts`）**保留**，`useCos72Session`（AirAccount）只服务用户模块。两轨并存、按层分。
 
 ## 0.2 SDK 中介的 gasless 写路径（core）
 
