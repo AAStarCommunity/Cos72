@@ -2,20 +2,17 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { parseUnits } from "viem";
 import Layout from "@/components/Layout";
 import { useTask } from "@/contexts/TaskContext";
-import { useDashboard } from "@/contexts/DashboardContext";
+import { useCos72Session } from "@/contexts/Cos72SessionContext";
 import { getStoredAuth } from "@/lib/auth";
 import {
   ALL_TASK_TYPES,
   DEFAULT_REWARD_TOKEN_SYMBOL,
+  DEFAULT_REWARD_TOKEN_DECIMALS,
   TASK_TYPE_GENERAL,
-  X402_API_URL,
-  isX402Configured,
-  REWARD_TOKEN_NAME,
-  REWARD_TOKEN_VERSION,
 } from "@/lib/contracts/task-config";
-import { postTaskWithX402, type X402Receipt } from "@/lib/x402-client";
 import { type CreateTaskForm } from "@/lib/task-types";
 import { ArrowLeftIcon, InformationCircleIcon } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
@@ -29,8 +26,11 @@ const DEADLINE_OPTIONS = [
 
 export default function CreateTaskPage() {
   const router = useRouter();
-  const { createTask, approveToken, checkAllowance, contractConfigured, linkReceipt } = useTask();
-  useDashboard();
+  const { createTask, approveToken, checkAllowance, contractConfigured } = useTask();
+  // Cos72 is AirAccount-only: every write is a gasless sponsored UserOp via the
+  // session's `send`. No window.ethereum, no EOA, no EIP-2612 permit (an AA
+  // cannot EOA-sign typed data). Reward escrow = approve(send) + createTask(send).
+  const { send, isConnected, address } = useCos72Session();
 
   const [form, setForm] = useState<CreateTaskForm>({
     title: "",
@@ -39,9 +39,8 @@ export default function CreateTaskPage() {
     deadlineDays: 7,
     taskType: TASK_TYPE_GENERAL,
   });
-  const [step, setStep] = useState<"form" | "x402" | "approve" | "submit" | "linking">("form");
+  const [step, setStep] = useState<"form" | "approve" | "submit">("form");
   const [submitting, setSubmitting] = useState(false);
-  const [walletClient, setWalletClient] = useState<import("viem").WalletClient | null>(null);
 
   useEffect(() => {
     const { token } = getStoredAuth();
@@ -49,23 +48,6 @@ export default function CreateTaskPage() {
       router.push("/auth/login");
     }
   }, [router]);
-
-  // Get wallet client from browser provider (MetaMask / injected)
-  useEffect(() => {
-    async function loadWallet() {
-      if (typeof window === "undefined") return;
-      const { createWalletClient, custom } = await import("viem");
-      const { SUPPORTED_CHAIN } = await import("@/lib/contracts/task-config");
-      const provider = (window as Window & { ethereum?: unknown }).ethereum;
-      if (!provider) return;
-      const client = createWalletClient({
-        chain: SUPPORTED_CHAIN,
-        transport: custom(provider as Parameters<typeof custom>[0]),
-      });
-      setWalletClient(client);
-    }
-    loadWallet();
-  }, []);
 
   const handleUpdate = <K extends keyof CreateTaskForm>(key: K, value: CreateTaskForm[K]) => {
     setForm(prev => ({ ...prev, [key]: value }));
@@ -77,199 +59,41 @@ export default function CreateTaskPage() {
     parseFloat(form.rewardAmount) > 0;
 
   async function handleSubmit() {
-    if (!isValid || !walletClient) return;
+    if (!isValid) return;
+    if (!isConnected || !address) {
+      toast.error("Passkey login required to post a task.");
+      return;
+    }
     if (!contractConfigured) {
       toast.error("Contract not configured. Check NEXT_PUBLIC_TASK_ESCROW_ADDRESS.");
       return;
     }
 
     setSubmitting(true);
-    let x402Receipt: X402Receipt | null = null;
-
     try {
-      const { parseUnits, createPublicClient, http } = await import("viem");
-      const {
-        DEFAULT_REWARD_TOKEN_DECIMALS,
-        DEFAULT_REWARD_TOKEN,
-        TASK_ESCROW_ADDRESS,
-        SUPPORTED_CHAIN,
-        RPC_URL,
-      } = await import("@/lib/contracts/task-config");
-      const { ERC20_ABI, TASK_ESCROW_ABI } = await import("@/lib/contracts/task-escrow-abi");
-
       const rewardWei = parseUnits(form.rewardAmount, DEFAULT_REWARD_TOKEN_DECIMALS);
-      const addresses = await walletClient.requestAddresses();
-      const ownerAddress = addresses[0];
-      const chainId = await walletClient.getChainId();
 
-      const metadata = JSON.stringify({
-        title: form.title,
-        description: form.description,
-        createdAt: Math.floor(Date.now() / 1000),
-      });
-      const deadlineBig = BigInt(Math.floor(Date.now() / 1000) + form.deadlineDays * 86400);
-
-      const publicClient = createPublicClient({ chain: SUPPORTED_CHAIN, transport: http(RPC_URL) });
-
-      // ── Step 1: x402 payment (if API server is configured) ──────────────
-      if (isX402Configured()) {
-        setStep("x402");
-        toast.loading("Signing x402 payment...", { id: "x402" });
-        try {
-          x402Receipt = await postTaskWithX402(
-            X402_API_URL,
-            {
-              title: form.title,
-              description: form.description,
-              rewardAmount: form.rewardAmount,
-              deadlineDays: form.deadlineDays,
-              taskType: form.taskType,
-            },
-            walletClient,
-            DEFAULT_REWARD_TOKEN,
-            REWARD_TOKEN_NAME,
-            REWARD_TOKEN_VERSION,
-            chainId
-          );
-          toast.dismiss("x402");
-          toast.success("x402 payment signed");
-        } catch (x402Err) {
-          toast.dismiss("x402");
-          // Non-fatal: warn and continue with on-chain creation
-          console.warn("[x402] Payment failed, continuing without receipt:", x402Err);
-          toast.error(
-            `x402 skipped: ${x402Err instanceof Error ? x402Err.message : "unknown error"}`,
-            { duration: 4000 }
-          );
+      // ── Step 1: ensure the escrow can pull the reward (skip once xPNTs auto-
+      // approves the escrow spender; mock USDC needs an explicit approve). ──
+      const currentAllowance = await checkAllowance(address);
+      if (currentAllowance < rewardWei) {
+        setStep("approve");
+        toast.loading("Approving reward token (gasless)...", { id: "approve" });
+        const approved = await approveToken(rewardWei, send);
+        toast.dismiss("approve");
+        if (!approved) {
+          toast.error("Token approval failed");
+          setStep("form");
+          return;
         }
+        toast.success("Token approved");
       }
 
-      // ── Step 2: on-chain task creation (permit or approve+create) ────────
-      let taskId: `0x${string}` | null = null;
-      let usedPermit = false;
-
-      try {
-        const [tokenName, nonce] = await Promise.all([
-          publicClient.readContract({
-            address: DEFAULT_REWARD_TOKEN,
-            abi: ERC20_ABI,
-            functionName: "name",
-          }),
-          publicClient.readContract({
-            address: DEFAULT_REWARD_TOKEN,
-            abi: ERC20_ABI,
-            functionName: "nonces",
-            args: [ownerAddress],
-          }),
-        ]);
-
-        const permitDeadline = BigInt(Math.floor(Date.now() / 1000) + 3600);
-
-        const permitSig = await walletClient.signTypedData({
-          account: ownerAddress,
-          domain: {
-            name: tokenName as string,
-            version: REWARD_TOKEN_VERSION,
-            chainId,
-            verifyingContract: DEFAULT_REWARD_TOKEN,
-          },
-          types: {
-            Permit: [
-              { name: "owner", type: "address" },
-              { name: "spender", type: "address" },
-              { name: "value", type: "uint256" },
-              { name: "nonce", type: "uint256" },
-              { name: "deadline", type: "uint256" },
-            ],
-          },
-          primaryType: "Permit",
-          message: {
-            owner: ownerAddress,
-            spender: TASK_ESCROW_ADDRESS,
-            value: rewardWei,
-            nonce: nonce as bigint,
-            deadline: permitDeadline,
-          },
-        });
-
-        const r = `0x${permitSig.slice(2, 66)}` as `0x${string}`;
-        const s = `0x${permitSig.slice(66, 130)}` as `0x${string}`;
-        const v = parseInt(permitSig.slice(130, 132), 16);
-
-        setStep("submit");
-        toast.loading("Creating task on-chain (single tx)...", { id: "create" });
-
-        const hash = await walletClient.writeContract({
-          address: TASK_ESCROW_ADDRESS,
-          abi: TASK_ESCROW_ABI,
-          functionName: "createTaskWithPermit",
-          args: [
-            DEFAULT_REWARD_TOKEN,
-            rewardWei,
-            deadlineBig,
-            metadata,
-            form.taskType,
-            permitDeadline,
-            v,
-            r,
-            s,
-          ],
-          account: ownerAddress,
-          chain: SUPPORTED_CHAIN,
-        });
-
-        const receipt = await publicClient.waitForTransactionReceipt({ hash });
-        const log = receipt.logs.find(
-          l => l.address.toLowerCase() === TASK_ESCROW_ADDRESS.toLowerCase()
-        );
-        if (log?.topics[1]) {
-          taskId = log.topics[1] as `0x${string}`;
-          usedPermit = true;
-        }
-      } catch {
-        // Permit not supported — fall back to approve + createTask
-      }
-
-      if (!usedPermit) {
-        const currentAllowance = await checkAllowance(ownerAddress);
-        if (currentAllowance < rewardWei) {
-          setStep("approve");
-          toast.loading("Approving token spend...", { id: "approve" });
-          const approved = await approveToken(rewardWei, walletClient);
-          toast.dismiss("approve");
-          if (!approved) {
-            toast.error("Token approval failed");
-            setStep("form");
-            return;
-          }
-          toast.success("Token approved");
-        }
-
-        setStep("submit");
-        toast.loading("Creating task on-chain...", { id: "create" });
-        taskId = await createTask(form, walletClient);
-      }
-
+      // ── Step 2: create the task on-chain (gasless sponsored UserOp). ──
+      setStep("submit");
+      toast.loading("Creating task on-chain (gasless)...", { id: "create" });
+      const taskId = await createTask(form, send);
       toast.dismiss("create");
-
-      // ── Step 3: auto-link x402 receipt (if we have both) ─────────────────
-      if (taskId && x402Receipt) {
-        setStep("linking");
-        toast.loading("Linking x402 receipt on-chain...", { id: "link" });
-        const linked = await linkReceipt(
-          taskId,
-          x402Receipt.receiptId,
-          x402Receipt.receiptUri,
-          walletClient
-        );
-        toast.dismiss("link");
-        if (!linked) {
-          // Non-fatal: task was created, receipt just wasn't linked
-          toast.error("Receipt linking failed — you can link it manually on the task page", {
-            duration: 5000,
-          });
-        }
-      }
 
       if (taskId) {
         toast.success("Task created successfully!");
@@ -285,9 +109,6 @@ export default function CreateTaskPage() {
       setSubmitting(false);
     }
   }
-
-  const hasEthereum =
-    typeof window !== "undefined" && !!(window as Window & { ethereum?: unknown }).ethereum;
 
   return (
     <Layout requireAuth>
@@ -308,12 +129,13 @@ export default function CreateTaskPage() {
           </div>
         </div>
 
-        {/* No wallet warning */}
-        {!hasEthereum && (
+        {/* Not-logged-in warning */}
+        {!isConnected && (
           <div className="mb-5 p-4 rounded-lg bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 text-sm text-yellow-800 dark:text-yellow-400 flex gap-2">
             <InformationCircleIcon className="w-5 h-5 shrink-0 mt-0.5" />
             <p>
-              No wallet detected. Install MetaMask or another Web3 wallet to create tasks on-chain.
+              Sign in with your passkey to post a task. Rewards are escrowed gaslessly from your
+              AirAccount — no wallet extension, no ETH for gas.
             </p>
           </div>
         )}
@@ -442,22 +264,16 @@ export default function CreateTaskPage() {
           {/* Submit */}
           <button
             onClick={handleSubmit}
-            disabled={!isValid || submitting || !walletClient}
+            disabled={!isValid || submitting || !isConnected}
             className="w-full py-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-300 dark:disabled:bg-gray-700 text-white disabled:text-gray-500 font-medium text-sm transition-colors"
           >
             {submitting
-              ? step === "x402"
-                ? "Signing x402 payment..."
-                : step === "approve"
-                  ? "Approving token..."
-                  : step === "linking"
-                    ? "Linking receipt..."
-                    : "Creating task..."
-              : !walletClient
-                ? "Connect wallet to post"
-                : isX402Configured()
-                  ? "Post Task (x402 + Permit)"
-                  : "Post Task (EIP-2612 Permit)"}
+              ? step === "approve"
+                ? "Approving token..."
+                : "Creating task..."
+              : !isConnected
+                ? "Sign in to post"
+                : "Post Task (gasless)"}
           </button>
         </div>
       </div>
