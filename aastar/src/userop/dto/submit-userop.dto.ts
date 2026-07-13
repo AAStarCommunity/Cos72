@@ -24,12 +24,19 @@ export class SubmitUserOpDto {
   @IsObject()
   credential?: unknown;
 
-  @ApiProperty({ required: false, type: DeviceWebAuthnDto, description: "Tier-2/3 passkey assertion" })
+  @ApiProperty({
+    required: false,
+    type: DeviceWebAuthnDto,
+    description: "Tier-2/3 passkey assertion",
+  })
   @IsOptional()
   @IsObject()
   deviceWebAuthn?: DeviceWebAuthnDto;
 
-  @ApiProperty({ required: false, description: "Tier-3 guardian co-signature (hex) over userOpHash" })
+  @ApiProperty({
+    required: false,
+    description: "Tier-3 guardian co-signature (hex) over userOpHash",
+  })
   @IsOptional()
   @IsString()
   @Matches(/^0x[0-9a-fA-F]+$/, { message: "guardianSignature must be a 0x-prefixed hex string" })

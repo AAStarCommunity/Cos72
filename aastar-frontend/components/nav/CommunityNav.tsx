@@ -52,7 +52,7 @@ function useRoles(): { roles: RoleFlags; loading: boolean } {
     }
     setLoading(true);
     readRoles(address)
-      .then((r) => !cancelled && setRoles(r))
+      .then(r => !cancelled && setRoles(r))
       .catch(() => !cancelled && setRoles(EMPTY_ROLES))
       .finally(() => !cancelled && setLoading(false));
     return () => {
@@ -64,12 +64,12 @@ function useRoles(): { roles: RoleFlags; loading: boolean } {
 
 export function CommunityNav({ active }: { active?: string }) {
   const { roles, loading } = useRoles();
-  const tabs = TABS.filter((t) => !t.ownerOnly || roles.community);
+  const tabs = TABS.filter(t => !t.ownerOnly || roles.community);
 
   return (
     <nav className="border-b border-gray-200 dark:border-gray-700">
       <ul className="flex flex-wrap items-center gap-1">
-        {tabs.map((t) => {
+        {tabs.map(t => {
           const isActive = t.key === active;
           const base = "px-3 py-2 text-sm rounded-t transition-colors";
           if (t.soon) {
@@ -111,9 +111,7 @@ export function CommunityNav({ active }: { active?: string }) {
           </li>
         )}
       </ul>
-      {loading && (
-        <p className="px-3 py-1 text-xs text-gray-400 dark:text-gray-500">读取角色中…</p>
-      )}
+      {loading && <p className="px-3 py-1 text-xs text-gray-400 dark:text-gray-500">读取角色中…</p>}
     </nav>
   );
 }

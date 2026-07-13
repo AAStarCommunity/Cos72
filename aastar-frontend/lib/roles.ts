@@ -54,7 +54,7 @@ export async function readRoles(user: Address): Promise<RoleFlags> {
     getUserRoles: (args: { user: Address }) => Promise<Hex[]>;
   };
   const roleIds = await ext.getUserRoles({ user });
-  const has = (r: Hex) => roleIds.some((x) => x.toLowerCase() === r.toLowerCase());
+  const has = (r: Hex) => roleIds.some(x => x.toLowerCase() === r.toLowerCase());
   return {
     community: has(ROLE_COMMUNITY),
     endUser: has(ROLE_ENDUSER),

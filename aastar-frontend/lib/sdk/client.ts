@@ -91,8 +91,7 @@ export function buildGuardClient(publicClient: PublicClient, guardAddress: Addre
 /** Ensure the injected wallet is on the expected chain; prompts a switch if not. */
 export async function ensureChain(chainId: number = CHAIN_SEPOLIA): Promise<boolean> {
   const provider = getInjectedProvider() as
-    | { request: (a: { method: string; params?: unknown[] }) => Promise<unknown> }
-    | undefined;
+    { request: (a: { method: string; params?: unknown[] }) => Promise<unknown> } | undefined;
   if (!provider) return false;
   const current = (await provider.request({ method: "eth_chainId" })) as string;
   if (parseInt(current, 16) === chainId) return true;

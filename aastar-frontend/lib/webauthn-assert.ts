@@ -115,7 +115,7 @@ export async function runDvtConfirmation(
       rpId: req.rpId,
       userVerification: req.userVerification,
       timeout: req.timeout,
-      allowCredentials: (req.allowCredentials ?? []).map((c) => ({
+      allowCredentials: (req.allowCredentials ?? []).map(c => ({
         id: bufToB64url(c.id as ArrayBuffer),
         type: "public-key" as const,
       })),

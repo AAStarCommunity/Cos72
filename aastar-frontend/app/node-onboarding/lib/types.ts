@@ -1,12 +1,12 @@
-import type { Hex, Address } from 'viem';
+import type { Hex, Address } from "viem";
 
 /** Which class of node is being onboarded — the flow forks on where the BLS key lives. */
-export type NodeKind = 'local' | 'kms-tee';
+export type NodeKind = "local" | "kms-tee";
 
-export type StepStatus = 'pending' | 'active' | 'doing' | 'done' | 'error';
+export type StepStatus = "pending" | "active" | "doing" | "done" | "error";
 
 export interface PortalConfig {
-  network: 'sepolia' | 'op-sepolia';
+  network: "sepolia" | "op-sepolia";
   nodeKind: NodeKind;
   /** KMS base URL (only for kms-tee nodes), e.g. http://127.0.0.1:3100. */
   kmsUrl: string;
