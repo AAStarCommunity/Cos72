@@ -20,6 +20,10 @@ import {
   TASK_STATUS_LABELS,
 } from "@/lib/task-types";
 
+/** keccak256("TaskCreated(bytes32,address,address,uint256)") — used to verify the
+ *  emitting event (topic0), not just the emitting address, when reading a receipt. */
+const TASK_CREATED_TOPIC = keccak256(toBytes("TaskCreated(bytes32,address,address,uint256)"));
+
 /**
  * Every write goes through the Cos72 session's gasless `send` (cosSend). It
  * resolves once the sponsored UserOp is mined (cosSend polls for the tx hash),
@@ -226,17 +230,13 @@ export function TaskProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const approveToken = useCallback(async (amount: bigint, send: SendFn): Promise<boolean> => {
-    try {
-      await send({
-        to: DEFAULT_REWARD_TOKEN,
-        abi: ERC20_ABI,
-        functionName: "approve",
-        args: [TASK_ESCROW_ADDRESS, amount],
-      });
-      return true;
-    } catch {
-      return false;
-    }
+    await send({
+      to: DEFAULT_REWARD_TOKEN,
+      abi: ERC20_ABI,
+      functionName: "approve",
+      args: [TASK_ESCROW_ADDRESS, amount],
+    });
+    return true;
   }, []);
 
   const createTask = useCallback(
@@ -251,99 +251,80 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         createdAt: Math.floor(Date.now() / 1000),
       });
 
-      try {
-        const hash = await send({
-          to: TASK_ESCROW_ADDRESS,
-          abi: TASK_ESCROW_ABI,
-          functionName: "createTask",
-          args: [DEFAULT_REWARD_TOKEN, reward, deadline, metadata, form.taskType],
-        });
+      // Let send() surface its own errors (revert reason / timeout) to the caller.
+      const hash = await send({
+        to: TASK_ESCROW_ADDRESS,
+        abi: TASK_ESCROW_ABI,
+        functionName: "createTask",
+        args: [DEFAULT_REWARD_TOKEN, reward, deadline, metadata, form.taskType],
+      });
 
-        // send() resolves once mined; read the receipt to extract the taskId.
-        const client = getPublicClient();
-        const receipt = await client.waitForTransactionReceipt({ hash });
-        const log = receipt.logs.find(
-          l => l.address.toLowerCase() === TASK_ESCROW_ADDRESS.toLowerCase()
-        );
-        return (log?.topics[1] as `0x${string}` | undefined) ?? null;
-      } catch {
-        return null;
-      }
+      // send() resolves once mined; read the receipt to extract the taskId. Match
+      // the emitting event by BOTH the escrow address AND the TaskCreated topic0 so
+      // an unrelated same-address log can't be misread as the taskId.
+      const client = getPublicClient();
+      const receipt = await client.waitForTransactionReceipt({ hash });
+      const log = receipt.logs.find(
+        l =>
+          l.address.toLowerCase() === TASK_ESCROW_ADDRESS.toLowerCase() &&
+          l.topics[0] === TASK_CREATED_TOPIC
+      );
+      return (log?.topics[1] as `0x${string}` | undefined) ?? null;
     },
     []
   );
 
   const acceptTask = useCallback(async (taskId: string, send: SendFn): Promise<boolean> => {
-    try {
-      await send({
-        to: TASK_ESCROW_ADDRESS,
-        abi: TASK_ESCROW_ABI,
-        functionName: "acceptTask",
-        args: [taskId as `0x${string}`],
-      });
-      return true;
-    } catch {
-      return false;
-    }
+    await send({
+      to: TASK_ESCROW_ADDRESS,
+      abi: TASK_ESCROW_ABI,
+      functionName: "acceptTask",
+      args: [taskId as `0x${string}`],
+    });
+    return true;
   }, []);
 
   const submitWork = useCallback(
     async (taskId: string, evidenceUri: string, send: SendFn): Promise<boolean> => {
-      try {
-        await send({
-          to: TASK_ESCROW_ADDRESS,
-          abi: TASK_ESCROW_ABI,
-          functionName: "submitWork",
-          args: [taskId as `0x${string}`, evidenceUri],
-        });
-        return true;
-      } catch {
-        return false;
-      }
+      await send({
+        to: TASK_ESCROW_ADDRESS,
+        abi: TASK_ESCROW_ABI,
+        functionName: "submitWork",
+        args: [taskId as `0x${string}`, evidenceUri],
+      });
+      return true;
     },
     []
   );
 
   const approveWork = useCallback(async (taskId: string, send: SendFn): Promise<boolean> => {
-    try {
-      await send({
-        to: TASK_ESCROW_ADDRESS,
-        abi: TASK_ESCROW_ABI,
-        functionName: "approveWork",
-        args: [taskId as `0x${string}`],
-      });
-      return true;
-    } catch {
-      return false;
-    }
+    await send({
+      to: TASK_ESCROW_ADDRESS,
+      abi: TASK_ESCROW_ABI,
+      functionName: "approveWork",
+      args: [taskId as `0x${string}`],
+    });
+    return true;
   }, []);
 
   const finalizeTask = useCallback(async (taskId: string, send: SendFn): Promise<boolean> => {
-    try {
-      await send({
-        to: TASK_ESCROW_ADDRESS,
-        abi: TASK_ESCROW_ABI,
-        functionName: "finalizeTask",
-        args: [taskId as `0x${string}`],
-      });
-      return true;
-    } catch {
-      return false;
-    }
+    await send({
+      to: TASK_ESCROW_ADDRESS,
+      abi: TASK_ESCROW_ABI,
+      functionName: "finalizeTask",
+      args: [taskId as `0x${string}`],
+    });
+    return true;
   }, []);
 
   const cancelTask = useCallback(async (taskId: string, send: SendFn): Promise<boolean> => {
-    try {
-      await send({
-        to: TASK_ESCROW_ADDRESS,
-        abi: TASK_ESCROW_ABI,
-        functionName: "cancelTask",
-        args: [taskId as `0x${string}`],
-      });
-      return true;
-    } catch {
-      return false;
-    }
+    await send({
+      to: TASK_ESCROW_ADDRESS,
+      abi: TASK_ESCROW_ABI,
+      functionName: "cancelTask",
+      args: [taskId as `0x${string}`],
+    });
+    return true;
   }, []);
 
   // T01: load task token balance for a given address
@@ -393,22 +374,18 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       receiptUri: string,
       send: SendFn
     ): Promise<boolean> => {
-      try {
-        // receiptId must be bytes32; if it's a plain string, hash it
-        const receiptIdBytes =
-          receiptId.startsWith("0x") && receiptId.length === 66
-            ? (receiptId as `0x${string}`)
-            : keccak256(toBytes(receiptId));
-        await send({
-          to: TASK_ESCROW_ADDRESS,
-          abi: TASK_ESCROW_ABI,
-          functionName: "linkReceipt",
-          args: [taskId as `0x${string}`, receiptIdBytes, receiptUri],
-        });
-        return true;
-      } catch {
-        return false;
-      }
+      // receiptId must be bytes32; if it's a plain string, hash it
+      const receiptIdBytes =
+        receiptId.startsWith("0x") && receiptId.length === 66
+          ? (receiptId as `0x${string}`)
+          : keccak256(toBytes(receiptId));
+      await send({
+        to: TASK_ESCROW_ADDRESS,
+        abi: TASK_ESCROW_ABI,
+        functionName: "linkReceipt",
+        args: [taskId as `0x${string}`, receiptIdBytes, receiptUri],
+      });
+      return true;
     },
     []
   );
