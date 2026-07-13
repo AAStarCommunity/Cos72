@@ -1,24 +1,17 @@
 "use client";
 
 import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react";
-import {
-  parseUnits,
-  formatUnits,
-  keccak256,
-  toBytes,
-  type PublicClient,
-  type WalletClient,
-} from "viem";
+import { parseUnits, formatUnits, keccak256, toBytes, type PublicClient } from "viem";
 import { TASK_ESCROW_ABI, ERC20_ABI } from "@/lib/contracts/task-escrow-abi";
 import {
   TASK_ESCROW_ADDRESS,
   DEFAULT_REWARD_TOKEN,
   DEFAULT_REWARD_TOKEN_DECIMALS,
   TASK_TYPE_LABELS,
-  SUPPORTED_CHAIN,
   isContractsConfigured,
   getPublicClient,
 } from "@/lib/contracts/task-config";
+import type { ContractCall } from "@/lib/sdk/cosTx";
 import {
   type Task,
   type ParsedTask,
@@ -26,6 +19,14 @@ import {
   TaskStatus,
   TASK_STATUS_LABELS,
 } from "@/lib/task-types";
+
+/**
+ * Every write goes through the Cos72 session's gasless `send` (cosSend). It
+ * resolves once the sponsored UserOp is mined (cosSend polls for the tx hash),
+ * so callers get the on-chain tx hash back and no longer manage a walletClient
+ * or an EOA. Pass `useCos72Session().send` into any write below.
+ */
+type SendFn = (call: ContractCall) => Promise<`0x${string}`>;
 
 interface TaskContextType {
   // Data
@@ -42,23 +43,23 @@ interface TaskContextType {
   // Actions
   loadAllTasks: () => Promise<void>;
   loadMyTasks: (address: string) => Promise<void>;
-  createTask: (form: CreateTaskForm, walletClient: WalletClient) => Promise<`0x${string}` | null>;
-  acceptTask: (taskId: string, walletClient: WalletClient) => Promise<boolean>;
-  submitWork: (taskId: string, evidenceUri: string, walletClient: WalletClient) => Promise<boolean>;
-  approveWork: (taskId: string, walletClient: WalletClient) => Promise<boolean>;
-  finalizeTask: (taskId: string, walletClient: WalletClient) => Promise<boolean>;
-  cancelTask: (taskId: string, walletClient: WalletClient) => Promise<boolean>;
+  createTask: (form: CreateTaskForm, send: SendFn) => Promise<`0x${string}` | null>;
+  acceptTask: (taskId: string, send: SendFn) => Promise<boolean>;
+  submitWork: (taskId: string, evidenceUri: string, send: SendFn) => Promise<boolean>;
+  approveWork: (taskId: string, send: SendFn) => Promise<boolean>;
+  finalizeTask: (taskId: string, send: SendFn) => Promise<boolean>;
+  cancelTask: (taskId: string, send: SendFn) => Promise<boolean>;
   // T06: Receipts
   getTaskReceipts: (taskId: string) => Promise<`0x${string}`[]>;
   linkReceipt: (
     taskId: string,
     receiptId: string,
     receiptUri: string,
-    walletClient: WalletClient
+    send: SendFn
   ) => Promise<boolean>;
   // Helpers
   getTask: (taskId: string) => Promise<ParsedTask | null>;
-  approveToken: (amount: bigint, walletClient: WalletClient) => Promise<boolean>;
+  approveToken: (amount: bigint, send: SendFn) => Promise<boolean>;
   checkAllowance: (ownerAddress: string) => Promise<bigint>;
 }
 
@@ -224,31 +225,22 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     return allowance as bigint;
   }, []);
 
-  const approveToken = useCallback(
-    async (amount: bigint, walletClient: WalletClient): Promise<boolean> => {
-      const [address] = await walletClient.requestAddresses();
-      try {
-        const hash = await walletClient.writeContract({
-          address: DEFAULT_REWARD_TOKEN,
-          abi: ERC20_ABI,
-          functionName: "approve",
-          args: [TASK_ESCROW_ADDRESS, amount],
-          account: address,
-          chain: SUPPORTED_CHAIN,
-        });
-        const client = getPublicClient();
-        await client.waitForTransactionReceipt({ hash });
-        return true;
-      } catch {
-        return false;
-      }
-    },
-    []
-  );
+  const approveToken = useCallback(async (amount: bigint, send: SendFn): Promise<boolean> => {
+    try {
+      await send({
+        to: DEFAULT_REWARD_TOKEN,
+        abi: ERC20_ABI,
+        functionName: "approve",
+        args: [TASK_ESCROW_ADDRESS, amount],
+      });
+      return true;
+    } catch {
+      return false;
+    }
+  }, []);
 
   const createTask = useCallback(
-    async (form: CreateTaskForm, walletClient: WalletClient): Promise<`0x${string}` | null> => {
-      const [address] = await walletClient.requestAddresses();
+    async (form: CreateTaskForm, send: SendFn): Promise<`0x${string}` | null> => {
       const reward = parseUnits(form.rewardAmount, DEFAULT_REWARD_TOKEN_DECIMALS);
       const deadline = BigInt(Math.floor(Date.now() / 1000) + form.deadlineDays * 86400);
 
@@ -260,26 +252,20 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       });
 
       try {
-        const hash = await walletClient.writeContract({
-          address: TASK_ESCROW_ADDRESS,
+        const hash = await send({
+          to: TASK_ESCROW_ADDRESS,
           abi: TASK_ESCROW_ABI,
           functionName: "createTask",
           args: [DEFAULT_REWARD_TOKEN, reward, deadline, metadata, form.taskType],
-          account: address,
-          chain: SUPPORTED_CHAIN,
         });
 
+        // send() resolves once mined; read the receipt to extract the taskId.
         const client = getPublicClient();
         const receipt = await client.waitForTransactionReceipt({ hash });
-
-        // Extract taskId from TaskCreated event
         const log = receipt.logs.find(
           l => l.address.toLowerCase() === TASK_ESCROW_ADDRESS.toLowerCase()
         );
-        if (log?.topics[1]) {
-          return log.topics[1] as `0x${string}`;
-        }
-        return null;
+        return (log?.topics[1] as `0x${string}` | undefined) ?? null;
       } catch {
         return null;
       }
@@ -287,42 +273,29 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     []
   );
 
-  const acceptTask = useCallback(
-    async (taskId: string, walletClient: WalletClient): Promise<boolean> => {
-      const [address] = await walletClient.requestAddresses();
-      try {
-        const hash = await walletClient.writeContract({
-          address: TASK_ESCROW_ADDRESS,
-          abi: TASK_ESCROW_ABI,
-          functionName: "acceptTask",
-          args: [taskId as `0x${string}`],
-          account: address,
-          chain: SUPPORTED_CHAIN,
-        });
-        const client = getPublicClient();
-        await client.waitForTransactionReceipt({ hash });
-        return true;
-      } catch {
-        return false;
-      }
-    },
-    []
-  );
+  const acceptTask = useCallback(async (taskId: string, send: SendFn): Promise<boolean> => {
+    try {
+      await send({
+        to: TASK_ESCROW_ADDRESS,
+        abi: TASK_ESCROW_ABI,
+        functionName: "acceptTask",
+        args: [taskId as `0x${string}`],
+      });
+      return true;
+    } catch {
+      return false;
+    }
+  }, []);
 
   const submitWork = useCallback(
-    async (taskId: string, evidenceUri: string, walletClient: WalletClient): Promise<boolean> => {
-      const [address] = await walletClient.requestAddresses();
+    async (taskId: string, evidenceUri: string, send: SendFn): Promise<boolean> => {
       try {
-        const hash = await walletClient.writeContract({
-          address: TASK_ESCROW_ADDRESS,
+        await send({
+          to: TASK_ESCROW_ADDRESS,
           abi: TASK_ESCROW_ABI,
           functionName: "submitWork",
           args: [taskId as `0x${string}`, evidenceUri],
-          account: address,
-          chain: SUPPORTED_CHAIN,
         });
-        const client = getPublicClient();
-        await client.waitForTransactionReceipt({ hash });
         return true;
       } catch {
         return false;
@@ -331,71 +304,47 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     []
   );
 
-  const approveWork = useCallback(
-    async (taskId: string, walletClient: WalletClient): Promise<boolean> => {
-      const [address] = await walletClient.requestAddresses();
-      try {
-        const hash = await walletClient.writeContract({
-          address: TASK_ESCROW_ADDRESS,
-          abi: TASK_ESCROW_ABI,
-          functionName: "approveWork",
-          args: [taskId as `0x${string}`],
-          account: address,
-          chain: SUPPORTED_CHAIN,
-        });
-        const client = getPublicClient();
-        await client.waitForTransactionReceipt({ hash });
-        return true;
-      } catch {
-        return false;
-      }
-    },
-    []
-  );
+  const approveWork = useCallback(async (taskId: string, send: SendFn): Promise<boolean> => {
+    try {
+      await send({
+        to: TASK_ESCROW_ADDRESS,
+        abi: TASK_ESCROW_ABI,
+        functionName: "approveWork",
+        args: [taskId as `0x${string}`],
+      });
+      return true;
+    } catch {
+      return false;
+    }
+  }, []);
 
-  const finalizeTask = useCallback(
-    async (taskId: string, walletClient: WalletClient): Promise<boolean> => {
-      const [address] = await walletClient.requestAddresses();
-      try {
-        const hash = await walletClient.writeContract({
-          address: TASK_ESCROW_ADDRESS,
-          abi: TASK_ESCROW_ABI,
-          functionName: "finalizeTask",
-          args: [taskId as `0x${string}`],
-          account: address,
-          chain: SUPPORTED_CHAIN,
-        });
-        const client = getPublicClient();
-        await client.waitForTransactionReceipt({ hash });
-        return true;
-      } catch {
-        return false;
-      }
-    },
-    []
-  );
+  const finalizeTask = useCallback(async (taskId: string, send: SendFn): Promise<boolean> => {
+    try {
+      await send({
+        to: TASK_ESCROW_ADDRESS,
+        abi: TASK_ESCROW_ABI,
+        functionName: "finalizeTask",
+        args: [taskId as `0x${string}`],
+      });
+      return true;
+    } catch {
+      return false;
+    }
+  }, []);
 
-  const cancelTask = useCallback(
-    async (taskId: string, walletClient: WalletClient): Promise<boolean> => {
-      const [address] = await walletClient.requestAddresses();
-      try {
-        const hash = await walletClient.writeContract({
-          address: TASK_ESCROW_ADDRESS,
-          abi: TASK_ESCROW_ABI,
-          functionName: "cancelTask",
-          args: [taskId as `0x${string}`],
-          account: address,
-          chain: SUPPORTED_CHAIN,
-        });
-        const client = getPublicClient();
-        await client.waitForTransactionReceipt({ hash });
-        return true;
-      } catch {
-        return false;
-      }
-    },
-    []
-  );
+  const cancelTask = useCallback(async (taskId: string, send: SendFn): Promise<boolean> => {
+    try {
+      await send({
+        to: TASK_ESCROW_ADDRESS,
+        abi: TASK_ESCROW_ABI,
+        functionName: "cancelTask",
+        args: [taskId as `0x${string}`],
+      });
+      return true;
+    } catch {
+      return false;
+    }
+  }, []);
 
   // T01: load task token balance for a given address
   const loadTaskTokenBalance = useCallback(async (address: string) => {
@@ -442,25 +391,20 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       taskId: string,
       receiptId: string,
       receiptUri: string,
-      walletClient: WalletClient
+      send: SendFn
     ): Promise<boolean> => {
-      const [address] = await walletClient.requestAddresses();
       try {
         // receiptId must be bytes32; if it's a plain string, hash it
         const receiptIdBytes =
           receiptId.startsWith("0x") && receiptId.length === 66
             ? (receiptId as `0x${string}`)
             : keccak256(toBytes(receiptId));
-        const hash = await walletClient.writeContract({
-          address: TASK_ESCROW_ADDRESS,
+        await send({
+          to: TASK_ESCROW_ADDRESS,
           abi: TASK_ESCROW_ABI,
           functionName: "linkReceipt",
           args: [taskId as `0x${string}`, receiptIdBytes, receiptUri],
-          account: address,
-          chain: SUPPORTED_CHAIN,
         });
-        const client = getPublicClient();
-        await client.waitForTransactionReceipt({ hash });
         return true;
       } catch {
         return false;

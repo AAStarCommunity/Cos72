@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Layout from "@/components/Layout";
 import { useTask } from "@/contexts/TaskContext";
-import { useDashboard } from "@/contexts/DashboardContext";
+import { useCos72Session } from "@/contexts/Cos72SessionContext";
 import { getStoredAuth } from "@/lib/auth";
 import { type ParsedTask, TaskStatus, TASK_STATUS_COLORS } from "@/lib/task-types";
 import {
@@ -23,7 +23,6 @@ import {
 } from "@heroicons/react/24/outline";
 import { formatDate, formatDateTime } from "@/lib/date-utils";
 import toast from "react-hot-toast";
-import type { WalletClient } from "viem";
 
 function AddressRow({ label, addr }: { label: string; addr: string }) {
   if (!addr || addr === "0x0000000000000000000000000000000000000000") return null;
@@ -61,12 +60,13 @@ export default function TaskDetailPage() {
     getTaskReceipts,
     linkReceipt,
   } = useTask();
-  const { data } = useDashboard();
+  // Cos72 is AirAccount-only: the smart account is the on-chain actor, so the
+  // contract stores it as community/taskor. Role checks compare against it, and
+  // every write is a gasless sponsored UserOp via `send`.
+  const { send, address: sessionAddress, isConnected } = useCos72Session();
 
   const [task, setTask] = useState<ParsedTask | null>(null);
   const [loading, setLoading] = useState(true);
-  const [walletClient, setWalletClient] = useState<WalletClient | null>(null);
-  const [eoaAddress, setEoaAddress] = useState<string>("");
   const [actionLoading, setActionLoading] = useState(false);
   const [evidenceUri, setEvidenceUri] = useState("");
   const [showEvidenceForm, setShowEvidenceForm] = useState(false);
@@ -79,8 +79,7 @@ export default function TaskDetailPage() {
   const [receiptInput, setReceiptInput] = useState("");
   const [receiptUriInput, setReceiptUriInput] = useState("");
 
-  // Use MetaMask EOA for role checks — contract stores EOA, not YAA smart account
-  const myAddress = (eoaAddress || (data.account?.address ?? "")).toLowerCase();
+  const myAddress = (sessionAddress ?? "").toLowerCase();
   const isCommunity = task?.community.toLowerCase() === myAddress;
   const isTaskor = task?.taskor.toLowerCase() === myAddress;
   const isZeroAddress = (addr: string) => addr === "0x0000000000000000000000000000000000000000";
@@ -89,29 +88,6 @@ export default function TaskDetailPage() {
     const { token } = getStoredAuth();
     if (!token) router.push("/auth/login");
   }, [router]);
-
-  useEffect(() => {
-    async function loadWallet() {
-      if (typeof window === "undefined") return;
-      const { createWalletClient, custom } = await import("viem");
-      const { SUPPORTED_CHAIN } = await import("@/lib/contracts/task-config");
-      const provider = (window as Window & { ethereum?: unknown }).ethereum;
-      if (!provider) return;
-      const client = createWalletClient({
-        chain: SUPPORTED_CHAIN,
-        transport: custom(provider as Parameters<typeof custom>[0]),
-      });
-      setWalletClient(client);
-      // Fetch EOA address for role comparison (contract stores EOA, not YAA smart account)
-      try {
-        const addrs = await client.getAddresses();
-        if (addrs[0]) setEoaAddress(addrs[0].toLowerCase());
-      } catch {
-        // not connected yet — will be resolved on first requestAddresses()
-      }
-    }
-    loadWallet();
-  }, []);
 
   useEffect(() => {
     if (!taskId) return;
@@ -143,19 +119,9 @@ export default function TaskDetailPage() {
     });
   }, [taskId, getTaskReceipts]);
 
-  const switchWallet = async () => {
-    if (!walletClient) return;
-    try {
-      const addrs = await walletClient.requestAddresses();
-      if (addrs[0]) setEoaAddress(addrs[0].toLowerCase());
-    } catch {
-      toast.error("Failed to switch wallet");
-    }
-  };
-
   async function runAction(fn: () => Promise<boolean>, successMsg: string) {
-    if (!walletClient) {
-      toast.error("No wallet connected");
+    if (!isConnected) {
+      toast.error("Passkey login required.");
       return;
     }
     setActionLoading(true);
@@ -253,24 +219,18 @@ export default function TaskDetailPage() {
           </div>
         </div>
 
-        {/* Wallet indicator */}
+        {/* Account indicator */}
         <div className="flex items-center justify-between px-1 text-xs text-gray-500 dark:text-gray-400">
           <span>
-            Wallet:{" "}
-            {eoaAddress ? (
+            AirAccount:{" "}
+            {sessionAddress ? (
               <span className="font-mono">
-                {eoaAddress.slice(0, 6)}…{eoaAddress.slice(-4)}
+                {sessionAddress.slice(0, 6)}…{sessionAddress.slice(-4)}
               </span>
             ) : (
-              <span className="italic">not connected</span>
+              <span className="italic">not signed in</span>
             )}
           </span>
-          <button
-            onClick={switchWallet}
-            className="text-emerald-600 dark:text-emerald-400 hover:underline"
-          >
-            {eoaAddress ? "Switch wallet" : "Connect wallet"}
-          </button>
         </div>
 
         {/* Description */}
@@ -339,7 +299,7 @@ export default function TaskDetailPage() {
         )}
 
         {/* T06: x402 Receipts */}
-        {(receipts.length > 0 || (eoaAddress && (isCommunity || isTaskor))) && (
+        {(receipts.length > 0 || ((isCommunity || isTaskor))) && (
           <Section title="x402 Receipts">
             {receipts.length > 0 ? (
               <div className="space-y-3">
@@ -385,7 +345,7 @@ export default function TaskDetailPage() {
               <p className="text-sm text-gray-500 dark:text-gray-400">No receipts linked yet.</p>
             )}
 
-            {eoaAddress && (isCommunity || isTaskor) && (
+            {(isCommunity || isTaskor) && (
               <div className="mt-3">
                 {!showLinkReceiptForm ? (
                   <button
@@ -423,13 +383,13 @@ export default function TaskDetailPage() {
                       </button>
                       <button
                         onClick={async () => {
-                          if (!receiptInput.trim() || !receiptUriInput.trim() || !walletClient)
+                          if (!receiptInput.trim() || !receiptUriInput.trim() || !isConnected)
                             return;
                           const ok = await linkReceipt(
                             task!.taskId,
                             receiptInput.trim(),
                             receiptUriInput.trim(),
-                            walletClient
+                            send
                           );
                           if (ok) {
                             toast.success("Receipt linked!");
@@ -460,7 +420,7 @@ export default function TaskDetailPage() {
           {isOpen && !isCommunity && !task.isExpired && (
             <button
               onClick={() =>
-                runAction(() => acceptTask(task.taskId, walletClient!), "Task claimed!")
+                runAction(() => acceptTask(task.taskId, send), "Task claimed!")
               }
               disabled={actionLoading}
               className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white font-semibold text-sm transition-colors"
@@ -502,7 +462,7 @@ export default function TaskDetailPage() {
                       onClick={() => {
                         if (!evidenceUri.trim()) return;
                         runAction(
-                          () => submitWork(task.taskId, evidenceUri.trim(), walletClient!),
+                          () => submitWork(task.taskId, evidenceUri.trim(), send),
                           "Work submitted!"
                         );
                         setShowEvidenceForm(false);
@@ -524,7 +484,7 @@ export default function TaskDetailPage() {
               <button
                 onClick={() =>
                   runAction(
-                    () => approveWork(task.taskId, walletClient!),
+                    () => approveWork(task.taskId, send),
                     "Work approved! Reward distributed."
                   )
                 }
@@ -544,7 +504,7 @@ export default function TaskDetailPage() {
           {task.canFinalize && (
             <button
               onClick={() =>
-                runAction(() => finalizeTask(task.taskId, walletClient!), "Task finalized!")
+                runAction(() => finalizeTask(task.taskId, send), "Task finalized!")
               }
               disabled={actionLoading}
               className="w-full py-3 rounded-xl bg-gray-700 hover:bg-gray-600 disabled:opacity-60 text-white font-semibold text-sm transition-colors"
@@ -558,7 +518,7 @@ export default function TaskDetailPage() {
             <button
               onClick={() =>
                 runAction(
-                  () => cancelTask(task.taskId, walletClient!),
+                  () => cancelTask(task.taskId, send),
                   "Task cancelled. Reward refunded."
                 )
               }
