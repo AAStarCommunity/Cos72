@@ -72,7 +72,7 @@
 
 ---
 
-## 4. Phase 1 = MyTask 集成（**进行中**）
+## 4. Phase 1 = MyTask 集成（**已完成**，PR #8 merged）
 
 **目标**：在 YAA 成熟的 `app/tasks` 页面上，把 window.ethereum 写路径换成 `cosSend`。
 
@@ -99,7 +99,25 @@
 
 ---
 
+## 4b. x402 付费发帖 — 现状与依赖（AA-x402）
+
+**定位**：MyTask 发任务前的可选「付费发帖」微支付门控，**非**奖励托管（奖励 escrow 已 gasless 走通）。PR #8 里从 create 流程移除了旧的 EOA x402（EIP-3009，AA 签不了）。
+
+**AA-x402 技术上可建**：
+- SDK `@aastar/sdk/x402`：`signX402PaymentAuthorization` / `X402Client({settlement:'direct'})` —— direct 路径用 ERC-1271（`SignatureCheckerLib.isValidSignatureNow`），支持 AirAccount passkey。
+- cos72 后端已有 KMS `signHashWithWebAuthn(address, hash)` → 出 AA 的离线 ERC-1271 签名。
+
+**卡在两个依赖（都未就绪）**：
+1. **X402Facilitator 合约 + facilitator 服务**（`/x402/{verify,settle,supported}`）—— DVT 运营，SDK 注释「empty until DVT deploys（YAA-Validator#130）」。已发 goutou 任务 `f14d3f9b` @repo:dvt 问 Sepolia 部署状态。
+2. **任务 x402 API server 要支持 direct scheme**（现走 EIP-3009 = EOA-only）—— server owner 改。
+
+**决策（jason）**：#8 先 merge（不含 x402）；AA-x402 等 dvt facilitator 解锁 + API server 支持 direct 后，开独立 PR（KMS SignHash→ERC-1271→X402Client direct）。cos72 用 xPNTs 付费 = 天然 direct 路径。
+
+---
+
 ## 5. 关键 gotcha（会再踩）
+
+- **后端 e2e 有 1 个陈旧断言（非本次引入）**：`aastar/test/app.e2e-spec.ts:9` 硬编码 `CANONICAL_PAYMASTER_V4=0x9578…72ee`，但 SDK 0.42 canonical 已是 `0xf394…fa0e` → e2e 14/15，这条红。SDK 0.42 bump(PR#7)引入，测试没跟更新。修法：把硬编码改成 SDK 常量 import。单测 41/41、type-check/build 全绿。
 
 - **装依赖**：@aastar/sdk 0.41 peerOptional react ^18 vs app react 19 → 干净 `npm install` ERESOLVE 失败。**已修**：root `.npmrc` `legacy-peer-deps=true` + react/react-dom 进 root `devDependencies`（强制 hoist 到 root，否则 `next build` 报 `Cannot find module 'react'`）。fresh clone 直接 `npm install` 即可。
 - **验构建成败**：后台 `cmd | tail` 的 exit code 是 tail 的、不是 cmd 的。用 `cmd > log 2>&1; echo $?` 单独取码（曾误判 build 绿）。
