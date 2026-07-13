@@ -16,7 +16,7 @@
 import type { Address } from "viem";
 
 const env = (k: string): Address | undefined =>
-  (process.env[k] ? (process.env[k] as Address) : undefined);
+  process.env[k] ? (process.env[k] as Address) : undefined;
 
 export const MODULE_ADDRESSES = {
   // MyTask (deploy TaskEscrowV2, not v1) — source: ~/Dev/mycelium/MyTask

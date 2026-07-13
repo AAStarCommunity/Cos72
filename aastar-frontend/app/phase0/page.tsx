@@ -128,8 +128,8 @@ function CredibilityPanel() {
             )}
           </div>
           <div className="text-gray-500 dark:text-gray-400">
-            发行 ${formatUnits(cred.issuedValueUSD, 18)} · 背书 ${formatUnits(cred.backingValueUSD, 18)}{" "}
-            · 上限 ${formatUnits(cred.effectiveCapUSD, 18)}
+            发行 ${formatUnits(cred.issuedValueUSD, 18)} · 背书 $
+            {formatUnits(cred.backingValueUSD, 18)} · 上限 ${formatUnits(cred.effectiveCapUSD, 18)}
           </div>
         </div>
       ))}

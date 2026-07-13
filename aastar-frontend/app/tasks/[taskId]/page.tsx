@@ -299,7 +299,7 @@ export default function TaskDetailPage() {
         )}
 
         {/* T06: x402 Receipts */}
-        {(receipts.length > 0 || ((isCommunity || isTaskor))) && (
+        {(receipts.length > 0 || isCommunity || isTaskor) && (
           <Section title="x402 Receipts">
             {receipts.length > 0 ? (
               <div className="space-y-3">
@@ -419,9 +419,7 @@ export default function TaskDetailPage() {
           {/* Claim task (Open → Accepted) */}
           {isOpen && !isCommunity && !task.isExpired && (
             <button
-              onClick={() =>
-                runAction(() => acceptTask(task.taskId, send), "Task claimed!")
-              }
+              onClick={() => runAction(() => acceptTask(task.taskId, send), "Task claimed!")}
               disabled={actionLoading}
               className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white font-semibold text-sm transition-colors"
             >
@@ -503,9 +501,7 @@ export default function TaskDetailPage() {
           {/* Anyone: finalize after challenge period */}
           {task.canFinalize && (
             <button
-              onClick={() =>
-                runAction(() => finalizeTask(task.taskId, send), "Task finalized!")
-              }
+              onClick={() => runAction(() => finalizeTask(task.taskId, send), "Task finalized!")}
               disabled={actionLoading}
               className="w-full py-3 rounded-xl bg-gray-700 hover:bg-gray-600 disabled:opacity-60 text-white font-semibold text-sm transition-colors"
             >
@@ -517,10 +513,7 @@ export default function TaskDetailPage() {
           {isOpen && isCommunity && (
             <button
               onClick={() =>
-                runAction(
-                  () => cancelTask(task.taskId, send),
-                  "Task cancelled. Reward refunded."
-                )
+                runAction(() => cancelTask(task.taskId, send), "Task cancelled. Reward refunded.")
               }
               disabled={actionLoading}
               className="w-full py-3 rounded-xl border border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 font-medium text-sm transition-colors"

@@ -33,7 +33,10 @@ export class PrepareUserOpDto {
   @IsBoolean()
   useWebAuthnPasskey?: boolean;
 
-  @ApiProperty({ required: false, description: "Sponsor gas (default true — Cos72 is gasless-only)" })
+  @ApiProperty({
+    required: false,
+    description: "Sponsor gas (default true — Cos72 is gasless-only)",
+  })
   @IsOptional()
   @IsBoolean()
   usePaymaster?: boolean;

@@ -11,15 +11,15 @@ import {
   custom,
   http,
   toHex,
-} from 'viem';
-import { sepolia, optimismSepolia } from 'viem/chains';
+} from "viem";
+import { sepolia, optimismSepolia } from "viem/chains";
 // Import the NARROW subpaths, not the umbrella barrel: the full `@aastar/sdk` index pulls node-only code
 // (config-file fs I/O, server bits) that breaks a browser bundle. /operator + /core are browser-safe.
-import { onboardDvtNode, type OnboardDvtNodeResult } from '@aastar/sdk/operator';
-import { buildDvtPop, type DvtPop } from '@aastar/sdk/core';
-import type { NodeKind, Pop, PortalConfig, WalletConn } from './types';
+import { onboardDvtNode, type OnboardDvtNodeResult } from "@aastar/sdk/operator";
+import { buildDvtPop, type DvtPop } from "@aastar/sdk/core";
+import type { NodeKind, Pop, PortalConfig, WalletConn } from "./types";
 
-const CHAINS = { sepolia, 'op-sepolia': optimismSepolia } as const;
+const CHAINS = { sepolia, "op-sepolia": optimismSepolia } as const;
 
 /** BLS12-381 scalar field order r — a generated node key must be a scalar in [1, r-1]. */
 const BLS12_381_R = 0x73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001n;
@@ -27,16 +27,16 @@ const BLS12_381_R = 0x73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00
 type Eip1193 = { request: (a: { method: string; params?: unknown[] }) => Promise<unknown> };
 function injected(): Eip1193 {
   const eth = (globalThis as unknown as { ethereum?: Eip1193 }).ethereum;
-  if (!eth) throw new Error('No injected wallet found (install MetaMask or a compatible wallet).');
+  if (!eth) throw new Error("No injected wallet found (install MetaMask or a compatible wallet).");
   return eth;
 }
 
 /** Connect the injected wallet and return the operator address + chainId. */
 export async function connectWallet(): Promise<WalletConn> {
   const eth = injected();
-  const accounts = (await eth.request({ method: 'eth_requestAccounts' })) as Address[];
-  if (!accounts?.length) throw new Error('Wallet returned no accounts.');
-  const chainIdHex = (await eth.request({ method: 'eth_chainId' })) as string;
+  const accounts = (await eth.request({ method: "eth_requestAccounts" })) as Address[];
+  if (!accounts?.length) throw new Error("Wallet returned no accounts.");
+  const chainIdHex = (await eth.request({ method: "eth_chainId" })) as string;
   return { address: accounts[0], chainId: Number(BigInt(chainIdHex)) };
 }
 
@@ -47,7 +47,11 @@ export function publicClientFor(cfg: PortalConfig) {
 
 /** Wallet (write) client bound to the connected operator account via the injected provider. */
 export function operatorWalletFor(cfg: PortalConfig, operator: Address) {
-  return createWalletClient({ account: operator, chain: CHAINS[cfg.network], transport: custom(injected()) });
+  return createWalletClient({
+    account: operator,
+    chain: CHAINS[cfg.network],
+    transport: custom(injected()),
+  });
 }
 
 /** Generate a fresh in-browser BLS secret key for a LOCAL node (never leaves the browser; user saves it). */
@@ -72,14 +76,18 @@ export function popFromLocalKey(blsSecretKey: Hex): Pop {
  */
 export function kmsPopSigner(cfg: PortalConfig, nodeIdOrPubkey: string): () => Promise<DvtPop> {
   return async () => {
-    const res = await fetch(`${cfg.kmsUrl.replace(/\/$/, '')}/pop`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
+    const res = await fetch(`${cfg.kmsUrl.replace(/\/$/, "")}/pop`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
       body: JSON.stringify({ node_id: nodeIdOrPubkey }),
     });
-    if (!res.ok) throw new Error(`KMS /pop failed: HTTP ${res.status} (is the KMS /pop endpoint live? — CC-37)`);
+    if (!res.ok)
+      throw new Error(
+        `KMS /pop failed: HTTP ${res.status} (is the KMS /pop endpoint live? — CC-37)`
+      );
     const pop = (await res.json()) as DvtPop;
-    if (!pop.publicKey || !pop.popPoint || !pop.popSig) throw new Error('KMS /pop returned an incomplete DvtPop');
+    if (!pop.publicKey || !pop.popPoint || !pop.popSig)
+      throw new Error("KMS /pop returned an incomplete DvtPop");
     return pop;
   };
 }
@@ -107,11 +115,11 @@ export async function onboard(args: OnboardArgs): Promise<OnboardDvtNodeResult> 
   const operatorWallet = operatorWalletFor(cfg, operator) as unknown as never;
   const base = { publicClient, operatorWallet, dryRun };
 
-  if (cfg.nodeKind === 'kms-tee') {
-    if (!kmsNodeRef) throw new Error('kms-tee node requires a KMS node id / pubkey reference');
+  if (cfg.nodeKind === "kms-tee") {
+    if (!kmsNodeRef) throw new Error("kms-tee node requires a KMS node id / pubkey reference");
     return onboardDvtNode({ ...base, popSigner: kmsPopSigner(cfg, kmsNodeRef) });
   }
-  if (!blsSecretKey) throw new Error('local node requires a BLS secret key');
+  if (!blsSecretKey) throw new Error("local node requires a BLS secret key");
   return onboardDvtNode({ ...base, blsSecretKey });
 }
 
@@ -119,7 +127,7 @@ export async function onboard(args: OnboardArgs): Promise<OnboardDvtNodeResult> 
 export async function fetchRecipe(cfg: PortalConfig): Promise<unknown | null> {
   if (!cfg.dvtUrl) return null;
   try {
-    const r = await fetch(`${cfg.dvtUrl.replace(/\/$/, '')}/recipe?network=${cfg.network}`);
+    const r = await fetch(`${cfg.dvtUrl.replace(/\/$/, "")}/recipe?network=${cfg.network}`);
     return r.ok ? await r.json() : null;
   } catch {
     return null;
@@ -129,7 +137,7 @@ export async function fetchRecipe(cfg: PortalConfig): Promise<unknown | null> {
 export async function fetchIdentity(cfg: PortalConfig, nodeId: Hex): Promise<unknown | null> {
   if (!cfg.dvtUrl) return null;
   try {
-    const r = await fetch(`${cfg.dvtUrl.replace(/\/$/, '')}/identity/${nodeId}`);
+    const r = await fetch(`${cfg.dvtUrl.replace(/\/$/, "")}/identity/${nodeId}`);
     return r.ok ? await r.json() : null;
   } catch {
     return null;

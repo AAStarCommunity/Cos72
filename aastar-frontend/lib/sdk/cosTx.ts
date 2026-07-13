@@ -48,7 +48,7 @@ export async function cosRead<T = unknown>(
   }) as Promise<T>;
 }
 
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
 
 /**
  * Gasless write, all tiers. Resolves the account's tier, prepares a sponsored
