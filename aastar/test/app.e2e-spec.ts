@@ -3,10 +3,15 @@ import { INestApplication, ValidationPipe } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import { Test } from "@nestjs/testing";
 import { AppModule } from "../src/app.module";
+import { getCanonicalAddresses } from "@aastar/sdk/core";
 
-// The canonical Sepolia PaymasterV4 (aPNTs gas token) from @aastar/sdk@0.26.x.
-// Asserting it here guards against the stale 0x1f0D… address regression (PR #357).
-const CANONICAL_PAYMASTER_V4 = "0x957852251f44570dc2B60Dde0954f191FF3372eE";
+// Canonical Sepolia PaymasterV4 (aPNTs gas token) read from the @aastar/sdk canonical
+// table — the SAME source the endpoint uses (paymaster.service → getCanonicalAddresses),
+// so the assertion tracks SDK bumps instead of going stale on a hardcoded address
+// (was 0x9578…, which drifted after the 0.42 bump). Still guards the endpoint's preset
+// plumbing: it must surface the SDK canonical, not a hardcoded/mis-plumbed value.
+const CANONICAL_PAYMASTER_V4 = (getCanonicalAddresses(11155111) as Record<string, string>)
+  .paymasterV4;
 
 describe("App e2e (HTTP layer)", () => {
   let app: INestApplication;
