@@ -151,6 +151,35 @@ describe("SsoService", () => {
         expect(result.code).toMatch(/^[0-9a-f]{64}$/);
       });
 
+      it("rejects an encoded-slash traversal (/sso/callback/%2f..%2fevil)", async () => {
+        await expect(
+          service.authorize(USER_ID, "http://localhost:5175/sso/callback/%2f..%2fevil")
+        ).rejects.toThrow(BadRequestException);
+      });
+
+      it("rejects an uppercase encoded-slash traversal (%2F)", async () => {
+        await expect(
+          service.authorize(USER_ID, "http://localhost:5175/sso/callback/%2F..%2Fevil")
+        ).rejects.toThrow(BadRequestException);
+      });
+
+      it("rejects an encoded-backslash variant (%5c)", async () => {
+        await expect(
+          service.authorize(USER_ID, "http://localhost:5175/sso/callback/%5c..%5cevil")
+        ).rejects.toThrow(BadRequestException);
+      });
+
+      it("rejects encoded dot-segments (%2e%2e)", async () => {
+        await expect(
+          service.authorize(USER_ID, "http://localhost:5175/sso/callback/%2e%2e/evil")
+        ).rejects.toThrow(BadRequestException);
+      });
+
+      it("still allows a normal sub-path after the encoding checks (/sso/callback/sub)", async () => {
+        const result = await service.authorize(USER_ID, "http://localhost:5175/sso/callback/sub");
+        expect(result.code).toMatch(/^[0-9a-f]{64}$/);
+      });
+
       it("normalizes trailing slashes on whitelist entries", async () => {
         const slashy = new SsoService(
           makeConfig({
