@@ -23,6 +23,7 @@ import { AdminModule } from "./admin/admin.module";
 import { SaleModule } from "./sale/sale.module";
 import { IndexerModule } from "./indexer/indexer.module";
 import { SsoModule } from "./sso/sso.module";
+import { MyTaskIndexModule } from "./mytask-index/mytask-index.module";
 
 @Module({
   imports: [
@@ -48,6 +49,7 @@ import { SsoModule } from "./sso/sso.module";
     SaleModule,
     IndexerModule,
     SsoModule,
+    MyTaskIndexModule,
   ],
   controllers: [AppController],
   providers: [AppService],
