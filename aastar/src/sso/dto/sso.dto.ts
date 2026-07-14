@@ -22,4 +22,13 @@ export class SsoExchangeDto {
   @Length(64, 64)
   @Matches(/^[0-9a-f]{64}$/, { message: "code must be 64 lowercase hex characters" })
   code: string;
+
+  @ApiProperty({
+    example: "https://myvote.example.com/sso/callback",
+    description:
+      "Must be exactly the redirect_uri the code was authorized for (OAuth code↔redirect binding); any mismatch is a 401.",
+  })
+  @IsString()
+  @MaxLength(2048)
+  redirect_uri: string;
 }

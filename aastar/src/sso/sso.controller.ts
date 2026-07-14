@@ -40,9 +40,12 @@ export class SsoController {
     status: 200,
     description: "{ token, aaAddress, expiresIn } — JWT audience 'myvote', TTL 10min",
   })
-  @ApiResponse({ status: 401, description: "Code invalid, expired, or already consumed" })
+  @ApiResponse({
+    status: 401,
+    description: "Code invalid / expired / already consumed / redirect_uri mismatch (unified)",
+  })
   async exchange(@Body() dto: SsoExchangeDto) {
-    return this.ssoService.exchange(dto.code);
+    return this.ssoService.exchange(dto.code, dto.redirect_uri);
   }
 
   @Get("verify")
