@@ -43,17 +43,17 @@
 
 ## 2. A 线 — cos72 本体基础链条
 
-| #   | 任务                                                                                                                                                                                                                                                      | 优先级 | 状态                 |
-| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ | -------------------- |
-| A-1 | Phase 0 共享层(cosSend 全 tier + 三层导航 + 角色门控 + addresses)PR#1-5                                                                                                                                                                                   | P0     | ✅                   |
-| A-2 | Phase 1 MyTask `app/tasks` 全流程 cosSend 化,PR#8                                                                                                                                                                                                         | P0     | ✅                   |
-| A-3 | CI 基线清债:prettier 14 文件 + `eslint-plugin-react-hooks` 钉 7.0.1 对齐上游(PR#10,codex APPROVE)                                                                                                                                                         | P0     | ✅ merged 2026-07-14 |
-| A-4 | 仓库开启 GitHub **Dependency Graph**(Security Audit 唯一堵点;fork 默认关)— 已经 `gh api` 启用,SBOM 1322 包,PR#10 Security Audit 转绿                                                                                                                      | P0     | ✅ 2026-07-14        |
-| A-5 | `CLAUDE.md` 入仓(PR#12,codex 5 findings 已修)                                                                                                                                                                                                             | P2     | ✅ merged 2026-07-14 |
-| A-6 | 例行 `git merge upstream/master`(节奏:上游每合大 PR 后;重点等 CC-43 viem 迁移落地)                                                                                                                                                                        | P1     | ⬜ 循环任务          |
-| A-7 | 运行时配置页(RPC/bundler 用户自配)— **YAA 基座已提供**:`app/settings` 完整配置 UI(RPC/Bundler/KMS/Relay/API-key + ping)→ `lib/api-key-store.ts`(localStorage)→ `lib/sdk/client.ts` `getRpcUrl()` 读路径已接线,2026-07-14 验证                             | P1     | ✅ 继承自 YAA        |
-| A-8 | **共享 indexer 基建**:NestJS 事件索引模块(replay lookback + txHash:logIndex 去重 + reorg 事务回滚 + 分块扫描 + 指数退避 + json/postgres 双持久化 + metrics,语义移植自 **MyShop 仓** `worker/src/apiServer.js`)。MyTask 列表扩展性与 MyShop purchases 共用 | P1     | ✅ merged Cos72#14   |
-| A-9 | e2e 基线扩展:登录→transfer→task 建单的 Playwright 冒烟,进 CI                                                                                                                                                                                              | P2     | ⬜                   |
+| #   | 任务                                                                                                                                                                                                                                                      | 优先级 | 状态                                                      |
+| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ | --------------------------------------------------------- |
+| A-1 | Phase 0 共享层(cosSend 全 tier + 三层导航 + 角色门控 + addresses)PR#1-5                                                                                                                                                                                   | P0     | ✅                                                        |
+| A-2 | Phase 1 MyTask `app/tasks` 全流程 cosSend 化,PR#8                                                                                                                                                                                                         | P0     | ✅                                                        |
+| A-3 | CI 基线清债:prettier 14 文件 + `eslint-plugin-react-hooks` 钉 7.0.1 对齐上游(PR#10,codex APPROVE)                                                                                                                                                         | P0     | ✅ merged 2026-07-14                                      |
+| A-4 | 仓库开启 GitHub **Dependency Graph**(Security Audit 唯一堵点;fork 默认关)— 已经 `gh api` 启用,SBOM 1322 包,PR#10 Security Audit 转绿                                                                                                                      | P0     | ✅ 2026-07-14                                             |
+| A-5 | `CLAUDE.md` 入仓(PR#12,codex 5 findings 已修)                                                                                                                                                                                                             | P2     | ✅ merged 2026-07-14                                      |
+| A-6 | 例行 `git merge upstream/master`(节奏:上游每合大 PR 后;重点等 CC-43 viem 迁移落地)                                                                                                                                                                        | P1     | ✅ 2026-07-14 核查:upstream 无新增(已含全部);例行任务保持 |
+| A-7 | 运行时配置页(RPC/bundler 用户自配)— **YAA 基座已提供**:`app/settings` 完整配置 UI(RPC/Bundler/KMS/Relay/API-key + ping)→ `lib/api-key-store.ts`(localStorage)→ `lib/sdk/client.ts` `getRpcUrl()` 读路径已接线,2026-07-14 验证                             | P1     | ✅ 继承自 YAA                                             |
+| A-8 | **共享 indexer 基建**:NestJS 事件索引模块(replay lookback + txHash:logIndex 去重 + reorg 事务回滚 + 分块扫描 + 指数退避 + json/postgres 双持久化 + metrics,语义移植自 **MyShop 仓** `worker/src/apiServer.js`)。MyTask 列表扩展性与 MyShop purchases 共用 | P1     | ✅ merged Cos72#14                                        |
+| A-9 | e2e 基线扩展:登录→transfer→task 建单的 Playwright 冒烟,进 CI                                                                                                                                                                                              | P2     | ⬜                                                        |
 
 ---
 
@@ -78,7 +78,7 @@
 | #     | 任务                                                                                                                                  | 优先级 | 说明                                           |
 | ----- | ------------------------------------------------------------------------------------------------------------------------------------- | ------ | ---------------------------------------------- |
 | MT-10 | 切 MT-8 新地址;删 approve 流(mock USDC 2 op → xPNTs 1 op)                                                                             | P1     | 🟡 地址已切 .env.local;删 approve 流待真 xPNTs |
-| MT-11 | challenge/仲裁 UI:challengeWork、jury 注册/投票/finalize、linkJuryValidation、validation requirement 展示(现只覆盖 happy path 8 函数) | P1     | ⬜                                             |
+| MT-11 | challenge/仲裁 UI:challengeWork、jury 注册/投票/finalize、linkJuryValidation、validation requirement 展示(现只覆盖 happy path 8 函数) | P1     | 🟡 PR Cos72#16(2 轮 codex,五门槛绿)            |
 | MT-12 | x402 付费发帖(AA-x402 direct 路径):KMS SignHash→ERC-1271→X402Client                                                                   | P2     | ⬜ 依赖 E-3                                    |
 | MT-13 | credit purchase 前端(xPNTs 信用透支)                                                                                                  | P2     | ⬜ 依赖 E-1                                    |
 
@@ -88,13 +88,13 @@
 
 ### 4.1 MyShop 仓(合约)
 
-| #    | 任务                                                                                                                                                                                               | 优先级 | 说明                                |
-| ---- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ | ----------------------------------- |
-| MS-1 | **停自铸**(已拍板):`APNTsSale.sol:191` / `GTokenSale.sol:194` 的 `IERC20Mintable.mint` 废弃 → xPNTsFactory 发 xPNTs;`MintERC20Action` 改受控发放;**MockERC20Mintable(mint 无权限)严禁上 Sepolia**  | **P0** | 🟡 设计已批(MyShop#4 merged),实施中 |
-| MS-2 | **Sepolia 首次部署**(deployments 现为空串,从未上链):MockRegistry→真实 Registry、MockCommunityNFT→真实 CommunityNFT(reference/ 有 Factory 参考);写 env 驱动 DeploySepolia 脚本(禁 anvil 硬编码 key) | **P0** | ⬜                                  |
-| MS-3 | 治理(已拍板):4 合约单 owner EOA → Safe 多签 + Ownable2Step;riskSigner/serialSigner 更换权限收紧                                                                                                    | P1     | ⬜                                  |
-| MS-4 | 合约加固:`_recover` 补 EIP-2 s-value 低半序检查(或换 OZ ECDSA);Item struct 加库存 maxSupply/每地址限购/销售时间窗(链上现在没有);`buy()` 循环 mint 加 quantity cap                                  | P1     | ⬜                                  |
-| MS-5 | 信用购物合约侧:`MyShopItems.purchaseWithCredit`(先余额后信用),按 **MyShop 仓** `docs/CreditPayment.md` 方案对接 SP `chargeCreditForShop`                                                           | P1     | ⬜ 依赖 E-1                         |
+| #    | 任务                                                                                                                                                                                               | 优先级 | 说明                                          |
+| ---- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ | --------------------------------------------- |
+| MS-1 | **停自铸**(已拍板):`APNTsSale.sol:191` / `GTokenSale.sol:194` 的 `IERC20Mintable.mint` 废弃 → xPNTsFactory 发 xPNTs;`MintERC20Action` 改受控发放;**MockERC20Mintable(mint 无权限)严禁上 Sepolia**  | **P0** | 🟡 实施 PR MyShop#5(2 轮 codex,20 测试)       |
+| MS-2 | **Sepolia 首次部署**(deployments 现为空串,从未上链):MockRegistry→真实 Registry、MockCommunityNFT→真实 CommunityNFT(reference/ 有 Factory 参考);写 env 驱动 DeploySepolia 脚本(禁 anvil 硬编码 key) | **P0** | 🟡 脚本半 PR MyShop#6(30 测试);上链等三问口径 |
+| MS-3 | 治理(已拍板):4 合约单 owner EOA → Safe 多签 + Ownable2Step;riskSigner/serialSigner 更换权限收紧                                                                                                    | P1     | ⬜                                            |
+| MS-4 | 合约加固:`_recover` 补 EIP-2 s-value 低半序检查(或换 OZ ECDSA);Item struct 加库存 maxSupply/每地址限购/销售时间窗(链上现在没有);`buy()` 循环 mint 加 quantity cap                                  | P1     | ⬜                                            |
+| MS-5 | 信用购物合约侧:`MyShopItems.purchaseWithCredit`(先余额后信用),按 **MyShop 仓** `docs/CreditPayment.md` 方案对接 SP `chargeCreditForShop`                                                           | P1     | ⬜ 依赖 E-1                                   |
 
 ### 4.2 cos72 仓(服务 + 前端重建)
 
