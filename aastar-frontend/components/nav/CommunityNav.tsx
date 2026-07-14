@@ -106,7 +106,11 @@ export function CommunityNav({ active }: { active?: string }) {
               : "text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
           }`;
           if (t.external) {
-            // Same tab on purpose: MyVote's SSO round-trip lands the user back on cos72.
+            // Same-tab navigation is deliberate (no target="_blank"): governance is a primary
+            // workflow, not a side trip, and MyVote's SSO round-trip lands the user back on
+            // cos72 anyway. rel="noopener noreferrer" is kept as a belt-and-braces safe default
+            // (it also suppresses the Referer to MyVote); the lint rule that pairs
+            // noopener with _blank does not apply to a same-tab link. Safe exception.
             return (
               <li key={t.key}>
                 <a href={t.href} rel="noopener noreferrer" className={linkClass}>
