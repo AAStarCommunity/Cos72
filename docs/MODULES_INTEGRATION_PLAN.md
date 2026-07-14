@@ -88,13 +88,13 @@
 
 ### 4.1 MyShop 仓(合约)
 
-| #    | 任务                                                                                                                                                                                               | 优先级 | 说明        |
-| ---- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ | ----------- |
-| MS-1 | **停自铸**(已拍板):`APNTsSale.sol:191` / `GTokenSale.sol:194` 的 `IERC20Mintable.mint` 废弃 → xPNTsFactory 发 xPNTs;`MintERC20Action` 改受控发放;**MockERC20Mintable(mint 无权限)严禁上 Sepolia**  | **P0** | ⬜          |
-| MS-2 | **Sepolia 首次部署**(deployments 现为空串,从未上链):MockRegistry→真实 Registry、MockCommunityNFT→真实 CommunityNFT(reference/ 有 Factory 参考);写 env 驱动 DeploySepolia 脚本(禁 anvil 硬编码 key) | **P0** | ⬜          |
-| MS-3 | 治理(已拍板):4 合约单 owner EOA → Safe 多签 + Ownable2Step;riskSigner/serialSigner 更换权限收紧                                                                                                    | P1     | ⬜          |
-| MS-4 | 合约加固:`_recover` 补 EIP-2 s-value 低半序检查(或换 OZ ECDSA);Item struct 加库存 maxSupply/每地址限购/销售时间窗(链上现在没有);`buy()` 循环 mint 加 quantity cap                                  | P1     | ⬜          |
-| MS-5 | 信用购物合约侧:`MyShopItems.purchaseWithCredit`(先余额后信用),按 **MyShop 仓** `docs/CreditPayment.md` 方案对接 SP `chargeCreditForShop`                                                           | P1     | ⬜ 依赖 E-1 |
+| #    | 任务                                                                                                                                                                                               | 优先级 | 说明                  |
+| ---- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ | --------------------- |
+| MS-1 | **停自铸**(已拍板):`APNTsSale.sol:191` / `GTokenSale.sol:194` 的 `IERC20Mintable.mint` 废弃 → xPNTsFactory 发 xPNTs;`MintERC20Action` 改受控发放;**MockERC20Mintable(mint 无权限)严禁上 Sepolia**  | **P0** | 🟡 设计稿 PR MyShop#4 |
+| MS-2 | **Sepolia 首次部署**(deployments 现为空串,从未上链):MockRegistry→真实 Registry、MockCommunityNFT→真实 CommunityNFT(reference/ 有 Factory 参考);写 env 驱动 DeploySepolia 脚本(禁 anvil 硬编码 key) | **P0** | ⬜                    |
+| MS-3 | 治理(已拍板):4 合约单 owner EOA → Safe 多签 + Ownable2Step;riskSigner/serialSigner 更换权限收紧                                                                                                    | P1     | ⬜                    |
+| MS-4 | 合约加固:`_recover` 补 EIP-2 s-value 低半序检查(或换 OZ ECDSA);Item struct 加库存 maxSupply/每地址限购/销售时间窗(链上现在没有);`buy()` 循环 mint 加 quantity cap                                  | P1     | ⬜                    |
+| MS-5 | 信用购物合约侧:`MyShopItems.purchaseWithCredit`(先余额后信用),按 **MyShop 仓** `docs/CreditPayment.md` 方案对接 SP `chargeCreditForShop`                                                           | P1     | ⬜ 依赖 E-1           |
 
 ### 4.2 cos72 仓(服务 + 前端重建)
 
