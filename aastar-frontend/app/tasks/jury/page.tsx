@@ -186,7 +186,7 @@ export default function JuryPanelPage() {
     } catch (err) {
       toast.dismiss("jury-approve");
       toast.dismiss("jury-register");
-      toast.error(err instanceof Error ? err.message : "Error");
+      toast.error(err instanceof Error && err.message ? err.message : t("juryPage.genericError"));
     } finally {
       setActionLoading(false);
     }
@@ -207,7 +207,7 @@ export default function JuryPanelPage() {
       await refreshJurorState();
     } catch (err) {
       toast.dismiss(toastId);
-      toast.error(err instanceof Error ? err.message : "Error");
+      toast.error(err instanceof Error && err.message ? err.message : t("juryPage.genericError"));
     } finally {
       setActionLoading(false);
     }

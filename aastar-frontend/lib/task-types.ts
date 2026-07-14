@@ -7,7 +7,6 @@ export enum TaskStatus {
   Challenged = 4,
   Finalized = 5,
   Refunded = 6,
-  Disputed = 7,
 }
 
 export const TASK_STATUS_LABELS: Record<TaskStatus, string> = {
@@ -18,7 +17,6 @@ export const TASK_STATUS_LABELS: Record<TaskStatus, string> = {
   [TaskStatus.Challenged]: "Challenged",
   [TaskStatus.Finalized]: "Completed",
   [TaskStatus.Refunded]: "Refunded",
-  [TaskStatus.Disputed]: "Disputed",
 };
 
 export const TASK_STATUS_COLORS: Record<TaskStatus, string> = {
@@ -32,7 +30,6 @@ export const TASK_STATUS_COLORS: Record<TaskStatus, string> = {
     "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400",
   [TaskStatus.Finalized]: "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400",
   [TaskStatus.Refunded]: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
-  [TaskStatus.Disputed]: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
 };
 
 // Mirrors TaskEscrowV2.sol Task struct
