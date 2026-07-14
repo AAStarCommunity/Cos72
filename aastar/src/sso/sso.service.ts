@@ -8,6 +8,7 @@ import { ConfigService } from "@nestjs/config";
 import { JwtService } from "@nestjs/jwt";
 import { randomBytes } from "crypto";
 import { AccountService } from "../account/account.service";
+import { SSO_TOKEN_AUDIENCE, SSO_TOKEN_TTL_SECONDS } from "./sso.constants";
 
 /**
  * MyVote SSO channel (MV-1, cos72 half).
@@ -24,6 +25,8 @@ import { AccountService } from "../account/account.service";
 interface SsoCodeEntry {
   userId: string;
   aaAddress: string;
+  /** Normalized redirect_uri the code was authorized for — exchange must present the same one. */
+  redirectUri: string;
   issuedAt: number;
   expiresAt: number;
 }
@@ -39,8 +42,12 @@ const SWEEP_MS = 60_000;
  */
 const MAX_CODES = 10_000;
 
-export const SSO_TOKEN_AUDIENCE = "myvote";
-export const SSO_TOKEN_TTL_SECONDS = 600; // 10 min
+/**
+ * Single unified error for every exchange failure (unknown / consumed / expired code,
+ * redirect_uri mismatch): one status + one message, so the endpoint cannot be used as an
+ * oracle to distinguish "code exists but expired" from "code never existed" etc.
+ */
+const INVALID_SSO_CODE = "Invalid SSO code";
 
 @Injectable()
 export class SsoService implements OnModuleDestroy {
@@ -67,6 +74,12 @@ export class SsoService implements OnModuleDestroy {
     if (!secret) {
       throw new Error("SSO_JWT_SECRET environment variable is required");
     }
+    // Enforce the isolation, don't just document it: a shared secret would make SSO tokens
+    // and cos72 session tokens cryptographically interchangeable.
+    const sessionSecret = this.configService.get<string>("JWT_SECRET");
+    if (sessionSecret && sessionSecret === secret) {
+      throw new Error("SSO_JWT_SECRET must differ from JWT_SECRET (token-domain isolation)");
+    }
     this.ssoJwtSecret = secret;
 
     // Fail-closed whitelist: empty/unset env means every redirect_uri is rejected.
@@ -86,15 +99,15 @@ export class SsoService implements OnModuleDestroy {
 
   /**
    * Mints a one-time SSO code for the (JWT-authenticated) user. `redirectUri` must match the
-   * SSO_ALLOWED_REDIRECTS whitelist: same origin as an entry AND prefixed by it — origins are
-   * compared on parsed URLs so `https://myvote.example.evil.com` can't pass an
-   * `https://myvote.example` entry.
+   * SSO_ALLOWED_REDIRECTS whitelist (see resolveRedirect for the matching rules). The code is
+   * bound to the normalized redirect_uri — exchange must present the exact same one (OAuth
+   * code↔redirect binding), so a stolen code can't be redeemed under a different redirect.
    */
   async authorize(
     userId: string,
     redirectUri: string
   ): Promise<{ code: string; redirectUri: string }> {
-    this.assertRedirectAllowed(redirectUri);
+    const normalizedRedirect = this.resolveRedirect(redirectUri);
 
     let aaAddress: string;
     try {
@@ -108,31 +121,57 @@ export class SsoService implements OnModuleDestroy {
     const code = randomBytes(32).toString("hex");
     const now = Date.now();
     this.evictIfOverCap();
-    this.codes.set(code, { userId, aaAddress, issuedAt: now, expiresAt: now + CODE_TTL_MS });
+    this.codes.set(code, {
+      userId,
+      aaAddress,
+      redirectUri: normalizedRedirect,
+      issuedAt: now,
+      expiresAt: now + CODE_TTL_MS,
+    });
 
-    return { code, redirectUri };
+    return { code, redirectUri: normalizedRedirect };
   }
 
   /**
-   * Swaps a one-time code for a short-lived SSO session token. The get+delete pair below is
-   * two synchronous operations with no await in between — atomic under Node's single-threaded
-   * event loop, so a code can never be redeemed twice even under concurrent requests.
+   * Swaps a one-time code for a short-lived SSO session token. The presented redirect_uri
+   * must exactly match (after URL normalization) the one the code was authorized for.
+   *
+   * The get+delete pair below is two synchronous operations with no await in between —
+   * atomic under Node's single-threaded event loop, so a code can never be redeemed twice
+   * even under concurrent requests. Any failed attempt (expired / redirect mismatch) also
+   * burns the code, per OAuth one-time-code semantics.
    */
-  exchange(code: string): { token: string; aaAddress: string; expiresIn: number } {
+  exchange(
+    code: string,
+    redirectUri: string
+  ): { token: string; aaAddress: string; expiresIn: number } {
     const entry = this.codes.get(code);
-    this.codes.delete(code); // consume unconditionally: even an expired code is single-use
+    this.codes.delete(code); // consume unconditionally: single-use even when the attempt fails
 
-    if (!entry) {
-      throw new UnauthorizedException("Invalid or already used SSO code");
+    // Normalize the presented redirect_uri exactly like authorize stored it; a value that
+    // doesn't parse can never match (fail-closed).
+    let presentedRedirect: string | null = null;
+    try {
+      presentedRedirect = new URL(redirectUri).toString();
+    } catch (_error) {
+      presentedRedirect = null;
     }
-    if (entry.expiresAt <= Date.now()) {
-      throw new UnauthorizedException("SSO code expired");
+
+    const valid =
+      entry !== undefined &&
+      entry.expiresAt > Date.now() &&
+      presentedRedirect !== null &&
+      entry.redirectUri === presentedRedirect;
+
+    if (!valid) {
+      throw new UnauthorizedException(INVALID_SSO_CODE);
     }
 
     const token = this.jwtService.sign(
       { sub: entry.userId, aa: entry.aaAddress },
       {
         secret: this.ssoJwtSecret,
+        algorithm: "HS256",
         audience: SSO_TOKEN_AUDIENCE,
         expiresIn: SSO_TOKEN_TTL_SECONDS,
       }
@@ -149,6 +188,7 @@ export class SsoService implements OnModuleDestroy {
     try {
       const payload = this.jwtService.verify<{ sub: string; aa: string }>(token, {
         secret: this.ssoJwtSecret,
+        algorithms: ["HS256"], // pin the algorithm — never trust the token header's alg
         audience: SSO_TOKEN_AUDIENCE,
       });
       return { valid: true, aaAddress: payload.aa ?? null };
@@ -157,7 +197,17 @@ export class SsoService implements OnModuleDestroy {
     }
   }
 
-  private assertRedirectAllowed(redirectUri: string): void {
+  /**
+   * Validates redirect_uri against SSO_ALLOWED_REDIRECTS and returns its normalized form.
+   * Matching rules (both sides URL-parsed, never raw-string prefixed):
+   * - origin must be exactly equal (so `https://myvote.example.com.evil.com` can't pass a
+   *   `https://myvote.example.com` entry), AND
+   * - pathname must match on a path-segment boundary: equal to the entry's path, or start
+   *   with entryPath + "/" (so a `/sso/callback` entry admits `/sso/callback/sub` but NOT
+   *   `/sso/callback-evil`). Entry paths are normalized by stripping trailing slashes; a
+   *   bare-origin entry admits every path on that origin.
+   */
+  private resolveRedirect(redirectUri: string): string {
     let target: URL;
     try {
       target = new URL(redirectUri);
@@ -166,17 +216,22 @@ export class SsoService implements OnModuleDestroy {
     }
 
     const allowed = this.allowedRedirects.some(entry => {
+      let entryUrl: URL;
       try {
-        const entryUrl = new URL(entry);
-        return target.origin === entryUrl.origin && redirectUri.startsWith(entry);
+        entryUrl = new URL(entry);
       } catch (_error) {
         return false; // malformed whitelist entry never matches (fail-closed)
       }
+      if (target.origin !== entryUrl.origin) return false;
+      const entryPath = entryUrl.pathname.replace(/\/+$/, ""); // "" = bare origin, admits all paths
+      return target.pathname === entryPath || target.pathname.startsWith(`${entryPath}/`);
     });
 
     if (!allowed) {
       throw new BadRequestException("redirect_uri is not in the SSO_ALLOWED_REDIRECTS whitelist");
     }
+
+    return target.toString();
   }
 
   private sweepExpired(): void {
