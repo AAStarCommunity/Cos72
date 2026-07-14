@@ -1,6 +1,15 @@
-import { Controller, Get, Query } from "@nestjs/common";
+import { BadRequestException, Controller, Get, Query } from "@nestjs/common";
 import { ApiOperation, ApiQuery, ApiTags } from "@nestjs/swagger";
 import { IndexerService } from "./indexer.service";
+
+/** Strict decimal-integer parse: "10abc", "1.5", "-1" are all rejected. */
+function parseStrictInt(name: string, value?: string): number | undefined {
+  if (value === undefined || value === "") return undefined;
+  if (!/^\d+$/.test(value)) {
+    throw new BadRequestException(`Query param "${name}" must be a non-negative integer`);
+  }
+  return Number.parseInt(value, 10);
+}
 
 @ApiTags("indexer")
 @Controller("indexer")
@@ -15,7 +24,7 @@ export class IndexerController {
 
   @Get("events")
   @ApiOperation({ summary: "Query indexed events (public read-only, newest first)" })
-  @ApiQuery({ name: "source", required: false, description: "Filter by source key" })
+  @ApiQuery({ name: "source", required: false, description: "Filter by registered source key" })
   @ApiQuery({ name: "limit", required: false, description: "Page size (default 50, max 200)" })
   @ApiQuery({ name: "offset", required: false, description: "Pagination offset (default 0)" })
   async getEvents(
@@ -23,12 +32,13 @@ export class IndexerController {
     @Query("limit") limit?: string,
     @Query("offset") offset?: string
   ) {
-    const parsedLimit = Number.parseInt(limit ?? "", 10);
-    const parsedOffset = Number.parseInt(offset ?? "", 10);
+    if (source && !this.indexerService.hasSource(source)) {
+      throw new BadRequestException(`Unknown indexer source: ${source}`);
+    }
     return this.indexerService.queryEvents({
       source: source || undefined,
-      limit: Number.isNaN(parsedLimit) ? undefined : parsedLimit,
-      offset: Number.isNaN(parsedOffset) ? undefined : parsedOffset,
+      limit: parseStrictInt("limit", limit),
+      offset: parseStrictInt("offset", offset),
     });
   }
 }

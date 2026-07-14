@@ -53,18 +53,28 @@ export interface IndexerSourceMetrics {
   fromBlock: number;
   lastProcessedBlock: number | null;
   eventsIndexed: number;
+  /** "disabled" after a non-transient persistence corruption error. */
+  status: "active" | "disabled";
 }
 
 export interface IndexerMetrics {
   running: boolean;
   pollIntervalMs: number;
   lookbackBlocks: number;
+  scanWindowBlocks: number;
   sourceCount: number;
   latestBlock: number | null;
   /** latestBlock - min(perSource lastProcessedBlock); 0 when idle or fully caught up. */
   lagBlocks: number;
+  /** Error of the most recent failed round; cleared on the next successful round. */
+  currentError: string | null;
+  /** Last error ever observed (sticky, for post-mortem). */
   lastError: string | null;
   lastErrorAt: string | null;
+  lastSuccessAt: string | null;
+  consecutiveErrors: number;
+  /** Epoch ms before which timer-driven polls are skipped (exponential backoff). */
+  backoffUntil: number | null;
   reconnectCount: number;
   totalPolls: number;
   reorgCount: number;
