@@ -53,7 +53,15 @@ export function safeReturnPath(raw: string | null | undefined, origin?: string):
   try {
     const url = new URL(raw, base);
     if (url.origin !== base) return null;
-    return url.pathname + url.search + url.hash;
+    const result = url.pathname + url.search + url.hash;
+    // (3b) Final-form recheck, independent of the input check in (2). The parser folds
+    // dot-segments (`..`), so an input that started with a single "/" — e.g. `/%2e%2e//evil.com`
+    // (%2e%2e = ..), `/a/..//evil.com`, `/foo/../..//evil.com` — can normalize to a pathname of
+    // `//evil.com`, which `router.push` would read as a protocol-relative authority. url.origin
+    // still equals `base` (the host lives in the path, not the authority), so (3) passes; guard
+    // the normalized OUTPUT here.
+    if (!result.startsWith("/") || result.startsWith("//")) return null;
+    return result;
   } catch {
     return null;
   }

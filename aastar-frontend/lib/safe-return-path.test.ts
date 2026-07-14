@@ -48,10 +48,28 @@ test("safeReturnPath handles the raw percent-encoded bypass strings after decode
   assert.equal(safeReturnPath("/\r\n//evil.com", ORIGIN), null);
 });
 
+test("safeReturnPath rejects dot-segment normalization that re-introduces an authority", () => {
+  // The WHATWG URL parser folds `..` dot-segments, so an input that starts with a single "/"
+  // can normalize to a pathname of `//evil.com` (a protocol-relative authority) while
+  // url.origin still equals base (the host lives in the path). The (3b) final-form recheck
+  // must catch these. `%2e%2e` = `..`; `%252e%252e` is double-encoded `..`.
+  const rejected = ["/%2e%2e//evil.com", "/a/..//evil.com", "/foo/../..//evil.com"];
+  for (const payload of rejected) {
+    assert.equal(safeReturnPath(payload, ORIGIN), null, `should reject dot-segment: ${payload}`);
+  }
+  // Double-encoded `%252e%252e` is NOT a real bypass at the router.push sink: the WHATWG URL
+  // parser does not decode `%25`, so the pathname stays `/%252e%252e//evil.com` (same-origin,
+  // single leading slash) and router.push navigates same-origin without a second decode. It is
+  // therefore honored as a same-origin path rather than rejected.
+  assert.equal(safeReturnPath("/%252e%252e//evil.com", ORIGIN), "/%252e%252e//evil.com");
+});
+
 test("safeReturnPath honors legitimate same-origin paths", () => {
   assert.equal(safeReturnPath("/dashboard", ORIGIN), "/dashboard");
   assert.equal(safeReturnPath("/sso/start?redirect_uri=x", ORIGIN), "/sso/start?redirect_uri=x");
   assert.equal(safeReturnPath("/proposal/0xabc#frag", ORIGIN), "/proposal/0xabc#frag");
+  // In-origin `..` that stays rooted must NOT be over-rejected: `/a/../b` normalizes to `/b`.
+  assert.equal(safeReturnPath("/a/../b", ORIGIN), "/b");
 });
 
 test("safeReturnPath returns null for empty / nullish input", () => {
