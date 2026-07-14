@@ -43,17 +43,17 @@
 
 ## 2. A 线 — cos72 本体基础链条
 
-| #   | 任务                                                                                                                                                                                      | 优先级 | 状态               |
-| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ | ------------------ |
-| A-1 | Phase 0 共享层(cosSend 全 tier + 三层导航 + 角色门控 + addresses)PR#1-5                                                                                                                   | P0     | ✅                 |
-| A-2 | Phase 1 MyTask `app/tasks` 全流程 cosSend 化,PR#8                                                                                                                                         | P0     | ✅                 |
-| A-3 | CI 基线清债:prettier 14 文件 + `eslint-plugin-react-hooks` 钉 7.0.1 对齐上游(PR#10,**14/14 checks 全绿**)                                                                                 | P0     | 🟡 待 review/merge |
-| A-4 | 仓库开启 GitHub **Dependency Graph**(Security Audit 唯一堵点;fork 默认关)— 已经 `gh api` 启用,SBOM 1322 包,PR#10 Security Audit 转绿                                                      | P0     | ✅ 2026-07-14      |
-| A-5 | `CLAUDE.md` 入仓(/init 已生成,在 stash)                                                                                                                                                   | P2     | ⬜                 |
-| A-6 | 例行 `git merge upstream/master`(节奏:上游每合大 PR 后;重点等 CC-43 viem 迁移落地)                                                                                                        | P1     | ⬜ 循环任务        |
-| A-7 | 运行时配置页(RPC/bundler 用户自配,`config/brand.ts` 无硬默认的补全 UI)                                                                                                                    | P1     | ⬜                 |
-| A-8 | **共享 indexer 基建**:NestJS 事件索引模块(replay lookback + txHash:logIndex 去重 + reorg 回滚 + DB 持久化,语义照抄 MyShop worker/apiServer.js)。MyTask 列表扩展性与 MyShop purchases 共用 | P1     | ⬜                 |
-| A-9 | e2e 基线扩展:登录→transfer→task 建单的 Playwright 冒烟,进 CI                                                                                                                              | P2     | ⬜                 |
+| #   | 任务                                                                                                                                                                                                   | 优先级 | 状态               |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------ | ------------------ |
+| A-1 | Phase 0 共享层(cosSend 全 tier + 三层导航 + 角色门控 + addresses)PR#1-5                                                                                                                                | P0     | ✅                 |
+| A-2 | Phase 1 MyTask `app/tasks` 全流程 cosSend 化,PR#8                                                                                                                                                      | P0     | ✅                 |
+| A-3 | CI 基线清债:prettier 14 文件 + `eslint-plugin-react-hooks` 钉 7.0.1 对齐上游(PR#10,**14/14 checks 全绿**)                                                                                              | P0     | 🟡 待 review/merge |
+| A-4 | 仓库开启 GitHub **Dependency Graph**(Security Audit 唯一堵点;fork 默认关)— 已经 `gh api` 启用,SBOM 1322 包,PR#10 Security Audit 转绿                                                                   | P0     | ✅ 2026-07-14      |
+| A-5 | `CLAUDE.md` 入仓(/init 已生成,在 stash)                                                                                                                                                                | P2     | ⬜                 |
+| A-6 | 例行 `git merge upstream/master`(节奏:上游每合大 PR 后;重点等 CC-43 viem 迁移落地)                                                                                                                     | P1     | ⬜ 循环任务        |
+| A-7 | 运行时配置页(RPC/bundler 用户自配,`config/brand.ts` 无硬默认的补全 UI)                                                                                                                                 | P1     | ⬜                 |
+| A-8 | **共享 indexer 基建**:NestJS 事件索引模块(replay lookback + txHash:logIndex 去重 + reorg 回滚 + DB 持久化,语义照抄 **MyShop 仓** `worker/src/apiServer.js`)。MyTask 列表扩展性与 MyShop purchases 共用 | P1     | ⬜                 |
+| A-9 | e2e 基线扩展:登录→transfer→task 建单的 Playwright 冒烟,进 CI                                                                                                                                           | P2     | ⬜                 |
 
 ---
 
@@ -94,13 +94,13 @@
 | MS-2 | **Sepolia 首次部署**(deployments 现为空串,从未上链):MockRegistry→真实 Registry、MockCommunityNFT→真实 CommunityNFT(reference/ 有 Factory 参考);写 env 驱动 DeploySepolia 脚本(禁 anvil 硬编码 key) | **P0** | ⬜          |
 | MS-3 | 治理(已拍板):4 合约单 owner EOA → Safe 多签 + Ownable2Step;riskSigner/serialSigner 更换权限收紧                                                                                                    | P1     | ⬜          |
 | MS-4 | 合约加固:`_recover` 补 EIP-2 s-value 低半序检查(或换 OZ ECDSA);Item struct 加库存 maxSupply/每地址限购/销售时间窗(链上现在没有);`buy()` 循环 mint 加 quantity cap                                  | P1     | ⬜          |
-| MS-5 | 信用购物合约侧:`MyShopItems.purchaseWithCredit`(先余额后信用),按 `docs/CreditPayment.md` 方案对接 SP `chargeCreditForShop`                                                                         | P1     | ⬜ 依赖 E-1 |
+| MS-5 | 信用购物合约侧:`MyShopItems.purchaseWithCredit`(先余额后信用),按 **MyShop 仓** `docs/CreditPayment.md` 方案对接 SP `chargeCreditForShop`                                                           | P1     | ⬜ 依赖 E-1 |
 
 ### 4.2 cos72 仓(服务 + 前端重建)
 
 | #     | 任务                                                                                                                                                                                                  | 优先级 | 说明                  |
 | ----- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ | --------------------- |
-| MS-6  | **permit 签名服务并入 NestJS + KMS agent-key**(已拍板):替代 permitServer.js 明文 env 私钥;`docs/worker.md` B5 直接作需求文档;保留 IP 限流语义                                                         | **P0** | ⬜                    |
+| MS-6  | **permit 签名服务并入 NestJS + KMS agent-key**(已拍板):替代 permitServer.js 明文 env 私钥;**MyShop 仓** `docs/worker.md` §B5 直接作需求文档;保留 IP 限流语义                                          | **P0** | ⬜                    |
 | MS-7  | **shop 前端重建**:App Router + YAA Layout + cosSend(原 4015 行无框架 JS 零搬迁)。移植语义资产:buy 步进状态机、错误→可操作提示映射表、店内 4 级角色 gating 矩阵、purchases 凭证展示                    | **P0** | ⬜ 依赖 MS-1/2 出地址 |
 | MS-8  | indexer 移植(= A-8 落地第一个消费方):Purchased 事件索引 + /shops /items /purchases /categories 查询 API                                                                                               | P1     | ⬜                    |
 | MS-9  | 信用购物前端 + 统一账单展示                                                                                                                                                                           | P1     | ⬜ 依赖 MS-5          |
@@ -132,13 +132,13 @@
 
 ## 6. E 线 — 生态依赖(goutou/Seeder 派发,跨仓)
 
-| #   | 任务                                                                                                                                                                   | 目标仓    | 状态                                       |
-| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- | ------------------------------------------ |
-| E-1 | SuperPaymaster:`chargeCreditForShop` + `authorizedShops` 白名单(**MyShop 信用购物 + MyTask credit purchase 合并一条需求线**;设计输入 = MyShop `docs/CreditPayment.md`) | repo:sp   | 🟡 CC `d50b88b0` 调研已派,待升级为实现需求 |
-| E-2 | DVT:Jury 质押/惩罚复用方案(proposal/jury 重构)                                                                                                                         | repo:dvt  | ⬜ 待发                                    |
-| E-3 | DVT:X402Facilitator 合约 + facilitator 服务 Sepolia 部署(YAA-Validator#130)                                                                                            | repo:dvt  | 🟡 goutou `f14d3f9b` 已在问                |
-| E-4 | YAAA:8 继承文件 ethers→viem(cos72 merge 继承)                                                                                                                          | repo:yaaa | 🟡 CC-43 已派未动工                        |
-| E-5 | KMS:`signTypedData`(domain 白名单)+ SSO 端点(= MV-1 的 KMS 半)                                                                                                         | repo:kms  | ⬜ 待发(MV-0 通过后)                       |
+| #   | 任务                                                                                                                                                                      | 目标仓    | 状态                                       |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- | ------------------------------------------ |
+| E-1 | SuperPaymaster:`chargeCreditForShop` + `authorizedShops` 白名单(**MyShop 信用购物 + MyTask credit purchase 合并一条需求线**;设计输入 = MyShop 仓 `docs/CreditPayment.md`) | repo:sp   | 🟡 CC `d50b88b0` 调研已派,待升级为实现需求 |
+| E-2 | DVT:Jury 质押/惩罚复用方案(proposal/jury 重构)                                                                                                                            | repo:dvt  | ⬜ 待发                                    |
+| E-3 | DVT:X402Facilitator 合约 + facilitator 服务 Sepolia 部署(YAA-Validator#130)                                                                                               | repo:dvt  | 🟡 goutou `f14d3f9b` 已在问                |
+| E-4 | YAAA:8 继承文件 ethers→viem(cos72 merge 继承)                                                                                                                             | repo:yaaa | 🟡 CC-43 已派未动工                        |
+| E-5 | KMS:`signTypedData`(domain 白名单)+ SSO 端点(= MV-1 的 KMS 半)                                                                                                            | repo:kms  | 🟡 已派发 Seeder(2026-07-14,repo:kms)      |
 
 ---
 
@@ -146,9 +146,9 @@
 
 ```
 M1 底盘收口(立即)
-   A-3 merge → A-4 开 Dependency Graph → CI 全绿
+   A-3 merge(A-4 Dependency Graph 已开✅,CI 已全绿)
    MT-1/2/3 开工(无外部依赖)          ← 已启动
-   MV-0 spike(一票否决项,尽早)
+   MV-0 spike ✅ GO(2026-07-14,详见 D 线)
 
 M2 MyTask 生产可用
    MT-4/5 → MT-8 重部署 → MT-10/11(cos72 切地址 + 仲裁 UI)
@@ -159,7 +159,7 @@ M3 MyShop 上线(与 M2 可并行启动)
    → MS-3 治理 → MS-8 indexer
 
 M4 MyVote SSO
-   MV-0 通过 → E-5/MV-1 → MV-2/3/4 → MV-5 → MV-7 入口
+   MV-0 已通过✅ → E-5(已派)/MV-1 → MV-2/3/4 → MV-5 → MV-7 入口
 
 M5 信用与微支付(依赖解锁后)
    E-1 落地 → MS-5/9 + MT-13;E-3 落地 → MT-12
@@ -170,5 +170,5 @@ M5 信用与微支付(依赖解锁后)
 - MyTask 两个 P0 是**资金安全/卡死级**,修完才能对外;其余是替换与补全。
 - MyShop 的量最大但路径清晰,合约协议本身设计干净(改造而非重写)。
 - MyVote 的 MV-0
-  spike 决定整条 D 线形态,**必须最先做**;其余工作量在 KMS/cos72 侧而非 MyVote 仓。
+  spike 决定整条 D 线形态(**已于 2026-07-14 完成,结论 GO**);其余工作量在 KMS/cos72 侧而非 MyVote 仓。
 - E 线全部是「别人仓」的活,用 goutou 派发并在本表回填状态,不要在 cos72/模块仓里自造平行实现。
