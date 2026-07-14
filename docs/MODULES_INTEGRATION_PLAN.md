@@ -47,8 +47,8 @@
 | --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ | ------------------ |
 | A-1 | Phase 0 共享层(cosSend 全 tier + 三层导航 + 角色门控 + addresses)PR#1-5                                                                                                                   | P0     | ✅                 |
 | A-2 | Phase 1 MyTask `app/tasks` 全流程 cosSend 化,PR#8                                                                                                                                         | P0     | ✅                 |
-| A-3 | CI 基线清债:prettier 14 文件 + `eslint-plugin-react-hooks` 钉 7.0.1 对齐上游(PR#10)                                                                                                       | P0     | 🟡 待 review/merge |
-| A-4 | 仓库开启 GitHub **Dependency Graph**(Security Audit 唯一堵点;fork 默认关)                                                                                                                 | P0     | ⬜ admin 设置      |
+| A-3 | CI 基线清债:prettier 14 文件 + `eslint-plugin-react-hooks` 钉 7.0.1 对齐上游(PR#10,**14/14 checks 全绿**)                                                                                 | P0     | 🟡 待 review/merge |
+| A-4 | 仓库开启 GitHub **Dependency Graph**(Security Audit 唯一堵点;fork 默认关)— 已经 `gh api` 启用,SBOM 1322 包,PR#10 Security Audit 转绿                                                      | P0     | ✅ 2026-07-14      |
 | A-5 | `CLAUDE.md` 入仓(/init 已生成,在 stash)                                                                                                                                                   | P2     | ⬜                 |
 | A-6 | 例行 `git merge upstream/master`(节奏:上游每合大 PR 后;重点等 CC-43 viem 迁移落地)                                                                                                        | P1     | ⬜ 循环任务        |
 | A-7 | 运行时配置页(RPC/bundler 用户自配,`config/brand.ts` 无硬默认的补全 UI)                                                                                                                    | P1     | ⬜                 |
