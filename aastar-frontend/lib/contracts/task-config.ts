@@ -92,3 +92,10 @@ export function isX402Configured(): boolean {
 export function isContractsConfigured(): boolean {
   return !!TASK_ESCROW_ADDRESS && TASK_ESCROW_ADDRESS !== "0x" && TASK_ESCROW_ADDRESS.length === 42;
 }
+
+/** MT-11: JuryContract deployed & wired via env (challenge/arbitration UI). */
+export function isJuryConfigured(): boolean {
+  return (
+    !!JURY_CONTRACT_ADDRESS && JURY_CONTRACT_ADDRESS !== "0x" && JURY_CONTRACT_ADDRESS.length === 42
+  );
+}

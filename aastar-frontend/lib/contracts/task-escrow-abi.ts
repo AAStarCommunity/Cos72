@@ -38,9 +38,11 @@ export const TASK_ESCROW_ABI = [
     outputs: [],
   },
   {
+    // V2 redeploy: the challenge stake is an ERC-20 transferFrom
+    // (challengeStakeToken, e.g. xPNT) — no native value, requires prior approve().
     name: "challengeWork",
     type: "function",
-    stateMutability: "payable",
+    stateMutability: "nonpayable",
     inputs: [{ name: "taskId", type: "bytes32" }],
     outputs: [],
   },
@@ -146,6 +148,49 @@ export const TASK_ESCROW_ABI = [
     outputs: [{ name: "", type: "uint256" }],
   },
   {
+    name: "challengeStakeToken",
+    type: "function",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ name: "", type: "address" }],
+  },
+  {
+    name: "challengeStakeAmount",
+    type: "function",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ name: "", type: "uint256" }],
+  },
+  {
+    name: "getTaskRequiredValidationTags",
+    type: "function",
+    stateMutability: "view",
+    inputs: [{ name: "taskId", type: "bytes32" }],
+    outputs: [{ name: "tags", type: "bytes32[]" }],
+  },
+  {
+    name: "getTaskValidationRequirement",
+    type: "function",
+    stateMutability: "view",
+    inputs: [
+      { name: "taskId", type: "bytes32" },
+      { name: "tag", type: "bytes32" },
+    ],
+    outputs: [
+      { name: "minCount", type: "uint64" },
+      { name: "minAvgResponse", type: "uint8" },
+      { name: "minUniqueValidators", type: "uint8" },
+      { name: "enabled", type: "bool" },
+    ],
+  },
+  {
+    name: "validationsSatisfied",
+    type: "function",
+    stateMutability: "view",
+    inputs: [{ name: "taskId", type: "bytes32" }],
+    outputs: [{ name: "", type: "bool" }],
+  },
+  {
     name: "createTaskWithPermit",
     type: "function",
     stateMutability: "nonpayable",
@@ -229,6 +274,23 @@ export const TASK_ESCROW_ABI = [
     inputs: [
       { name: "taskId", type: "bytes32", indexed: true },
       { name: "refundAmount", type: "uint256", indexed: false },
+    ],
+  },
+  {
+    name: "TaskChallenged",
+    type: "event",
+    inputs: [
+      { name: "taskId", type: "bytes32", indexed: true },
+      { name: "challenger", type: "address", indexed: true },
+      { name: "stake", type: "uint256", indexed: false },
+    ],
+  },
+  {
+    name: "ChallengeResolved",
+    type: "event",
+    inputs: [
+      { name: "taskId", type: "bytes32", indexed: true },
+      { name: "challengeAccepted", type: "bool", indexed: false },
     ],
   },
 ] as const;

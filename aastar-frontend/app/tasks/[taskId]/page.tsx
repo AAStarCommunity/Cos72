@@ -1,12 +1,21 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter, useParams } from "next/navigation";
+import { useTranslation } from "react-i18next";
+import { formatUnits } from "viem";
 import Layout from "@/components/Layout";
 import { useTask } from "@/contexts/TaskContext";
 import { useCos72Session } from "@/contexts/Cos72SessionContext";
 import { getStoredAuth } from "@/lib/auth";
-import { type ParsedTask, TaskStatus, TASK_STATUS_COLORS } from "@/lib/task-types";
+import {
+  type ParsedTask,
+  type ChallengeStakeConfig,
+  type ValidationRequirementView,
+  TaskStatus,
+  TASK_STATUS_COLORS,
+} from "@/lib/task-types";
 import {
   DEFAULT_REWARD_TOKEN_SYMBOL,
   X402_API_URL,
@@ -20,9 +29,13 @@ import {
   CheckCircleIcon,
   ExclamationTriangleIcon,
   ReceiptRefundIcon,
+  ScaleIcon,
 } from "@heroicons/react/24/outline";
 import { formatDate, formatDateTime } from "@/lib/date-utils";
 import toast from "react-hot-toast";
+
+const ZERO_HASH = "0x0000000000000000000000000000000000000000000000000000000000000000";
+const isBytes32 = (v: string) => /^0x[0-9a-fA-F]{64}$/.test(v);
 
 function AddressRow({ label, addr }: { label: string; addr: string }) {
   if (!addr || addr === "0x0000000000000000000000000000000000000000") return null;
@@ -50,6 +63,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 export default function TaskDetailPage() {
   const router = useRouter();
   const { taskId } = useParams<{ taskId: string }>();
+  const { t } = useTranslation();
   const {
     getTask,
     acceptTask,
@@ -59,6 +73,14 @@ export default function TaskDetailPage() {
     cancelTask,
     getTaskReceipts,
     linkReceipt,
+    // MT-11: challenge / arbitration
+    getChallengeStakeConfig,
+    checkStakeAllowance,
+    approveStakeToken,
+    challengeWork,
+    linkJuryValidation,
+    getValidationRequirements,
+    getValidationsSatisfied,
   } = useTask();
   // Cos72 is AirAccount-only: the smart account is the on-chain actor, so the
   // contract stores it as community/taskor. Role checks compare against it, and
@@ -78,6 +100,12 @@ export default function TaskDetailPage() {
   const [showLinkReceiptForm, setShowLinkReceiptForm] = useState(false);
   const [receiptInput, setReceiptInput] = useState("");
   const [receiptUriInput, setReceiptUriInput] = useState("");
+  // MT-11: challenge (approve xPNT stake + challengeWork, two gasless ops)
+  const [stakeConfig, setStakeConfig] = useState<ChallengeStakeConfig | null>(null);
+  const [juryHashInput, setJuryHashInput] = useState("");
+  // MT-11: per-tag validation requirements (read-only)
+  const [validationReqs, setValidationReqs] = useState<ValidationRequirementView[]>([]);
+  const [validationsOk, setValidationsOk] = useState<boolean | null>(null);
 
   const myAddress = (sessionAddress ?? "").toLowerCase();
   const isCommunity = task?.community.toLowerCase() === myAddress;
@@ -118,6 +146,71 @@ export default function TaskDetailPage() {
       setReceiptDetails(map);
     });
   }, [taskId, getTaskReceipts]);
+
+  // MT-11: load the ERC-20 challenge-stake config once the task is in a
+  // challengeable/challenged state (needed for the stake notice + amounts).
+  useEffect(() => {
+    if (!task || (!task.canChallenge && task.status !== TaskStatus.Challenged)) return;
+    getChallengeStakeConfig().then(setStakeConfig);
+  }, [task, getChallengeStakeConfig]);
+
+  // MT-11: read-only per-tag validation requirements + satisfied flag.
+  useEffect(() => {
+    if (!taskId) return;
+    getValidationRequirements(taskId).then(async reqs => {
+      setValidationReqs(reqs);
+      if (reqs.length > 0) setValidationsOk(await getValidationsSatisfied(taskId));
+    });
+  }, [taskId, getValidationRequirements, getValidationsSatisfied]);
+
+  // MT-11: approve stake (op #1, skipped when allowance suffices) + challengeWork (op #2)
+  async function handleChallenge() {
+    if (!task || !isConnected || !sessionAddress) {
+      toast.error(t("taskChallenge.loginRequired"));
+      return;
+    }
+    const config = stakeConfig ?? (await getChallengeStakeConfig());
+    if (!config) {
+      toast.error(t("taskChallenge.stakeLoading"));
+      return;
+    }
+    setActionLoading(true);
+    try {
+      const allowance = await checkStakeAllowance(sessionAddress);
+      if (allowance < config.amount) {
+        toast.loading(t("taskChallenge.approving"), { id: "challenge-approve" });
+        await approveStakeToken(config.amount, send);
+        toast.dismiss("challenge-approve");
+        toast.success(t("taskChallenge.approved"));
+      }
+      toast.loading(t("taskChallenge.challenging"), { id: "challenge-send" });
+      await challengeWork(task.taskId, send);
+      toast.dismiss("challenge-send");
+      toast.success(t("taskChallenge.challenged"));
+      await refresh();
+    } catch (err) {
+      toast.dismiss("challenge-approve");
+      toast.dismiss("challenge-send");
+      toast.error(err instanceof Error ? err.message : "Error");
+    } finally {
+      setActionLoading(false);
+    }
+  }
+
+  // MT-11: resolve a Challenged task against a COMPLETED jury verdict
+  async function handleLinkJury() {
+    if (!task || !isConnected) {
+      toast.error(t("taskChallenge.loginRequired"));
+      return;
+    }
+    const hash = juryHashInput.trim();
+    if (!isBytes32(hash)) {
+      toast.error(t("taskChallenge.invalidHash"));
+      return;
+    }
+    await runAction(() => linkJuryValidation(task.taskId, hash, send), t("taskChallenge.linked"));
+    setJuryHashInput("");
+  }
 
   async function runAction(fn: () => Promise<boolean>, successMsg: string) {
     if (!isConnected) {
@@ -188,8 +281,10 @@ export default function TaskDetailPage() {
   const isOpen = task.status === TaskStatus.Open;
   const isAccepted = task.status === TaskStatus.Accepted || task.status === TaskStatus.InProgress;
   const isSubmitted = task.status === TaskStatus.Submitted;
+  const isChallenged = task.status === TaskStatus.Challenged;
   const isFinalized = task.status === TaskStatus.Finalized;
   const isRefunded = task.status === TaskStatus.Refunded;
+  const hasJuryHash = task.juryTaskHash && task.juryTaskHash !== ZERO_HASH;
 
   return (
     <Layout requireAuth>
@@ -295,6 +390,123 @@ export default function TaskDetailPage() {
             <p className="text-sm text-gray-700 dark:text-gray-300 break-words">
               {task.evidenceUri}
             </p>
+          </Section>
+        )}
+
+        {/* MT-11: per-tag validation requirements (read-only, escrow getters) */}
+        {validationReqs.length > 0 && (
+          <Section title={t("taskChallenge.validationTitle")}>
+            <div className="space-y-3">
+              {validationsOk !== null && (
+                <span
+                  className={`inline-block text-xs font-medium px-2 py-1 rounded-full ${
+                    validationsOk
+                      ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400"
+                      : "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400"
+                  }`}
+                >
+                  {validationsOk
+                    ? t("taskChallenge.validationSatisfied")
+                    : t("taskChallenge.validationUnsatisfied")}
+                </span>
+              )}
+              {validationReqs.map(req => (
+                <div
+                  key={req.tag}
+                  className="rounded-lg border border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/40 p-3"
+                >
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <span className="text-xs text-gray-500 dark:text-gray-400">
+                      {t("taskChallenge.reqTag")}
+                    </span>
+                    <span className="text-xs font-mono text-gray-700 dark:text-gray-300 break-all">
+                      {req.tag.slice(0, 14)}…{req.tag.slice(-8)}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 text-xs text-gray-500 dark:text-gray-400">
+                    <div>
+                      <p>{t("taskChallenge.reqMinCount")}</p>
+                      <p className="text-gray-900 dark:text-white font-medium">
+                        {req.minCount.toString()}
+                      </p>
+                    </div>
+                    <div>
+                      <p>{t("taskChallenge.reqMinAvg")}</p>
+                      <p className="text-gray-900 dark:text-white font-medium">
+                        {req.minAvgResponse}
+                      </p>
+                    </div>
+                    <div>
+                      <p>{t("taskChallenge.reqMinUnique")}</p>
+                      <p className="text-gray-900 dark:text-white font-medium">
+                        {req.minUniqueValidators}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Section>
+        )}
+
+        {/* MT-11: challenge in progress — stake info + linkJuryValidation entry */}
+        {isChallenged && (
+          <Section title={t("taskChallenge.challengedTitle")}>
+            <div className="space-y-3">
+              <p className="text-sm text-gray-700 dark:text-gray-300">
+                {t("taskChallenge.challengedInfo")}
+              </p>
+              {task.challengeStake > 0n && stakeConfig && (
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-500 dark:text-gray-400">
+                    {t("taskChallenge.stakeLocked")}
+                  </span>
+                  <span className="font-semibold text-orange-600 dark:text-orange-400">
+                    {formatUnits(task.challengeStake, stakeConfig.decimals)} {stakeConfig.symbol}
+                  </span>
+                </div>
+              )}
+              {hasJuryHash ? (
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-500 dark:text-gray-400">
+                    {t("taskChallenge.juryHash")}
+                  </span>
+                  <span className="font-mono text-xs text-gray-900 dark:text-white">
+                    {task.juryTaskHash.slice(0, 14)}…{task.juryTaskHash.slice(-10)}
+                  </span>
+                </div>
+              ) : (
+                <div className="space-y-2 pt-1 border-t border-gray-100 dark:border-gray-700">
+                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300 pt-2">
+                    {t("taskChallenge.linkJuryTitle")}
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    {t("taskChallenge.linkJuryHint")}
+                  </p>
+                  <input
+                    type="text"
+                    value={juryHashInput}
+                    onChange={e => setJuryHashInput(e.target.value)}
+                    placeholder={t("taskChallenge.juryHashPlaceholder")}
+                    className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-transparent text-sm font-mono text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  />
+                  <button
+                    onClick={handleLinkJury}
+                    disabled={!isBytes32(juryHashInput.trim()) || actionLoading}
+                    className="w-full py-2 rounded-lg bg-orange-600 hover:bg-orange-700 disabled:opacity-60 text-white text-sm font-medium transition-colors flex items-center justify-center gap-2"
+                  >
+                    <ScaleIcon className="w-4 h-4" />
+                    {t("taskChallenge.linkButton")}
+                  </button>
+                </div>
+              )}
+              <Link
+                href="/tasks/jury"
+                className="inline-block text-xs text-emerald-600 dark:text-emerald-400 hover:underline"
+              >
+                {t("taskChallenge.goToJury")} →
+              </Link>
+            </div>
           </Section>
         )}
 
@@ -494,6 +706,28 @@ export default function TaskDetailPage() {
               </button>
               <p className="text-xs text-center text-gray-500 dark:text-gray-400">
                 Or wait for the 3-day challenge period to expire for auto-settlement
+              </p>
+            </div>
+          )}
+
+          {/* MT-11: community challenges the submission (approve xPNT stake + challengeWork) */}
+          {isSubmitted && isCommunity && task.canChallenge && (
+            <div className="space-y-2">
+              <button
+                onClick={handleChallenge}
+                disabled={actionLoading || !stakeConfig}
+                className="w-full py-3 rounded-xl border border-orange-300 dark:border-orange-700 text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/20 disabled:opacity-60 font-semibold text-sm transition-colors flex items-center justify-center gap-2"
+              >
+                <ExclamationTriangleIcon className="w-5 h-5" />
+                {actionLoading ? "Processing..." : t("taskChallenge.challengeButton")}
+              </button>
+              <p className="text-xs text-center text-gray-500 dark:text-gray-400">
+                {stakeConfig
+                  ? t("taskChallenge.stakeNotice", {
+                      amount: formatUnits(stakeConfig.amount, stakeConfig.decimals),
+                      symbol: stakeConfig.symbol,
+                    })
+                  : t("taskChallenge.stakeLoading")}
               </p>
             </div>
           )}
