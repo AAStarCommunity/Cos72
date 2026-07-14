@@ -1082,5 +1082,25 @@
     "done": "限额已提高",
     "cancel": "取消",
     "note": "guardian 链下签变更 digest,你用 passkey 免 gas 提交。法定数 = 合约 RECOVERY_THRESHOLD。"
+  },
+  "ssoStart": {
+    "title": "正在为你登录 MyVote",
+    "working": "正在授权跳转——稍候将自动跳转。",
+    "back": "返回",
+    "home": "回到控制台",
+    "signInAgain": "重新登录",
+    "createAccount": "去创建账户",
+    "error": {
+      "title": "SSO 跳转失败",
+      "detailLabel": "后端返回",
+      "missingRedirect": "本页需要携带 ?redirect_uri 参数打开。请从 MyVote 的登录按钮进入，而不要直接访问本 URL。",
+      "notWhitelisted": "cos72 拒绝授权本次跳转：redirect_uri「{{uri}}」未登记在后端 SSO_ALLOWED_REDIRECTS 白名单中。",
+      "opsHint": "运维提示：请把这个完整的 redirect_uri（origin + 回调路径）加入 cos72 后端环境变量 SSO_ALLOWED_REDIRECTS，然后重启 API。SSO_ALLOWED_REDIRECTS 为空或未设置时，后端会拒绝所有 redirect_uri（fail-closed，属预期行为）。",
+      "noAccount": "你的 cos72 账户还没有 AirAccount。请先创建智能账户，再登录 MyVote。",
+      "unauthorized": "cos72 登录态缺失或已过期。请重新登录后继续前往 MyVote。",
+      "badRedirect": "后端返回的跳转地址不是合法 URL，已中止跳转。请联系 cos72 团队。",
+      "network": "无法连接 cos72 后端。请检查网络后重试。",
+      "unknown": "cos72 后端拒绝了本次 SSO 授权请求。"
+    }
   }
 }

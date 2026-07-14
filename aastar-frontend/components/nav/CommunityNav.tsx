@@ -27,13 +27,29 @@ type Tab = {
   ownerOnly?: boolean;
   /** Module not built yet — render disabled. */
   soon?: boolean;
+  /** Leaves cos72 (deployed elsewhere) — rendered as a plain <a>, not a next/link route. */
+  external?: boolean;
 };
 
+/**
+ * MyVote deployment (MV-7). Optional: when unset, the MyVote tab stays a disabled "即将上线"
+ * placeholder and no governance entry links out — nothing to click, nothing to 404.
+ * NEXT_PUBLIC_* is inlined at build time, so this must be a literal property access.
+ */
+const MYVOTE_URL = process.env.NEXT_PUBLIC_MYVOTE_URL?.trim() || "";
+
+/**
+ * MyVote's own sign-in bounces the browser back to cos72 `/sso/start?redirect_uri=…`
+ * (see app/sso/start/page.tsx), so we just link at MyVote's root — cos72 never constructs
+ * MyVote's callback URL, and the redirect_uri whitelist stays owned by the backend.
+ */
 const TABS: Tab[] = [
   { key: "overview", label: "概览", href: "#" },
   { key: "mytask", label: "MyTask", href: "#", soon: true },
   { key: "myshop", label: "MyShop", href: "#", soon: true },
-  { key: "myvote", label: "MyVote", href: "#", soon: true },
+  MYVOTE_URL
+    ? { key: "myvote", label: "MyVote · 治理", href: MYVOTE_URL, external: true }
+    : { key: "myvote", label: "MyVote", href: "#", soon: true },
   { key: "members", label: "成员", href: "#" },
   { key: "governance", label: "治理", href: "#", ownerOnly: true },
   { key: "issue", label: "发币", href: "#", ownerOnly: true },
@@ -84,16 +100,24 @@ export function CommunityNav({ active }: { active?: string }) {
               </li>
             );
           }
+          const linkClass = `${base} ${
+            isActive
+              ? "border-b-2 border-emerald-500 font-medium text-gray-900 dark:text-white"
+              : "text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
+          }`;
+          if (t.external) {
+            // Same tab on purpose: MyVote's SSO round-trip lands the user back on cos72.
+            return (
+              <li key={t.key}>
+                <a href={t.href} rel="noopener noreferrer" className={linkClass}>
+                  {t.label}
+                </a>
+              </li>
+            );
+          }
           return (
             <li key={t.key}>
-              <Link
-                href={t.href}
-                className={`${base} ${
-                  isActive
-                    ? "border-b-2 border-emerald-500 font-medium text-gray-900 dark:text-white"
-                    : "text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
-                }`}
-              >
+              <Link href={t.href} className={linkClass}>
                 {t.label}
               </Link>
             </li>

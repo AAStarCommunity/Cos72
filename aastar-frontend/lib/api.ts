@@ -1,5 +1,17 @@
 import axios from "axios";
 
+declare module "axios" {
+  export interface AxiosRequestConfig {
+    /**
+     * Opt this request out of the global "401 → wipe session + bounce to /auth/login"
+     * response interceptor, so the caller can handle the 401 itself. Used by flows that
+     * must keep their own context across the login round-trip (e.g. the SSO handoff page,
+     * which has to preserve `?redirect_uri`).
+     */
+    skipAuthRedirect?: boolean;
+  }
+}
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api/v1";
 
 const api = axios.create({
@@ -22,7 +34,7 @@ api.interceptors.request.use(config => {
 api.interceptors.response.use(
   response => response,
   error => {
-    if (error.response?.status === 401) {
+    if (error.response?.status === 401 && !error.config?.skipAuthRedirect) {
       localStorage.removeItem("token");
       localStorage.removeItem("user");
       window.location.href = "/auth/login";
@@ -30,6 +42,23 @@ api.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
+// MyVote SSO handoff (MV-7 frontend half of the MV-1 backend endpoints).
+// `/sso/authorize` is JWT-guarded: the cos72 session token identifies the user (the userId is
+// NEVER sent in the body) and the backend mints a one-time code bound to a *whitelisted*
+// redirect_uri (fail-closed against SSO_ALLOWED_REDIRECTS). The response echoes the normalized
+// redirectUri — the browser must redirect to THAT value, not to the raw URL query param, which
+// is what keeps this from being an open redirect.
+// `skipAuthRedirect`: a 401 here must not silently dump the user on a bare /auth/login — the
+// SSO start page re-enters login with a return path so the handoff can resume.
+export const ssoAPI = {
+  authorize: (redirectUri: string) =>
+    api.post<{ code: string; redirectUri: string }>(
+      "/sso/authorize",
+      { redirect_uri: redirectUri },
+      { skipAuthRedirect: true }
+    ),
+};
 
 // Generic gasless UserOperation API (Phase 0 §0.2 — the backend contract cosSend calls).
 // Two-phase like transferAPI: `prepare` returns the userOpHash for the browser to sign
