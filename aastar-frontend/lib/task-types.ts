@@ -68,14 +68,18 @@ export interface ParsedTask {
   deadline: Date;
   createdAt: Date;
   challengeDeadline: Date | null;
+  challengeStake: bigint;
   status: TaskStatus;
   statusLabel: string;
   metadataUri: string;
   evidenceUri: string;
   taskType: string;
   taskTypeLabel: string;
+  juryTaskHash: `0x${string}`;
   isExpired: boolean;
   canFinalize: boolean;
+  /** Submitted and still inside the challenge window (community may challengeWork). */
+  canChallenge: boolean;
 }
 
 export interface CreateTaskForm {
@@ -98,4 +102,65 @@ export interface TaskMetadata {
   requirements?: string;
   tags?: string[];
   createdAt: number;
+}
+
+// ====== MT-11: Jury / arbitration types (JuryContract.sol) ======
+
+// Mirrors IJuryContract.TaskStatus
+export enum JuryTaskStatus {
+  Pending = 0,
+  InProgress = 1,
+  Completed = 2,
+  Disputed = 3,
+  Cancelled = 4,
+}
+
+// Mirrors IJuryContract.Task (raw chain shape)
+export interface JuryTask {
+  agentId: bigint;
+  taskHash: `0x${string}`;
+  evidenceUri: string;
+  taskType: number;
+  reward: bigint;
+  deadline: bigint;
+  status: JuryTaskStatus;
+  minJurors: bigint;
+  consensusThreshold: bigint;
+  totalVotes: bigint;
+  positiveVotes: bigint;
+  finalResponse: number;
+}
+
+// Mirrors IJuryContract.Vote
+export interface JuryVote {
+  juror: `0x${string}`;
+  response: number;
+  reasoning: string;
+  timestamp: bigint;
+  slashed: boolean;
+}
+
+/** Per-tag validation requirement on the escrow (read-only display). */
+export interface ValidationRequirementView {
+  tag: `0x${string}`;
+  minCount: bigint;
+  minAvgResponse: number;
+  minUniqueValidators: number;
+  enabled: boolean;
+}
+
+/** Challenge stake config read from the escrow (ERC-20, e.g. xPNT). */
+export interface ChallengeStakeConfig {
+  token: `0x${string}`;
+  amount: bigint;
+  symbol: string;
+  decimals: number;
+}
+
+/** Jury staking config (registerJuror): stakingToken + minStake. */
+export interface JuryStakingInfo {
+  token: `0x${string}`;
+  minStake: bigint;
+  symbol: string;
+  decimals: number;
 }

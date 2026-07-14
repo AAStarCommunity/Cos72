@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslation } from "react-i18next";
 import Layout from "@/components/Layout";
 import { useTask } from "@/contexts/TaskContext";
 import { useDashboard } from "@/contexts/DashboardContext";
@@ -14,6 +15,7 @@ import {
   ClockIcon,
   CurrencyDollarIcon,
   ArrowPathIcon,
+  ScaleIcon,
 } from "@heroicons/react/24/outline";
 import { formatDistanceToNow } from "@/lib/date-utils";
 
@@ -101,6 +103,7 @@ function shortenAddress(addr: string): string {
 }
 
 export default function TasksPage() {
+  const { t } = useTranslation();
   const router = useRouter();
   const {
     tasks,
@@ -164,13 +167,23 @@ export default function TasksPage() {
               {openCount} open {openCount === 1 ? "task" : "tasks"} available
             </p>
           </div>
-          <button
-            onClick={() => router.push("/tasks/create")}
-            className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm"
-          >
-            <PlusIcon className="w-4 h-4" />
-            Post Task
-          </button>
+          <div className="flex items-center gap-2">
+            {/* MT-11: jury panel entry (register / vote / finalize / claim) */}
+            <button
+              onClick={() => router.push("/tasks/jury")}
+              className="flex items-center gap-2 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+            >
+              <ScaleIcon className="w-4 h-4" />
+              {t("juryPage.entry")}
+            </button>
+            <button
+              onClick={() => router.push("/tasks/create")}
+              className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm"
+            >
+              <PlusIcon className="w-4 h-4" />
+              Post Task
+            </button>
+          </div>
         </div>
 
         {/* Contract not configured warning */}
