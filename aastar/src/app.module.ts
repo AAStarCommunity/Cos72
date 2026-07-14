@@ -21,6 +21,7 @@ import { CommunityModule } from "./community/community.module";
 import { OperatorModule } from "./operator/operator.module";
 import { AdminModule } from "./admin/admin.module";
 import { SaleModule } from "./sale/sale.module";
+import { IndexerModule } from "./indexer/indexer.module";
 
 @Module({
   imports: [
@@ -44,6 +45,7 @@ import { SaleModule } from "./sale/sale.module";
     OperatorModule,
     AdminModule,
     SaleModule,
+    IndexerModule,
   ],
   controllers: [AppController],
   providers: [AppService],
