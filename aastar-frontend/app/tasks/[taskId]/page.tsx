@@ -22,6 +22,7 @@ import {
   isX402Configured,
 } from "@/lib/contracts/task-config";
 import { fetchReceiptDetails, type X402ReceiptDetails } from "@/lib/x402-client";
+import { decodeTaskErrorKey } from "@/lib/contracts/decode-task-error";
 import {
   ArrowLeftIcon,
   CurrencyDollarIcon,
@@ -191,7 +192,7 @@ export default function TaskDetailPage() {
     } catch (err) {
       toast.dismiss("challenge-approve");
       toast.dismiss("challenge-send");
-      toast.error(err instanceof Error ? err.message : "Error");
+      toast.error(describeTxError(err));
     } finally {
       setActionLoading(false);
     }
@@ -212,6 +213,14 @@ export default function TaskDetailPage() {
     setJuryHashInput("");
   }
 
+  /** MT-11 (Codex M1/M2): map escrow custom-error reverts to bilingual copy;
+   *  unrecognized failures fall back to the raw message, then a generic key. */
+  function describeTxError(err: unknown): string {
+    const key = decodeTaskErrorKey(err);
+    if (key) return t(key);
+    return err instanceof Error && err.message ? err.message : t("taskChallenge.errors.generic");
+  }
+
   async function runAction(fn: () => Promise<boolean>, successMsg: string) {
     if (!isConnected) {
       toast.error("Passkey login required.");
@@ -230,7 +239,7 @@ export default function TaskDetailPage() {
       }
     } catch (err) {
       toast.dismiss(toastId);
-      toast.error(err instanceof Error ? err.message : "Error");
+      toast.error(describeTxError(err));
     } finally {
       setActionLoading(false);
     }
@@ -719,7 +728,7 @@ export default function TaskDetailPage() {
                 className="w-full py-3 rounded-xl border border-orange-300 dark:border-orange-700 text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/20 disabled:opacity-60 font-semibold text-sm transition-colors flex items-center justify-center gap-2"
               >
                 <ExclamationTriangleIcon className="w-5 h-5" />
-                {actionLoading ? "Processing..." : t("taskChallenge.challengeButton")}
+                {actionLoading ? t("taskChallenge.processing") : t("taskChallenge.challengeButton")}
               </button>
               <p className="text-xs text-center text-gray-500 dark:text-gray-400">
                 {stakeConfig

@@ -1129,7 +1129,21 @@
     "reqMinCount": "Min validations",
     "reqMinAvg": "Min avg score",
     "reqMinUnique": "Min unique validators",
-    "loginRequired": "Passkey login required."
+    "loginRequired": "Passkey login required.",
+    "processing": "Processing…",
+    "errors": {
+      "InvalidTaskState": "The task is not in a state that allows this action.",
+      "NotCommunity": "Only the task's community (publisher) can do this.",
+      "TaskExpired": "The task deadline has passed.",
+      "ChallengePeriodNotOver": "The challenge period has not ended yet.",
+      "ChallengePeriodExpired": "The challenge period has expired — challenging is no longer possible.",
+      "AlreadyChallenged": "This task has already been challenged.",
+      "TransferFailed": "Token transfer failed — check your xPNT balance and allowance.",
+      "ZeroAmount": "Amount must be greater than zero.",
+      "ValidationsNotSatisfied": "The task's validation requirements are not satisfied yet.",
+      "PausedError": "The contract is currently paused.",
+      "generic": "Transaction failed."
+    }
   },
   "juryPage": {
     "title": "Jury Panel",
@@ -1190,6 +1204,7 @@
     "claimed": "Rewards claimed!",
     "nothingToClaim": "Nothing to claim yet.",
     "refresh": "Refresh",
-    "loginRequired": "Passkey login required."
+    "loginRequired": "Passkey login required.",
+    "genericError": "Transaction failed."
   }
 }

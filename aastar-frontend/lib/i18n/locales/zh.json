@@ -1129,7 +1129,21 @@
     "reqMinCount": "最少验证次数",
     "reqMinAvg": "最低平均分",
     "reqMinUnique": "最少独立验证者",
-    "loginRequired": "需要 Passkey 登录。"
+    "loginRequired": "需要 Passkey 登录。",
+    "processing": "处理中…",
+    "errors": {
+      "InvalidTaskState": "任务当前状态不允许此操作。",
+      "NotCommunity": "仅任务社区(发布者)可执行此操作。",
+      "TaskExpired": "任务已过截止时间。",
+      "ChallengePeriodNotOver": "挑战期尚未结束。",
+      "ChallengePeriodExpired": "挑战期已过,无法再发起挑战。",
+      "AlreadyChallenged": "该任务已被挑战。",
+      "TransferFailed": "代币转账失败 — 请检查 xPNT 余额与授权额度。",
+      "ZeroAmount": "数量必须大于 0。",
+      "ValidationsNotSatisfied": "任务的验证要求尚未满足。",
+      "PausedError": "合约当前已暂停。",
+      "generic": "交易失败。"
+    }
   },
   "juryPage": {
     "title": "陪审团面板",
@@ -1190,6 +1204,7 @@
     "claimed": "奖励已领取!",
     "nothingToClaim": "暂无可领取奖励。",
     "refresh": "刷新",
-    "loginRequired": "需要 Passkey 登录。"
+    "loginRequired": "需要 Passkey 登录。",
+    "genericError": "交易失败。"
   }
 }
