@@ -49,6 +49,13 @@ const MAX_CODES = 10_000;
  */
 const INVALID_SSO_CODE = "Invalid SSO code";
 
+/**
+ * Percent-encoded path separators / dot-segments: `%2f` (/), `%5c` (\, which many stacks
+ * fold to /), and `%2e` (.), any case. Their presence in a redirect_uri path means the value
+ * only *looks* whitelisted until something downstream decodes it — always reject.
+ */
+const ENCODED_PATH_SEPARATOR = /%2f|%5c|%2e/i;
+
 @Injectable()
 export class SsoService implements OnModuleDestroy {
   private readonly ssoJwtSecret: string;
@@ -200,12 +207,18 @@ export class SsoService implements OnModuleDestroy {
   /**
    * Validates redirect_uri against SSO_ALLOWED_REDIRECTS and returns its normalized form.
    * Matching rules (both sides URL-parsed, never raw-string prefixed):
+   * - the path must contain no ENCODED separators (see ENCODED_PATH_SEPARATOR below), AND
    * - origin must be exactly equal (so `https://myvote.example.com.evil.com` can't pass a
    *   `https://myvote.example.com` entry), AND
    * - pathname must match on a path-segment boundary: equal to the entry's path, or start
    *   with entryPath + "/" (so a `/sso/callback` entry admits `/sso/callback/sub` but NOT
-   *   `/sso/callback-evil`). Entry paths are normalized by stripping trailing slashes; a
-   *   bare-origin entry admits every path on that origin.
+   *   `/sso/callback-evil`). Both sides are canonicalized the same way (trailing slashes
+   *   stripped) and compared case-sensitively — URL paths ARE case-sensitive.
+   *
+   * OPERATIONAL NOTE: a bare-origin entry (e.g. `https://myvote.example.com`) admits EVERY
+   * path on that origin — fine for local dev, but production SSO_ALLOWED_REDIRECTS should
+   * list the exact callback path (e.g. `https://myvote.example.com/sso/callback`), so an
+   * open-redirect or XSS sink elsewhere on the MyVote origin can't receive SSO codes.
    */
   private resolveRedirect(redirectUri: string): string {
     let target: URL;
@@ -213,6 +226,16 @@ export class SsoService implements OnModuleDestroy {
       target = new URL(redirectUri);
     } catch (_error) {
       throw new BadRequestException("redirect_uri must be an absolute URL");
+    }
+
+    // WHATWG URL leaves %2f / %5c / %2e ENCODED in `pathname` (it does not decode or
+    // re-normalize them), so `/sso/callback/%2f..%2fevil` would sail through the
+    // segment-boundary check below while a downstream proxy or framework that DOES decode
+    // and re-normalize the path resolves it to `/sso/evil` — a path-traversal escape from
+    // the whitelisted callback. Reject any encoded separator/dot-segment outright
+    // (fail-closed); a legitimate callback URL never needs one in its path.
+    if (ENCODED_PATH_SEPARATOR.test(target.pathname)) {
+      throw new BadRequestException("redirect_uri is not in the SSO_ALLOWED_REDIRECTS whitelist");
     }
 
     const allowed = this.allowedRedirects.some(entry => {
