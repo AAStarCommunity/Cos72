@@ -49,7 +49,9 @@ npm workspaces monorepo. Two active workspaces plus scaffolding for future work:
 clean install fails ERESOLVE. This is worked around by root `.npmrc`
 (`legacy-peer-deps=true`) and hoisting `react`/`react-dom` into root
 `devDependencies` (otherwise `next build` reports `Cannot find module 'react'`).
-A fresh clone runs `npm install` directly. Do not use `npm ci`/pnpm here.
+A fresh clone runs `npm install` directly. Never use pnpm here; `npm ci` is fine
+(CI uses it — the committed `.npmrc` makes it honor legacy-peer-deps) but for
+local installs that change deps you need `npm install` to update the lockfile.
 
 ## Common commands
 
@@ -69,13 +71,16 @@ npm run type-check -w aastar         # tsc --noEmit
 npm run type-check -w aastar-frontend
 
 # Lint / format
-npm run lint                         # eslint --fix across workspaces
+npm run lint                         # lint all workspaces (aastar runs eslint --fix; frontend is check-only, --max-warnings 0)
 npm run lint:check -w aastar-frontend
 npm run format                       # prettier --write . (root)
 npm run format:check
 
-# Full CI gate (matches .github/workflows/ci.yml)
+# Local aggregate gate (subset of GitHub CI)
 npm run ci                           # format:check && lint && build && test:ci
+# NOTE: actual .github/workflows/ci.yml runs more on top: lint:check + type-check
+# per workspace, npm audit, Trivy, CodeQL, Dependency Review — green `npm run ci`
+# does NOT guarantee green GitHub CI.
 
 # i18n parity (frontend has i18next EN/ZH — keep keys in sync)
 npm run i18n:check -w aastar-frontend
@@ -115,8 +120,10 @@ NestJS feature-module app. Each domain is `*.module.ts` + `*.controller.ts` +
   management (prod signing).
 - **Management-portal domains**:
   `registry / community / operator / admin / sale / token / user-token / user-nft / guardian`
-  — read live Sepolia data via the SDK and expose it under `/api/v1/*`. These
-  have the real unit specs.
+  — read live Sepolia data via the SDK and expose it under `/api/v1/*`. The real
+  unit specs live in five of them:
+  `registry / community / operator / admin / sale` (`*.service.spec.ts`); the
+  rest have none.
 - **database** (`database/`): dual persistence behind `persistence.interface.ts`
   with `json.adapter.ts` and `postgres.adapter.ts`, selected by `DB_TYPE`
   (`json` | `postgres`). `data-tools/` provides export/import + `db:clear`
@@ -145,8 +152,9 @@ Next.js App Router (`app/`), Tailwind v4, i18next (EN/ZH).
   backend-returned `userOpHash` (the browser can't independently recompute it) —
   inherent to KMS-server-only.
 - **Addresses**: `lib/addresses.ts` `infraAddresses()` reads SDK canonical
-  addresses; module addresses are in transition via env (`config/modules.ts` +
-  `.env.local`, gitignored).
+  addresses; module addresses are in transition via env
+  (`aastar-frontend/config/modules.ts` + `.env.local`, gitignored — not to be
+  confused with the repo-root `config/brand.ts`).
 - **Navigation = GitHub-style three tiers**: L1 user menu (cross-community,
   top-right, from YAA) / L2 community menu (`components/nav/CommunityNav.tsx`,
   module tabs gated by role via `lib/roles.ts`) / L3 module sub-nav. **Role
