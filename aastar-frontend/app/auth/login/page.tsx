@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Layout from "@/components/Layout";
@@ -12,8 +12,31 @@ import { startAuthentication, startRegistration } from "@simplewebauthn/browser"
 
 const isEmail = (v: string) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v);
 
+/** Where to land after a successful sign-in when `?redirect=` is absent or unusable. */
+const DEFAULT_LANDING = "/dashboard";
+
+/**
+ * Sanitize the `?redirect=` return path (used by flows that bounce through login, e.g.
+ * /sso/start). Only a same-origin *path* is honored: it must start with a single "/" and
+ * must not continue with "/" or "\" (protocol-relative `//evil.com` and `/\evil.com` are
+ * both treated as absolute URLs by browsers), so `?redirect=` can never become an open
+ * redirect off cos72.
+ */
+function safeReturnPath(raw: string | null): string | null {
+  if (!raw) return null;
+  if (!raw.startsWith("/") || /^\/[/\\]/.test(raw)) return null;
+  return raw;
+}
+
 export default function LoginPage() {
   const [loading, setLoading] = useState(false);
+  // Read in an effect (not during render): `window` doesn't exist while prerendering, and
+  // useSearchParams would force this page behind a Suspense boundary.
+  const [returnTo, setReturnTo] = useState(DEFAULT_LANDING);
+  useEffect(() => {
+    const safe = safeReturnPath(new URLSearchParams(window.location.search).get("redirect"));
+    if (safe) setReturnTo(safe);
+  }, []);
   const [loginMode, setLoginMode] = useState<"passkey" | "otp">("passkey");
   const [email, setEmail] = useState("");
   const [otpEmail, setOtpEmail] = useState("");
@@ -54,7 +77,7 @@ export default function LoginPage() {
       toast.dismiss(t);
       setStoredAuth(access_token, user);
       toast.success("Welcome back!");
-      router.push("/dashboard");
+      router.push(returnTo);
     } catch (error: any) {
       if (t) toast.dismiss(t);
 
@@ -163,7 +186,7 @@ export default function LoginPage() {
       } else {
         toast.success("Signed in!");
       }
-      router.push("/dashboard");
+      router.push(returnTo);
     } catch (error: any) {
       if (t) toast.dismiss(t);
       setWalletStatus(null);

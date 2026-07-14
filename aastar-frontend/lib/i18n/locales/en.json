@@ -1082,5 +1082,25 @@
     "done": "Tier limits raised",
     "cancel": "Cancel",
     "note": "Guardians sign the change digest off-chain; you submit it gaslessly with your passkey. Quorum = the contract's RECOVERY_THRESHOLD."
+  },
+  "ssoStart": {
+    "title": "Signing you in to MyVote",
+    "working": "Authorizing the handoff — you'll be redirected automatically.",
+    "back": "Back",
+    "home": "Go to dashboard",
+    "signInAgain": "Sign in again",
+    "createAccount": "Create your account",
+    "error": {
+      "title": "SSO handoff failed",
+      "detailLabel": "Backend response",
+      "missingRedirect": "This page must be opened with a ?redirect_uri parameter. Start from MyVote's sign-in button instead of opening this URL directly.",
+      "notWhitelisted": "cos72 refused to authorize this handoff: the redirect_uri \"{{uri}}\" is not registered in the backend SSO_ALLOWED_REDIRECTS whitelist.",
+      "opsHint": "For operators: add this exact redirect_uri (origin + callback path) to SSO_ALLOWED_REDIRECTS in the cos72 backend environment, then restart the API. An empty/unset SSO_ALLOWED_REDIRECTS rejects every redirect_uri by design (fail-closed).",
+      "noAccount": "Your cos72 account has no AirAccount yet. Create your smart account first, then sign in to MyVote.",
+      "unauthorized": "Your cos72 session is missing or has expired. Sign in again to continue to MyVote.",
+      "badRedirect": "The backend returned a redirect target that is not a valid URL. Nothing was redirected — report this to the cos72 team.",
+      "network": "Could not reach the cos72 backend. Check your connection and try again.",
+      "unknown": "The cos72 backend rejected the SSO authorization request."
+    }
   }
 }
