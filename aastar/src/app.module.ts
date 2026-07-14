@@ -22,6 +22,7 @@ import { OperatorModule } from "./operator/operator.module";
 import { AdminModule } from "./admin/admin.module";
 import { SaleModule } from "./sale/sale.module";
 import { IndexerModule } from "./indexer/indexer.module";
+import { SsoModule } from "./sso/sso.module";
 
 @Module({
   imports: [
@@ -46,6 +47,7 @@ import { IndexerModule } from "./indexer/indexer.module";
     AdminModule,
     SaleModule,
     IndexerModule,
+    SsoModule,
   ],
   controllers: [AppController],
   providers: [AppService],
