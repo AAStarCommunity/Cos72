@@ -1,4 +1,4 @@
-import { Injectable, Logger, OnModuleInit } from "@nestjs/common";
+import { Injectable, Logger, OnModuleInit, ServiceUnavailableException } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import type { Address } from "viem";
 import { IndexerService } from "../indexer/indexer.service";
@@ -38,11 +38,27 @@ export interface TaskChallengesResult {
   taskId: string;
   challenges: ChallengeEntry[];
   resolution: ChallengeResolution | null;
+  /** How many source events were scanned to build this answer. */
+  scanned: number;
+  /** Total events the indexer holds for this source. */
+  total: number;
+  /**
+   * True when the MAX_SCAN_EVENTS cap was hit before exhausting the source, so
+   * matching events (or a resolution) may exist in the un-scanned older window.
+   * When true and `challenges` is empty, "not found" is NOT authoritative.
+   */
+  truncated: boolean;
 }
 
 export interface RecentChallengesResult {
   limit: number;
   challenges: ChallengeEntry[];
+  /** How many source events were scanned. */
+  scanned: number;
+  /** Total events the indexer holds for this source. */
+  total: number;
+  /** True when the scan cap was hit before `limit` challenges were collected. */
+  truncated: boolean;
 }
 
 /**
@@ -93,6 +109,14 @@ export class MyTaskIndexService implements OnModuleInit {
       return;
     }
 
+    // Idempotency: if the source is already registered (e.g. a re-init), adopt it
+    // instead of calling registerSource again (which throws on a duplicate key).
+    if (this.indexerService.hasSource(MYTASK_CHALLENGES_SOURCE)) {
+      this.registered = true;
+      this.logger.log("MyTask challenges source already registered; skipping re-registration");
+      return;
+    }
+
     const fromBlock = this.resolveFromBlock();
     try {
       this.indexerService.registerSource({
@@ -134,13 +158,26 @@ export class MyTaskIndexService implements OnModuleInit {
   }
 
   /**
+   * Guard the read paths: if the source was never registered (empty/invalid
+   * address, no RPC, or a failed/duplicate registration), querying the indexer
+   * would return an empty array indistinguishable from "no one challenged".
+   * Surface that as 503 so callers never mistake "not indexed" for "no data".
+   */
+  private ensureRegistered(): void {
+    if (!this.isRegistered()) {
+      throw new ServiceUnavailableException("MyTask index source is not registered");
+    }
+  }
+
+  /**
    * All challengers of a task, oldest-challenge-first, plus the resolution if
    * one has been indexed. taskId must be a 0x-prefixed bytes32; comparison is
    * case-insensitive (topics decode to lowercase hex).
    */
   async getChallengesByTaskId(taskId: string): Promise<TaskChallengesResult> {
+    this.ensureRegistered();
     const normalized = taskId.toLowerCase();
-    const records = await this.drainEvents();
+    const { events: records, scanned, total, truncated } = await this.drainEvents();
 
     const challenges: ChallengeEntry[] = [];
     let resolution: ChallengeResolution | null = null;
@@ -172,51 +209,67 @@ export class MyTaskIndexService implements OnModuleInit {
 
     // Oldest challenge first for a stable, chronological UI list.
     challenges.sort((a, b) => a.blockNumber - b.blockNumber || a.logIndex - b.logIndex);
-    return { taskId, challenges, resolution };
+    return { taskId, challenges, resolution, scanned, total, truncated };
   }
 
   /** Most-recent challenges across all tasks, newest first, capped at `limit`. */
   async getRecentChallenges(limit: number): Promise<RecentChallengesResult> {
+    this.ensureRegistered();
     // getEvents is newest-first; page forward, keeping only TaskChallenged, until
     // we have `limit` of them (resolutions consume slots so a single page of
     // `limit` events can under-fill). Bounded by MAX_SCAN_EVENTS.
     const challenges: ChallengeEntry[] = [];
-    let offset = 0;
+    let scanned = 0;
+    let total = 0;
     for (;;) {
-      const { events, total } = await this.indexerService.queryEvents({
+      const { events, total: pageTotal } = await this.indexerService.queryEvents({
         source: MYTASK_CHALLENGES_SOURCE,
         limit: INDEX_PAGE_SIZE,
-        offset,
+        offset: scanned,
       });
+      total = pageTotal;
       for (const event of events) {
+        scanned += 1;
         if (event.eventName !== "TaskChallenged") continue;
         challenges.push(this.toChallengeEntry(event));
-        if (challenges.length >= limit) return { limit, challenges };
+        // Enough collected: the answer is complete regardless of un-scanned tail.
+        if (challenges.length >= limit) {
+          return { limit, challenges, scanned, total, truncated: false };
+        }
       }
-      offset += events.length;
-      if (events.length === 0 || offset >= total || offset >= MAX_SCAN_EVENTS) break;
+      if (events.length === 0 || scanned >= total || scanned >= MAX_SCAN_EVENTS) break;
     }
-    return { limit, challenges };
+    // Fell short of `limit`: truncated only if the cap stopped us with more to scan.
+    return { limit, challenges, scanned, total, truncated: scanned < total };
   }
 
   /**
    * Drain up to MAX_SCAN_EVENTS records for the source (A-8 has no arg-level
    * filter, so taskId filtering happens here). Pages in INDEX_PAGE_SIZE chunks.
+   * `truncated` is true when the cap stopped us before the source was exhausted,
+   * so an empty filter result is "maybe in the older window", not "definitely none".
    */
-  private async drainEvents(): Promise<IndexedEventRecord[]> {
+  private async drainEvents(): Promise<{
+    events: IndexedEventRecord[];
+    scanned: number;
+    total: number;
+    truncated: boolean;
+  }> {
     const out: IndexedEventRecord[] = [];
-    let offset = 0;
+    let scanned = 0;
+    let total = 0;
     for (;;) {
-      const { events, total } = await this.indexerService.queryEvents({
+      const { events, total: pageTotal } = await this.indexerService.queryEvents({
         source: MYTASK_CHALLENGES_SOURCE,
         limit: INDEX_PAGE_SIZE,
-        offset,
+        offset: scanned,
       });
+      total = pageTotal;
       out.push(...events);
-      offset += events.length;
-      if (events.length === 0 || offset >= total || offset >= MAX_SCAN_EVENTS) break;
+      scanned += events.length;
+      if (events.length === 0 || scanned >= total || scanned >= MAX_SCAN_EVENTS) break;
     }
-    return out;
+    return { events: out, scanned, total, truncated: scanned < total };
   }
 
   private toChallengeEntry(record: IndexedEventRecord): ChallengeEntry {
