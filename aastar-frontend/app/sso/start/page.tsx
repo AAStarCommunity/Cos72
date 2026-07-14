@@ -84,6 +84,12 @@ export default function SsoStartPage() {
       target.searchParams.set("code", data.code);
       // replace(), not assign(): the SSO start URL must not sit in history — going "back" to it
       // would re-mint a code and bounce the user around.
+      //
+      // REFERRER/URL boundary: the one-time code rides in MyVote's callback URL. cos72's job
+      // ends here, and using replace() (not assign()) already keeps the code-bearing URL out of
+      // THIS origin's history. Scrubbing the code from the *landed* MyVote callback URL (it must
+      // not linger in the address bar, history, or an onward Referer) is MyVote's callback
+      // responsibility — MyVote #4 does `history.replaceState` to strip `?code=` after exchange.
       window.location.replace(target.toString());
     } catch (error: unknown) {
       const err = error as {

@@ -7,6 +7,7 @@ import Layout from "@/components/Layout";
 import { authAPI } from "@/lib/api";
 import { kmsClient } from "@/lib/yaaa";
 import { setStoredAuth } from "@/lib/auth";
+import { safeReturnPath } from "@/lib/safe-return-path";
 import toast from "react-hot-toast";
 import { startAuthentication, startRegistration } from "@simplewebauthn/browser";
 
@@ -14,19 +15,6 @@ const isEmail = (v: string) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v);
 
 /** Where to land after a successful sign-in when `?redirect=` is absent or unusable. */
 const DEFAULT_LANDING = "/dashboard";
-
-/**
- * Sanitize the `?redirect=` return path (used by flows that bounce through login, e.g.
- * /sso/start). Only a same-origin *path* is honored: it must start with a single "/" and
- * must not continue with "/" or "\" (protocol-relative `//evil.com` and `/\evil.com` are
- * both treated as absolute URLs by browsers), so `?redirect=` can never become an open
- * redirect off cos72.
- */
-function safeReturnPath(raw: string | null): string | null {
-  if (!raw) return null;
-  if (!raw.startsWith("/") || /^\/[/\\]/.test(raw)) return null;
-  return raw;
-}
 
 export default function LoginPage() {
   const [loading, setLoading] = useState(false);
