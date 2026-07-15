@@ -43,6 +43,16 @@ module.exports = {
         PIMLICO_API_KEY: process.env.PIMLICO_API_KEY,
         KMS_ENABLED: "true",
         KMS_ENDPOINT: "https://kms.aastar.io",
+        // MyVote SSO (PR #18): SsoService FAILS FAST on boot if SSO_JWT_SECRET is unset — must be
+        // passed through here or the PM2/Docker backend crashes at startup. Must differ from
+        // JWT_SECRET. SSO_ALLOWED_REDIRECTS is a comma-separated exact-URL whitelist (empty =
+        // reject all, fail-closed) — set it to MyVote's `https://<myvote>/sso/callback`.
+        SSO_JWT_SECRET: process.env.SSO_JWT_SECRET,
+        SSO_ALLOWED_REDIRECTS: process.env.SSO_ALLOWED_REDIRECTS || "",
+        // MyTask challenge indexer (PR #20): defaults to the MT-8 Sepolia deployment; override per
+        // environment. Empty MYTASK_ESCROW_ADDRESS disables the indexer (skips, does not crash).
+        MYTASK_ESCROW_ADDRESS: process.env.MYTASK_ESCROW_ADDRESS,
+        MYTASK_INDEX_FROM_BLOCK: process.env.MYTASK_INDEX_FROM_BLOCK,
       },
     },
     {
